@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { HeroSection } from "@/components/blocks/hero-section-1";
+import { HeroSection } from "@/components/blocks/hero";
 import { TalentFinder } from "@/components/blocks/talent-finder";
-import FeaturesSection from "@/components/blocks/features-1";
-import FeaturesSection2 from "@/components/blocks/features-8";
+import FeaturesSection from "@/components/blocks/oneplatformthreeprofiles";
+import FeaturesSection2 from "@/components/blocks/techmatch";
+import BuildBySection from "@/components/blocks/buildby";
+import EcosystemSection from "@/components/blocks/ecosystem";
 
 type RoleFilter = "Founder" | "Freelancer" | "Investor" | "All";
 
@@ -23,6 +25,8 @@ export default function Home() {
       <TalentFinder userRoleFilter={userFilter} lookingForRoleFilter={lookingForFilter} />
       <FeaturesSection />
       <FeaturesSection2 />
+      <BuildBySection />
+      <EcosystemSection />
     </>
   );
 }
