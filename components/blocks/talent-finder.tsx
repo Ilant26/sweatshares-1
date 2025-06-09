@@ -139,7 +139,7 @@ const mockUsers: User[] = [
 const roles = ["Founder", "Freelancer", "Investor"] as const;
 type Role = typeof roles[number];
 
-interface InteractiveButtonProps extends Omit<HTMLMotionProps<"button">, "onAnimationStart" | "onDrag" | "onDragEnd" | "onDragExit" | "onDragEnter" | "onDragLeave" | "onDragOver" | "onDragStart" | "onDrop"> {
+interface InteractiveButtonProps extends HTMLMotionProps<"button"> {
   text: string;
   icon: React.ReactNode;
   variant?: "primary" | "secondary" | "tertiary";
@@ -188,8 +188,8 @@ export function TalentFinder({
   lookingForRoleFilter,
   onLookingForChange,
 }: { 
-  userRoleFilter: string;
-  lookingForRoleFilter: string;
+  userRoleFilter: "Founder" | "Freelancer" | "Investor" | "All";
+  lookingForRoleFilter: "Founder" | "Freelancer" | "Investor" | "All";
   onLookingForChange: (role: Role | "All") => void;
 }) {
   const filteredUsers = mockUsers.filter((user) => {
@@ -201,6 +201,7 @@ export function TalentFinder({
     if (lookingForRoleFilter === "All") {
       return true; // Show all users if looking for 'All'
     } else {
+      // Only show users whose role matches the lookingForRoleFilter
       return user.role === lookingForRoleFilter;
     }
   });
