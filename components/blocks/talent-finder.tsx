@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { motion, HTMLMotionProps } from "framer-motion";
-import { ArrowRight, UserPlus, User, MessageCircle } from "lucide-react";
+import { UserPlus, User, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface User {
@@ -11,6 +11,7 @@ interface User {
   avatarUrl: string;
   bio: string;
   skills: string[];
+  lookingFor?: ("Founder" | "Freelancer" | "Investor")[];
 }
 
 const mockUsers: User[] = [
@@ -21,6 +22,7 @@ const mockUsers: User[] = [
     avatarUrl: "https://randomuser.me/api/portraits/women/1.jpg",
     bio: "Building the next big thing in fintech.",
     skills: ["Fintech", "Leadership", "Fundraising"],
+    lookingFor: ["Freelancer", "Investor"],
   },
   {
     id: "2",
@@ -29,6 +31,7 @@ const mockUsers: User[] = [
     avatarUrl: "https://randomuser.me/api/portraits/men/2.jpg",
     bio: "Full-stack developer and designer.",
     skills: ["React", "Node.js", "UI/UX"],
+    lookingFor: ["Founder"],
   },
   {
     id: "3",
@@ -37,6 +40,7 @@ const mockUsers: User[] = [
     avatarUrl: "https://randomuser.me/api/portraits/women/3.jpg",
     bio: "Angel investor in SaaS startups.",
     skills: ["SaaS", "Angel Investing", "Mentoring"],
+    lookingFor: ["Founder", "Freelancer"],
   },
   {
     id: "4",
@@ -45,6 +49,7 @@ const mockUsers: User[] = [
     avatarUrl: "https://randomuser.me/api/portraits/men/4.jpg",
     bio: "Serial entrepreneur in health tech.",
     skills: ["Health Tech", "Startups", "Growth"],
+    lookingFor: ["Freelancer", "Investor"],
   },
   {
     id: "5",
@@ -53,6 +58,7 @@ const mockUsers: User[] = [
     avatarUrl: "https://randomuser.me/api/portraits/women/5.jpg",
     bio: "UX/UI specialist for web apps.",
     skills: ["UX", "UI", "Figma"],
+    lookingFor: ["Founder"],
   },
   {
     id: "6",
@@ -61,6 +67,7 @@ const mockUsers: User[] = [
     avatarUrl: "https://randomuser.me/api/portraits/men/6.jpg",
     bio: "VC partner focused on AI.",
     skills: ["AI", "Venture Capital", "Strategy"],
+    lookingFor: ["Founder", "Freelancer"],
   },
   {
     id: "7",
@@ -69,6 +76,7 @@ const mockUsers: User[] = [
     avatarUrl: "https://randomuser.me/api/portraits/women/7.jpg",
     bio: "Edtech founder passionate about learning innovation.",
     skills: ["Edtech", "Innovation", "Team Building"],
+    lookingFor: ["Freelancer", "Investor"],
   },
   {
     id: "8",
@@ -77,6 +85,7 @@ const mockUsers: User[] = [
     avatarUrl: "https://randomuser.me/api/portraits/men/8.jpg",
     bio: "Mobile app developer and React Native expert.",
     skills: ["React Native", "iOS", "Android"],
+    lookingFor: ["Founder"],
   },
   {
     id: "9",
@@ -85,6 +94,7 @@ const mockUsers: User[] = [
     avatarUrl: "https://randomuser.me/api/portraits/women/9.jpg",
     bio: "Seed investor in climate tech and sustainability.",
     skills: ["Climate Tech", "Sustainability", "Seed Funding"],
+    lookingFor: ["Founder", "Freelancer"],
   },
   {
     id: "10",
@@ -93,6 +103,7 @@ const mockUsers: User[] = [
     avatarUrl: "https://randomuser.me/api/portraits/men/10.jpg",
     bio: "Founder of a SaaS platform for remote teams.",
     skills: ["SaaS", "Remote Work", "Product"],
+    lookingFor: ["Freelancer", "Investor"],
   },
   {
     id: "11",
@@ -101,6 +112,7 @@ const mockUsers: User[] = [
     avatarUrl: "https://randomuser.me/api/portraits/women/11.jpg",
     bio: "Freelance product manager and agile coach.",
     skills: ["Product Management", "Agile", "Scrum"],
+    lookingFor: ["Founder"],
   },
   {
     id: "12",
@@ -109,6 +121,7 @@ const mockUsers: User[] = [
     avatarUrl: "https://randomuser.me/api/portraits/men/12.jpg",
     bio: "Angel investor in B2B SaaS and marketplaces.",
     skills: ["B2B SaaS", "Marketplaces", "Angel Investing"],
+    lookingFor: ["Founder", "Freelancer"],
   },
   {
     id: "13",
@@ -117,6 +130,7 @@ const mockUsers: User[] = [
     avatarUrl: "https://randomuser.me/api/portraits/women/13.jpg",
     bio: "Healthtech founder focused on digital wellness.",
     skills: ["Healthtech", "Digital Wellness", "Leadership"],
+    lookingFor: ["Freelancer", "Investor"],
   },
   {
     id: "14",
@@ -125,6 +139,7 @@ const mockUsers: User[] = [
     avatarUrl: "https://randomuser.me/api/portraits/men/14.jpg",
     bio: "UI/UX designer for SaaS and mobile apps.",
     skills: ["UI/UX", "Web Design", "Mobile Design"],
+    lookingFor: ["Founder"],
   },
   {
     id: "15",
@@ -133,6 +148,7 @@ const mockUsers: User[] = [
     avatarUrl: "https://randomuser.me/api/portraits/women/15.jpg",
     bio: "VC focused on early-stage European startups.",
     skills: ["Venture Capital", "Europe", "Startups"],
+    lookingFor: ["Founder", "Freelancer"],
   },
 ];
 
@@ -186,52 +202,24 @@ InteractiveButton.displayName = "InteractiveButton";
 export function TalentFinder({
   userRoleFilter,
   lookingForRoleFilter,
-  onLookingForChange,
 }: { 
   userRoleFilter: "Founder" | "Freelancer" | "Investor" | "All";
   lookingForRoleFilter: "Founder" | "Freelancer" | "Investor" | "All";
-  onLookingForChange: (role: Role | "All") => void;
 }) {
+  console.log("TalentFinder - userRoleFilter:", userRoleFilter);
+  console.log("TalentFinder - lookingForRoleFilter:", lookingForRoleFilter);
+
   const filteredUsers = mockUsers.filter((user) => {
-    // If user is a 'Founder' looking for a 'Freelancer', show Freelancers.
-    // If user is a 'Freelancer' looking for a 'Founder', show Founders.
-    // If user is an 'Investor' looking for a 'Founder' or 'Freelancer', show them accordingly.
-    // If 'All' is selected for lookingForRoleFilter, show all users.
-    
-    if (lookingForRoleFilter === "All") {
-      return true; // Show all users if looking for 'All'
-    } else {
-      // Only show users whose role matches the lookingForRoleFilter
-      return user.role === lookingForRoleFilter;
+    let matchesByLookingForRole = true;
+    if (lookingForRoleFilter !== "All") {
+      matchesByLookingForRole = user.role === lookingForRoleFilter;
     }
+
+    return matchesByLookingForRole;
   });
   
   return (
     <section className="w-full max-w-5xl mx-auto py-12 px-4">
-      <motion.div 
-        className="flex justify-center gap-2 mb-8 flex-wrap"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        <Button
-          variant={lookingForRoleFilter === "All" ? "default" : "outline"}
-          onClick={() => onLookingForChange("All")}
-          className="rounded-full"
-        >
-          All
-        </Button>
-        {roles.map((role) => (
-          <Button
-            key={role}
-            variant={lookingForRoleFilter === role ? "default" : "outline"}
-            onClick={() => onLookingForChange(role)}
-            className="rounded-full"
-          >
-            {role}
-          </Button>
-        ))}
-      </motion.div>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
         {filteredUsers.length === 0 ? (
           <div className="col-span-full text-center text-muted-foreground">

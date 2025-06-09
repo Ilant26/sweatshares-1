@@ -30,16 +30,17 @@ const transitionVariants = {
 export function HeroSection({
     onSearchFilterChange,
 }: { 
-    onSearchFilterChange: (filters: { userRole: string; lookingForRole: string }) => void;
+    onSearchFilterChange: (filters: { userRole: "Founder" | "Freelancer" | "Investor" | "All"; lookingForRole: "Founder" | "Freelancer" | "Investor" | "All" }) => void;
 }) {
-    const [userRole, setUserRole] = React.useState("Founder")
-    const [lookingForRole, setLookingForRole] = React.useState("Freelancer")
+    const [userRole, setUserRole] = React.useState<"Founder" | "Freelancer" | "Investor">("Founder")
+    const [lookingForRole, setLookingForRole] = React.useState<"Founder" | "Freelancer" | "Investor" | "All">("Freelancer")
 
     React.useEffect(() => {
         onSearchFilterChange({ userRole, lookingForRole })
     }, [userRole, lookingForRole, onSearchFilterChange])
 
     const roles = ["Founder", "Freelancer", "Investor", "All"]
+    const userRolesOptions = ["Founder", "Freelancer", "Investor"]
 
     return (
         <>
@@ -86,16 +87,28 @@ export function HeroSection({
                                     </p>
                                 </AnimatedGroup>
 
-                                <div className="mt-12 flex flex-col items-center justify-center gap-4 md:flex-row">
+                                <AnimatedGroup
+                                    variants={{
+                                        container: {
+                                            visible: {
+                                                transition: {
+                                                    staggerChildren: 0.05,
+                                                    delayChildren: 0.75,
+                                                },
+                                            },
+                                        },
+                                        ...transitionVariants,
+                                    }}
+                                    className="mt-12 flex flex-col items-center justify-center gap-4 md:flex-row">
                                     <div className="flex flex-col sm:flex-row gap-4 w-full max-w-xl bg-background p-4 rounded-xl shadow-lg border border-border">
                                         <div className="flex-1">
                                             <label htmlFor="userRole" className="sr-only">I am a...</label>
-                                            <Select value={userRole} onValueChange={setUserRole}>
+                                            <Select value={userRole} onValueChange={(value: "Founder" | "Freelancer" | "Investor" | "All") => setUserRole(value as "Founder" | "Freelancer" | "Investor")}>
                                                 <SelectTrigger id="userRole" className="w-full">
                                                     <SelectValue placeholder="I am a..." />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    {roles.map((role) => (
+                                                    {userRolesOptions.map((role) => (
                                                         <SelectItem key={role} value={role}>{`I am a ${role}`}</SelectItem>
                                                     ))}
                                                 </SelectContent>
@@ -103,7 +116,7 @@ export function HeroSection({
                                         </div>
                                         <div className="flex-1">
                                             <label htmlFor="lookingFor" className="sr-only">Looking for...</label>
-                                            <Select value={lookingForRole} onValueChange={setLookingForRole}>
+                                            <Select value={lookingForRole} onValueChange={(value: "Founder" | "Freelancer" | "Investor" | "All") => setLookingForRole(value)}>
                                                 <SelectTrigger id="lookingFor" className="w-full">
                                                     <SelectValue placeholder="Looking for..." />
                                                 </SelectTrigger>
@@ -115,7 +128,7 @@ export function HeroSection({
                                             </Select>
                                         </div>
                                     </div>
-                                </div>
+                                </AnimatedGroup>
                             </div>
                         </div>
                     </div>

@@ -4,23 +4,21 @@ import { useState } from "react";
 import { HeroSection } from "@/components/blocks/hero-section-1";
 import { TalentFinder } from "@/components/blocks/talent-finder";
 
-export default function Home() {
-  const [userFilter, setUserFilter] = useState("Founder");
-  const [lookingForFilter, setLookingForFilter] = useState("Freelancer");
+type RoleFilter = "Founder" | "Freelancer" | "Investor" | "All";
 
-  const handleSearchFilterChange = (filters: { userRole: string; lookingForRole: string }) => {
+export default function Home() {
+  const [userFilter, setUserFilter] = useState<RoleFilter>("All");
+  const [lookingForFilter, setLookingForFilter] = useState<RoleFilter>("Freelancer");
+
+  const handleSearchFilterChange = (filters: { userRole: RoleFilter; lookingForRole: RoleFilter }) => {
     setUserFilter(filters.userRole);
     setLookingForFilter(filters.lookingForRole);
-  };
-
-  const handleLookingForChange = (role: "Founder" | "Freelancer" | "Investor" | "All") => {
-    setLookingForFilter(role);
   };
 
   return (
     <>
       <HeroSection onSearchFilterChange={handleSearchFilterChange} />
-      <TalentFinder userRoleFilter={userFilter} lookingForRoleFilter={lookingForFilter} onLookingForChange={handleLookingForChange} />
+      <TalentFinder userRoleFilter={userFilter} lookingForRoleFilter={lookingForFilter} />
     </>
   );
 }

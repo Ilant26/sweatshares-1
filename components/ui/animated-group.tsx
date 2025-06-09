@@ -17,7 +17,7 @@ type PresetType =
   | 'swing';
 
 type AnimatedGroupProps = {
-  children: ReactNode;
+  children?: ReactNode;
   className?: string;
   variants?: {
     container?: Variants;
