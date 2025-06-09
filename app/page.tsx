@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { HeroSection } from "@/components/blocks/hero-section-1";
 import { TalentFinder } from "@/components/blocks/talent-finder";
+import FeaturesSection from "@/components/blocks/features-1";
+import FeaturesSection2 from "@/components/blocks/features-8";
 
 type RoleFilter = "Founder" | "Freelancer" | "Investor" | "All";
 
@@ -19,6 +21,8 @@ export default function Home() {
     <>
       <HeroSection onSearchFilterChange={handleSearchFilterChange} />
       <TalentFinder userRoleFilter={userFilter} lookingForRoleFilter={lookingForFilter} />
+      <FeaturesSection />
+      <FeaturesSection2 />
     </>
   );
 }

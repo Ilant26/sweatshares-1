@@ -6,6 +6,7 @@ import { AnimatedGroup } from '@/components/ui/animated-group'
 import { cn } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { ThemeSwitcher } from "@/components/theme-switcher"
 
 const transitionVariants = {
     item: {
@@ -62,7 +63,7 @@ export function HeroSection({
                                     <Link
                                         href="#link"
                                         className="hover:bg-background dark:hover:border-t-border bg-muted group mx-auto flex w-fit items-center gap-4 rounded-full border p-1 pl-4 shadow-md shadow-black/5 transition-all duration-300 dark:border-t-white/5 dark:shadow-zinc-950">
-                                        <span className="text-foreground text-sm">  </span>
+                                        <span className="text-foreground text-sm">SweatShares is now live! 🎉</span>
                                         <span className="dark:border-background block h-4 w-0.5 border-l bg-white dark:bg-zinc-700"></span>
 
                                         <div className="bg-background group-hover:bg-muted size-6 overflow-hidden rounded-full duration-500">
@@ -78,12 +79,12 @@ export function HeroSection({
                                     </Link>
                         
                                     <h1
-                                        className="mt-8 max-w-4xl mx-auto text-balance text-6xl md:text-7xl lg:mt-16 xl:text-[5.25rem]">
-                                        Trouvez votre match parfait
+                                        className="mt-8 max-w-4xl mx-auto text-balance text-4xl md:text-5xl lg:mt-16 xl:text-6xl">
+                                        We connect founders, experts and investors to collaborate on innovative projects.
                                     </h1>
                                     <p
                                         className="mx-auto mt-8 max-w-2xl text-balance text-lg">
-                                        Connectez-vous avec des fondateurs, experts et investisseurs pour collaborer sur des projets innovants en cash, equity ou les deux.
+                                        Whether you're a founder, expert, or investor, you're in the right place. SweatShares is your go-to platform for finding opportunities. 
                                     </p>
                                 </AnimatedGroup>
 
@@ -179,7 +180,7 @@ const HeroHeader = () => {
                             </button>
                         </div>
 
-                        <div className="absolute inset-0 m-auto hidden size-fit lg:block">
+                        <div className="flex items-center gap-6">
                             <ul className="flex gap-8 text-sm">
                                 {menuItems.map((item, index) => (
                                     <li key={index}>
@@ -207,7 +208,9 @@ const HeroHeader = () => {
                                     ))}
                                 </ul>
                             </div>
-                            <div className="flex w-full flex-col space-y-3 sm:flex-row sm:gap-3 sm:space-y-0 md:w-fit">
+                            
+                            <div className="flex items-center gap-4">
+                                <ThemeSwitcher />
                                 <Button
                                     asChild
                                     variant="outline"
