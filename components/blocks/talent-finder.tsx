@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { motion } from "framer-motion";
+import { motion, HTMLMotionProps } from "framer-motion";
 import { ArrowRight, UserPlus, User, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -139,7 +139,7 @@ const mockUsers: User[] = [
 const roles = ["Founder", "Freelancer", "Investor"] as const;
 type Role = typeof roles[number];
 
-interface InteractiveButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+interface InteractiveButtonProps extends Omit<HTMLMotionProps<"button">, "onAnimationStart" | "onDrag" | "onDragEnd" | "onDragExit" | "onDragEnter" | "onDragLeave" | "onDragOver" | "onDragStart" | "onDrop"> {
   text: string;
   icon: React.ReactNode;
   variant?: "primary" | "secondary" | "tertiary";
@@ -183,12 +183,28 @@ const InteractiveButton = React.forwardRef<HTMLButtonElement, InteractiveButtonP
 );
 InteractiveButton.displayName = "InteractiveButton";
 
-export function TalentFinder() {
-  const [selectedRole, setSelectedRole] = useState<Role | "All">("All");
-  const filteredUsers =
-    selectedRole === "All"
-      ? mockUsers
-      : mockUsers.filter((user) => user.role === selectedRole);
+export function TalentFinder({
+  userRoleFilter,
+  lookingForRoleFilter,
+  onLookingForChange,
+}: { 
+  userRoleFilter: string;
+  lookingForRoleFilter: string;
+  onLookingForChange: (role: Role | "All") => void;
+}) {
+  const filteredUsers = mockUsers.filter((user) => {
+    // If user is a 'Founder' looking for a 'Freelancer', show Freelancers.
+    // If user is a 'Freelancer' looking for a 'Founder', show Founders.
+    // If user is an 'Investor' looking for a 'Founder' or 'Freelancer', show them accordingly.
+    // If 'All' is selected for lookingForRoleFilter, show all users.
+    
+    if (lookingForRoleFilter === "All") {
+      return true; // Show all users if looking for 'All'
+    } else {
+      return user.role === lookingForRoleFilter;
+    }
+  });
+  
   return (
     <section className="w-full max-w-5xl mx-auto py-12 px-4">
       <motion.div 
@@ -198,8 +214,8 @@ export function TalentFinder() {
         transition={{ duration: 0.5 }}
       >
         <Button
-          variant={selectedRole === "All" ? "default" : "outline"}
-          onClick={() => setSelectedRole("All")}
+          variant={lookingForRoleFilter === "All" ? "default" : "outline"}
+          onClick={() => onLookingForChange("All")}
           className="rounded-full"
         >
           All
@@ -207,8 +223,8 @@ export function TalentFinder() {
         {roles.map((role) => (
           <Button
             key={role}
-            variant={selectedRole === role ? "default" : "outline"}
-            onClick={() => setSelectedRole(role)}
+            variant={lookingForRoleFilter === role ? "default" : "outline"}
+            onClick={() => onLookingForChange(role)}
             className="rounded-full"
           >
             {role}

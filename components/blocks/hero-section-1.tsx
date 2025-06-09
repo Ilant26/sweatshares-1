@@ -4,6 +4,8 @@ import { ArrowRight, ChevronRight, Menu, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { AnimatedGroup } from '@/components/ui/animated-group'
 import { cn } from '@/lib/utils'
+import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 const transitionVariants = {
     item: {
@@ -25,7 +27,20 @@ const transitionVariants = {
     },
 }
 
-export function HeroSection() {
+export function HeroSection({
+    onSearchFilterChange,
+}: { 
+    onSearchFilterChange: (filters: { userRole: string; lookingForRole: string }) => void;
+}) {
+    const [userRole, setUserRole] = React.useState("Founder")
+    const [lookingForRole, setLookingForRole] = React.useState("Freelancer")
+
+    React.useEffect(() => {
+        onSearchFilterChange({ userRole, lookingForRole })
+    }, [userRole, lookingForRole, onSearchFilterChange])
+
+    const roles = ["Founder", "Freelancer", "Investor", "All"]
+
     return (
         <>
             <HeroHeader />
@@ -71,21 +86,36 @@ export function HeroSection() {
                                     </p>
                                 </AnimatedGroup>
 
-                                <AnimatedGroup
-                                    variants={{
-                                        container: {
-                                            visible: {
-                                                transition: {
-                                                    staggerChildren: 0.05,
-                                                    delayChildren: 0.75,
-                                                },
-                                            },
-                                        },
-                                        ...transitionVariants,
-                                    }}
-                                    className="mt-12 flex flex-col items-center justify-center gap-2 md:flex-row">
-                                    {/* Buttons removed as requested */}
-                                </AnimatedGroup>
+                                <div className="mt-12 flex flex-col items-center justify-center gap-4 md:flex-row">
+                                    <div className="flex flex-col sm:flex-row gap-4 w-full max-w-xl bg-background p-4 rounded-xl shadow-lg border border-border">
+                                        <div className="flex-1">
+                                            <label htmlFor="userRole" className="sr-only">I am a...</label>
+                                            <Select value={userRole} onValueChange={setUserRole}>
+                                                <SelectTrigger id="userRole" className="w-full">
+                                                    <SelectValue placeholder="I am a..." />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {roles.map((role) => (
+                                                        <SelectItem key={role} value={role}>{`I am a ${role}`}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="flex-1">
+                                            <label htmlFor="lookingFor" className="sr-only">Looking for...</label>
+                                            <Select value={lookingForRole} onValueChange={setLookingForRole}>
+                                                <SelectTrigger id="lookingFor" className="w-full">
+                                                    <SelectValue placeholder="Looking for..." />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {roles.map((role) => (
+                                                        <SelectItem key={role} value={role}>{`Looking for ${role}`}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
