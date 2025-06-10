@@ -34,9 +34,6 @@ export default function ProfileSettingsPage() {
                                 <Camera className="mr-2 h-4 w-4" /> Edit Photo
                                 <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" />
                             </Button>
-                            <div className="text-sm text-center">
-                                <span className="text-orange-500">KYC Not Verified</span> <a href="#" className="text-blue-500 hover:underline">Complete KYC</a>
-                            </div>
                         </CardContent>
                     </Card>
                 </div>

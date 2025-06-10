@@ -14,10 +14,16 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar"
 import { ThemeSwitcher } from "@/components/theme-switcher"
+import { cookies } from 'next/headers';
 
-export default function Layout({ children }: { children: React.ReactNode }) {
+const SIDEBAR_COOKIE_NAME = "sidebar_state";
+
+export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const savedSidebarState = (await cookies()).get(SIDEBAR_COOKIE_NAME)?.value;
+  const defaultOpen = savedSidebarState === 'true' ? true : savedSidebarState === 'false' ? false : true; // Default to true if no cookie or invalid value
+
   return (
-    <SidebarProvider>
+    <SidebarProvider defaultOpen={defaultOpen}>
       <AppSidebar />
       <SidebarInset>
         <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
@@ -29,14 +35,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             />
             <Breadcrumb>
               <BreadcrumbList>
-                <BreadcrumbItem>
-                  <BreadcrumbLink href="/dashboard">
+                <BreadcrumbItem className="hidden md:block">
+                  <BreadcrumbLink href="#">
                     Dashboard
                   </BreadcrumbLink>
                 </BreadcrumbItem>
-                <BreadcrumbSeparator />
+                <BreadcrumbSeparator className="hidden md:block" />
                 <BreadcrumbItem>
-                  <BreadcrumbPage>My Profile</BreadcrumbPage>
+                  <BreadcrumbPage>Overview</BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
@@ -48,5 +54,5 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         {children}
       </SidebarInset>
     </SidebarProvider>
-  )
+  );
 } 
