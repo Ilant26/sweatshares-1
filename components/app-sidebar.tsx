@@ -82,7 +82,7 @@ const data = {
   projects: [
     {
       name: "Listings",
-      url: "#",
+      url: "/dashboard/my-listings",
       icon: Frame,
     },
     {
