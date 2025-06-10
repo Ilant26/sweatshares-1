@@ -12,6 +12,8 @@ import {
   PieChart,
   Settings2,
   SquareTerminal,
+  Users,
+  BellRing,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -68,15 +70,13 @@ const data = {
     },
     {
       title: "Network",
-      url: "#",
-      icon: Settings2,
-
+      url: "/dashboard/my-network",
+      icon: Users,
     },
     {
-      title: "Alerts",
-      url: "#",
-      icon: Settings2,
-
+      title: "My Alerts",
+      url: "/dashboard/my-alerts",
+      icon: BellRing,
     },
   ],
   projects: [

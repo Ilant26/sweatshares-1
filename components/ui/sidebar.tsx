@@ -55,8 +55,8 @@ function useSidebar() {
 
 function SidebarProvider({
   defaultOpen = true,
-  open: openProp,
-  onOpenChange: setOpenProp,
+  open: controlledOpen,
+  onOpenChange: setControlledOpen,
   className,
   style,
   children,
@@ -69,38 +69,46 @@ function SidebarProvider({
   const isMobile = useIsMobile()
   const [openMobile, setOpenMobile] = React.useState(false)
 
-  // This is the internal state of the sidebar.
-  // We use openProp and setOpenProp for control from outside the component.
-  const [_open, _setOpen] = React.useState(() => {
-    if (typeof window === 'undefined') {
-      return defaultOpen;
-    }
-    const cookieValue = document.cookie
-      .split('; ')
-      .find((row) => row.startsWith(`${SIDEBAR_COOKIE_NAME}=`))
-      ?.split('=')[1];
-    return cookieValue === 'true' ? true : cookieValue === 'false' ? false : defaultOpen;
-  });
+  // Internal state for uncontrolled component behavior
+  const [uncontrolledOpen, setUncontrolledOpen] = React.useState(defaultOpen)
 
-  const open = openProp ?? _open
+  // This ref ensures the cookie is only read once after the component mounts
+  const hasMounted = React.useRef(false)
+
+  // Update internal state from cookie after component mounts on client
+  React.useEffect(() => {
+    if (typeof window !== 'undefined' && !hasMounted.current) {
+      const cookieValue = document.cookie
+        .split('; ')
+        .find((row) => row.startsWith(`${SIDEBAR_COOKIE_NAME}=`))
+        ?.split('=')[1]
+      const savedOpen = cookieValue === 'true' ? true : cookieValue === 'false' ? false : defaultOpen
+      setUncontrolledOpen(savedOpen)
+      hasMounted.current = true
+    }
+  }, [defaultOpen])
+
+  // Determine the effective `open` state
+  const open = controlledOpen !== undefined ? controlledOpen : uncontrolledOpen
+
+  // Memoized setter for the `open` state
   const setOpen = React.useCallback(
     (value: boolean | ((value: boolean) => boolean)) => {
-      const openState = typeof value === "function" ? value(open) : value
-      if (setOpenProp) {
-        setOpenProp(openState)
+      const newOpenState = typeof value === "function" ? value(open) : value
+      if (controlledOpen !== undefined && setControlledOpen) {
+        setControlledOpen(newOpenState)
       } else {
-        _setOpen(openState)
+        setUncontrolledOpen(newOpenState)
       }
-
-      // This sets the cookie to keep the sidebar state.
-      document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`
+      // Always persist the state to a cookie
+      document.cookie = `${SIDEBAR_COOKIE_NAME}=${newOpenState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`
     },
-    [setOpenProp, open]
+    [open, controlledOpen, setControlledOpen, setUncontrolledOpen]
   )
 
-  // Helper to toggle the sidebar.
+  // Helper to toggle the sidebar
   const toggleSidebar = React.useCallback(() => {
-    return isMobile ? setOpenMobile((open) => !open) : setOpen((open) => !open)
+    return isMobile ? setOpenMobile((prevOpen) => !prevOpen) : setOpen((prevOpen) => !prevOpen)
   }, [isMobile, setOpen, setOpenMobile])
 
   // Adds a keyboard shortcut to toggle the sidebar.
