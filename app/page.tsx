@@ -7,6 +7,7 @@ import FeaturesSection from "@/components/blocks/oneplatformthreeprofiles";
 import FeaturesSection2 from "@/components/blocks/techmatch";
 import BuildBySection from "@/components/blocks/buildby";
 import EcosystemSection from "@/components/blocks/ecosystem";
+import FooterSection from "@/components/blocks/footer"
 
 type RoleFilter = "Founder" | "Freelancer" | "Investor" | "All";
 
@@ -27,6 +28,7 @@ export default function Home() {
       <FeaturesSection2 />
       <BuildBySection />
       <EcosystemSection />
+      <FooterSection />
     </>
   );
 }
