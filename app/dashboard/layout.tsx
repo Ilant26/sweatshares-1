@@ -35,6 +35,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       'invite-contacts': 'Invite Contacts',
       'profile-settings': 'Profile Settings',
       'my-alerts': 'My Alerts',
+      'my-favorites': 'My Favorites',
+      'my-vault': 'My Vault',
+      'news-feed': 'News Feed',
     };
     return mappedName[segment] || segment.replace(/-/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
   };

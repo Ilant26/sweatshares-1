@@ -15,12 +15,14 @@ export default function MyNetworkPage() {
     const [activeTab, setActiveTab] = useState('connections');
 
     const connections = [
-        { id: '1', name: 'Sophie Dubois', role: 'Directrice Marketing', company: 'MediTech Solutions', tags: ['Marketing', 'Partenaire'], avatar: 'https://github.com/shadcn.png', connectedDate: 'Depuis le 1 mars 2023' },
-        { id: '2', name: 'Philippe Laurent', role: 'Investisseur, Business Angel', company: 'Venture Capital Partners', tags: ['Investisseur', 'Mentor'], avatar: 'https://github.com/shadcn.png', connectedDate: 'Depuis le 3 mars 2023' },
-        { id: '3', name: 'Lucas Martin', role: 'Développeur full-stack', company: 'TechnoInnovate', tags: ['Co-fondateur', 'Freelancer'], avatar: 'https://github.com/shadcn.png', connectedDate: 'Depuis le 28 avril 2023' },
-        { id: '4', name: 'Émilie Rousseau', role: 'CEO & Fondatrice', company: 'EcoSolutions', tags: ['Co-fondateur', 'Mentor'], avatar: 'https://github.com/shadcn.png', connectedDate: 'Depuis le 5 janvier 2023' },
-        { id: '5', name: 'Camille Lefevre', role: 'UX/UI Designer', company: 'DesignWorks', tags: ['Marketing', 'Partenaire'], avatar: 'https://github.com/shadcn.png', connectedDate: 'Depuis le 2 mai 2023' },
-        { id: '6', name: 'Antoine Bernard', role: 'Directeur Commercial', company: 'GlobalTech', tags: ['Parrainage'], avatar: 'https://github.com/shadcn.png', connectedDate: 'Depuis le 22 fevrier 2023' },
+        { id: '1', name: 'Sophie Dubois', role: 'Directrice Marketing', company: 'MediTech Solutions', tags: ['Marketing', 'Partenaire'], avatar: 'https://randomuser.me/api/portraits/women/1.jpg', connectedDate: 'Depuis le 1 mars 2023' },
+        { id: '2', name: 'Philippe Laurent', role: 'Investisseur, Business Angel', company: 'Venture Capital Partners', tags: ['Investisseur', 'Mentor'], avatar: 'https://randomuser.me/api/portraits/men/2.jpg', connectedDate: 'Depuis le 3 mars 2023' },
+        { id: '3', name: 'Lucas Martin', role: 'Développeur full-stack', company: 'TechnoInnovate', tags: ['Co-fondateur', 'Freelancer'], avatar: 'https://randomuser.me/api/portraits/men/3.jpg', connectedDate: 'Depuis le 28 avril 2023' },
+        { id: '4', name: 'Émilie Rousseau', role: 'CEO & Fondatrice', company: 'EcoSolutions', tags: ['Co-fondateur', 'Mentor'], avatar: 'https://randomuser.me/api/portraits/women/4.jpg', connectedDate: 'Depuis le 5 janvier 2023' },
+        { id: '5', name: 'Camille Lefevre', role: 'UX/UI Designer', company: 'DesignWorks', tags: ['Marketing', 'Partenaire'], avatar: 'https://randomuser.me/api/portraits/men/5.jpg', connectedDate: 'Depuis le 2 mai 2023' },
+        { id: '6', name: 'Antoine Bernard', role: 'Directeur Commercial', company: 'GlobalTech', tags: ['Parrainage'], avatar: 'https://randomuser.me/api/portraits/men/6.jpg', connectedDate: 'Depuis le 22 fevrier 2023' },
+        { id: '7', name: 'Léa Dubois', role: 'Chef de Projet', company: 'Innovate Corp', tags: ['Management', 'Technologie'], avatar: 'https://randomuser.me/api/portraits/women/7.jpg', connectedDate: 'Depuis le 10 juin 2023' },
+        { id: '8', name: 'Thomas Durand', role: 'Analyste Financier', company: 'Finance Global', tags: ['Finance', 'Investissement'], avatar: 'https://randomuser.me/api/portraits/men/8.jpg', connectedDate: 'Depuis le 15 juillet 2023' },
     ];
 
     const renderConnectionCards = (data: typeof connections) => (

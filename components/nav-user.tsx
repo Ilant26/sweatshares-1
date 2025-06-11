@@ -84,8 +84,8 @@ export function NavUser({
             <DropdownMenuGroup>
               <DropdownMenuItem asChild>
                 <Link href="#">
-                  <Sparkles />
-                  Upgrade to Pro
+                <Sparkles />
+                Upgrade to Pro
                 </Link>
               </DropdownMenuItem>
             </DropdownMenuGroup>
@@ -93,28 +93,28 @@ export function NavUser({
             <DropdownMenuGroup>
               <DropdownMenuItem asChild>
                 <Link href="/dashboard/profile-settings">
-                  <BadgeCheck />
-                  My Account
+                <BadgeCheck />
+                My Account
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link href="#">
-                  <CreditCard />
-                  Billing
+                <CreditCard />
+                Billing
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link href="#">
-                  <Bell />
-                  Notifications
+                <Bell />
+                Notifications
                 </Link>
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
               <Link href="#">
-                <LogOut />
-                Log out
+              <LogOut />
+              Log out
               </Link>
             </DropdownMenuItem>
           </DropdownMenuContent>

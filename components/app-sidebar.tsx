@@ -14,6 +14,12 @@ import {
   SquareTerminal,
   Users,
   BellRing,
+  Star,
+  Lock,
+  LayoutDashboard,
+  MessageCircle,
+  List,
+  ReceiptText,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -55,18 +61,18 @@ const data = {
   navMain: [
     {
       title: "Dashboard",
-      url: "#",
-      icon: SquareTerminal
+      url: "/dashboard",
+      icon: LayoutDashboard,
     },
     {
       title: "Feed",
-      url: "#",
+      url: "/dashboard/news-feed",
       icon: BookOpen,
     },
     {
       title: "Messages",
       url: "/dashboard/messages",
-      icon: Bot
+      icon: MessageCircle,
     },
     {
       title: "Network",
@@ -78,22 +84,27 @@ const data = {
       url: "/dashboard/my-alerts",
       icon: BellRing,
     },
+    {
+      title: "My Favorites",
+      url: "/dashboard/my-favorites",
+      icon: Star,
+    },
   ],
   projects: [
     {
       name: "Listings",
       url: "/dashboard/my-listings",
-      icon: Frame,
+      icon: List,
     },
     {
-      name: "Vault",
-      url: "#",
-      icon: PieChart,
+      name: "My Vault",
+      url: "/dashboard/my-vault",
+      icon: Lock,
     },
     {
       name: "Invoices",
-      url: "#",
-      icon: Map,
+      url: "/dashboard/my-invoices",
+      icon: ReceiptText,
     },
   ],
 }

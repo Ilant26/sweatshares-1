@@ -85,6 +85,55 @@ export interface Database {
           tags?: string[]
         }
       }
+      friendships: {
+        Row: {
+          id: string
+          created_at: string
+          user_id: string
+          friend_id: string
+          status: 'pending' | 'accepted' | 'rejected'
+        }
+        Insert: {
+          id?: string
+          created_at?: string
+          user_id: string
+          friend_id: string
+          status?: 'pending' | 'accepted' | 'rejected'
+        }
+        Update: {
+          id?: string
+          created_at?: string
+          user_id?: string
+          friend_id?: string
+          status?: 'pending' | 'accepted' | 'rejected'
+        }
+      }
+      messages: {
+        Row: {
+          id: string
+          created_at: string
+          sender_id: string
+          receiver_id: string
+          content: string
+          read: boolean
+        }
+        Insert: {
+          id?: string
+          created_at?: string
+          sender_id: string
+          receiver_id: string
+          content: string
+          read?: boolean
+        }
+        Update: {
+          id?: string
+          created_at?: string
+          sender_id?: string
+          receiver_id?: string
+          content?: string
+          read?: boolean
+        }
+      }
     }
     Views: {
       [_ in never]: never

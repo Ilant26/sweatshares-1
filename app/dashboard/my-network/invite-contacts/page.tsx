@@ -1,27 +1,66 @@
 "use client"
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Search, UserPlus, MessageCircle } from 'lucide-react';
+import { sendFriendRequest } from '@/lib/friends';
+import { supabase } from '@/lib/supabase';
+import { toast } from 'sonner';
+
+interface User {
+  id: string;
+  username: string;
+  full_name: string | null;
+  avatar_url: string | null;
+  role?: string;
+  company?: string;
+}
 
 export default function InviteContactsPage() {
     const [searchTerm, setSearchTerm] = useState('');
+    const [users, setUsers] = useState<User[]>([]);
+    const [loading, setLoading] = useState(true);
 
-    const allUsers = [
-        { id: '1', name: 'John Doe', role: 'Software Engineer', company: 'Tech Solutions', avatar: 'https://github.com/shadcn.png' },
-        { id: '2', name: 'Jane Smith', role: 'Product Manager', company: 'Innovate Co.', avatar: 'https://github.com/shadcn.png' },
-        { id: '3', name: 'Peter Jones', role: 'Data Scientist', company: 'Data Insights', avatar: 'https://github.com/shadcn.png' },
-        { id: '4', name: 'Alice Brown', role: 'Marketing Specialist', company: 'Global Brands', avatar: 'https://github.com/shadcn.png' },
-        { id: '5', name: 'Michael Green', role: 'HR Manager', company: 'People First', avatar: 'https://github.com/shadcn.png' },
-    ];
+    useEffect(() => {
+        fetchUsers();
+    }, []);
 
-    const filteredUsers = allUsers.filter(user =>
-        user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.company.toLowerCase().includes(searchTerm.toLowerCase())
+    const fetchUsers = async () => {
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .neq('id', user.id);
+
+            if (error) throw error;
+            setUsers(data || []);
+        } catch (error) {
+            console.error('Error fetching users:', error);
+            toast.error('Failed to load users');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleConnect = async (userId: string) => {
+        try {
+            await sendFriendRequest(userId);
+            toast.success('Friend request sent successfully');
+        } catch (error) {
+            console.error('Error sending friend request:', error);
+            toast.error('Failed to send friend request');
+        }
+    };
+
+    const filteredUsers = users.filter(user =>
+        user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (user.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false)
     );
 
     return (
@@ -34,14 +73,16 @@ export default function InviteContactsPage() {
             <div className="relative w-full md:w-1/2 lg:w-1/3 mb-6">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
-                    placeholder="Search for people, roles, or companies..."
+                    placeholder="Search for people..."
                     className="pl-8 w-full"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                 />
             </div>
 
-            {filteredUsers.length === 0 ? (
+            {loading ? (
+                <p className="text-center text-muted-foreground">Loading users...</p>
+            ) : filteredUsers.length === 0 ? (
                 <p className="text-center text-muted-foreground">No users found matching your search.</p>
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -49,13 +90,12 @@ export default function InviteContactsPage() {
                         <Card key={user.id}>
                             <CardHeader className="flex flex-row items-center gap-4 space-y-0 pb-2">
                                 <Avatar className="h-16 w-16">
-                                    <AvatarImage src={user.avatar} alt={user.name} />
-                                    <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                                    <AvatarImage src={user.avatar_url || undefined} alt={user.username} />
+                                    <AvatarFallback>{user.username.charAt(0)}</AvatarFallback>
                                 </Avatar>
                                 <div>
-                                    <CardTitle className="text-lg">{user.name}</CardTitle>
-                                    <CardDescription>{user.role}</CardDescription>
-                                    <p className="text-sm text-muted-foreground">{user.company}</p>
+                                    <CardTitle className="text-lg">{user.full_name || user.username}</CardTitle>
+                                    <CardDescription>@{user.username}</CardDescription>
                                 </div>
                             </CardHeader>
                             <CardContent className="space-y-3">
@@ -63,7 +103,7 @@ export default function InviteContactsPage() {
                                     <Button variant="outline" size="sm">
                                         <MessageCircle className="h-4 w-4 mr-2" /> Message
                                     </Button>
-                                    <Button size="sm">
+                                    <Button size="sm" onClick={() => handleConnect(user.id)}>
                                         <UserPlus className="h-4 w-4 mr-2" /> Connect
                                     </Button>
                                 </div>
