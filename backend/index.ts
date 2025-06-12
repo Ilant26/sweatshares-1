@@ -70,8 +70,21 @@ if (!supabaseUrl || !supabaseServiceKey) {
 const supabase: SupabaseClient = createClient(supabaseUrl, supabaseServiceKey);
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json());
+
+// Public test route for connectivity
+app.get('/', (req, res) => {
+  res.json({ message: 'Welcome to SweatShares API' });
+});
+
+app.get('/api/test', (req, res) => {
+  res.json({ message: 'Backend is working!' });
+});
 
 // Authentication middleware
 const authenticateUser: RequestHandler = (req: Request, res: Response, next: NextFunction): void => {
@@ -210,6 +223,153 @@ const getUserNetwork: RequestHandler = (req: Request, res: Response): void => {
       res.json(data);
     });
 };
+
+// --- Network (Connections) Endpoints ---
+
+// Send Invitation
+app.post('/api/network/invite', authenticateUser, async (req: Request, res: Response) => {
+  const authenticatedReq = req as AuthenticatedRequest;
+  const { receiver_id } = req.body;
+  if (!receiver_id) {
+    res.status(400).json({ error: 'receiver_id is required' });
+    return;
+  }
+
+  const { data, error } = await supabase
+    .from('connections')
+    .insert({
+      sender_id: authenticatedReq.user!.id,
+      receiver_id,
+      status: 'pending'
+    })
+    .select()
+    .single();
+
+  if (error) {
+    res.status(500).json({ error: error.message });
+    return;
+  }
+  res.status(201).json(data);
+});
+
+// Accept Invitation
+app.post('/api/network/accept', authenticateUser, async (req: Request, res: Response) => {
+  const authenticatedReq = req as AuthenticatedRequest;
+  const { connection_id } = req.body;
+  if (!connection_id) {
+    res.status(400).json({ error: 'connection_id is required' });
+    return;
+  }
+
+  const { data, error } = await supabase
+    .from('connections')
+    .update({ status: 'accepted', updated_at: new Date().toISOString() })
+    .eq('id', connection_id)
+    .eq('receiver_id', authenticatedReq.user!.id)
+    .select()
+    .single();
+
+  if (error) {
+    res.status(500).json({ error: error.message });
+    return;
+  }
+  res.json(data);
+});
+
+// Reject Invitation
+app.post('/api/network/reject', authenticateUser, async (req: Request, res: Response) => {
+  const authenticatedReq = req as AuthenticatedRequest;
+  const { connection_id } = req.body;
+  if (!connection_id) {
+    res.status(400).json({ error: 'connection_id is required' });
+    return;
+  }
+
+  const { data, error } = await supabase
+    .from('connections')
+    .update({ status: 'rejected', updated_at: new Date().toISOString() })
+    .eq('id', connection_id)
+    .eq('receiver_id', authenticatedReq.user!.id)
+    .select()
+    .single();
+
+  if (error) {
+    res.status(500).json({ error: error.message });
+    return;
+  }
+  res.json(data);
+});
+
+// View My Connections
+app.get('/api/network/connections', authenticateUser, async (req: Request, res: Response) => {
+  const authenticatedReq = req as AuthenticatedRequest;
+  const myId = authenticatedReq.user!.id;
+
+  const { data, error } = await supabase
+    .from('connections')
+    .select(`
+      *,
+      sender:sender_id (id, username, full_name, avatar_url),
+      receiver:receiver_id (id, username, full_name, avatar_url)
+    `)
+    .or(`sender_id.eq.${myId},receiver_id.eq.${myId}`)
+    .eq('status', 'accepted');
+
+  if (error) {
+    res.status(500).json({ error: error.message });
+    return;
+  }
+
+  // Filter out self from each connection
+  const connections = (data || []).map((conn: any) => {
+    const other = conn.sender_id === myId ? conn.receiver : conn.sender;
+    return { ...other, connection_id: conn.id };
+  });
+
+  res.json(connections);
+});
+
+// View Received Invitations
+app.get('/api/network/received', authenticateUser, async (req: Request, res: Response) => {
+  const authenticatedReq = req as AuthenticatedRequest;
+  const myId = authenticatedReq.user!.id;
+
+  const { data, error } = await supabase
+    .from('connections')
+    .select(`
+      *,
+      sender:sender_id (id, username, full_name, avatar_url)
+    `)
+    .eq('receiver_id', myId)
+    .eq('status', 'pending');
+
+  if (error) {
+    res.status(500).json({ error: error.message });
+    return;
+  }
+  res.json(data);
+});
+
+// View Sent Invitations
+app.get('/api/network/sent', authenticateUser, async (req: Request, res: Response) => {
+  const authenticatedReq = req as AuthenticatedRequest;
+  const myId = authenticatedReq.user!.id;
+
+  const { data, error } = await supabase
+    .from('connections')
+    .select(`
+      *,
+      receiver:receiver_id (id, username, full_name, avatar_url)
+    `)
+    .eq('sender_id', myId)
+    .eq('status', 'pending');
+
+  if (error) {
+    res.status(500).json({ error: error.message });
+    return;
+  }
+  res.json(data);
+});
 
 // Route handlers
 app.get('/api/profile/:userId', authenticateUser, getProfile);
