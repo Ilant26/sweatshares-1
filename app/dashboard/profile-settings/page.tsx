@@ -125,24 +125,44 @@ export default function ProfileSettingsPage() {
 
         try {
             if (selectedFile) {
+                // Check if file is an image
+                if (!selectedFile.type.startsWith('image/')) {
+                    throw new Error('Please upload an image file');
+                }
+
+                // Check file size (max 5MB)
+                if (selectedFile.size > 5 * 1024 * 1024) {
+                    throw new Error('Image size should be less than 5MB');
+                }
+
                 const fileExtension = selectedFile.name.split('.').pop();
                 const filePath = `${user.id}/${Date.now()}.${fileExtension}`;
 
-                const { error: uploadError, data: uploadData } = await supabase.storage
-                    .from('avatars')
-                    .upload(filePath, selectedFile, {
-                        cacheControl: '3600',
-                        upsert: true,
-                    });
+                try {
+                    const { error: uploadError, data: uploadData } = await supabase.storage
+                        .from('avatars')
+                        .upload(filePath, selectedFile, {
+                            cacheControl: '3600',
+                            upsert: true,
+                        });
 
-                if (uploadError) throw uploadError;
+                    if (uploadError) {
+                        if (uploadError.message.includes('bucket')) {
+                            throw new Error('Storage bucket not found. Please contact support.');
+                        }
+                        throw uploadError;
+                    }
 
-                const { data: publicUrlData } = supabase.storage
-                    .from('avatars')
-                    .getPublicUrl(filePath);
+                    const { data: publicUrlData } = supabase.storage
+                        .from('avatars')
+                        .getPublicUrl(filePath);
 
-                if (publicUrlData) {
-                    newAvatarUrl = publicUrlData.publicUrl;
+                    if (publicUrlData) {
+                        newAvatarUrl = publicUrlData.publicUrl;
+                    }
+                } catch (storageError: any) {
+                    console.error('Storage error:', storageError);
+                    throw new Error(storageError.message || 'Failed to upload image. Please try again.');
                 }
             }
 
