@@ -1,4 +1,5 @@
 import { ThemeProvider } from "next-themes";
+import { Suspense } from "react";
 
 export default function AuthLayout({
   children,
@@ -12,7 +13,9 @@ export default function AuthLayout({
       enableSystem
       disableTransitionOnChange
     >
-      {children}
+      <Suspense>
+        {children}
+      </Suspense>
     </ThemeProvider>
   );
 } 
