@@ -39,4 +39,21 @@ export async function updatePassword(newPassword: string) {
     password: newPassword
   })
   return { data, error }
+}
+
+export async function verifyEmail(email: string, otp: string) {
+  const { data, error } = await supabase.auth.verifyOtp({
+    email,
+    token: otp,
+    type: 'email'
+  })
+  return { data, error }
+}
+
+export async function resendVerificationEmail(email: string) {
+  const { data, error } = await supabase.auth.resend({
+    type: 'signup',
+    email
+  })
+  return { data, error }
 } 

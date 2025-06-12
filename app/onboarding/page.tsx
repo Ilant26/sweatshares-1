@@ -34,11 +34,8 @@ export default function OnboardingPage() {
       const { error } = await supabase
         .from('profiles')
         .update({
-          username: formData.username,
-          full_name: formData.full_name,
           professional_role: formData.professional_role,
           country: formData.country,
-          languages: formData.languages.split(',').map(lang => lang.trim()),
           onboarding_completed: true,
           updated_at: new Date().toISOString(),
         })
@@ -73,28 +70,6 @@ export default function OnboardingPage() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
-              <Input
-                id="username"
-                required
-                value={formData.username}
-                onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                placeholder="Choose a unique username"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="full_name">Full Name</Label>
-              <Input
-                id="full_name"
-                required
-                value={formData.full_name}
-                onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                placeholder="Your full name"
-              />
-            </div>
-
-            <div className="space-y-2">
               <Label htmlFor="professional_role">Professional Role</Label>
               <Select
                 value={formData.professional_role}
@@ -104,9 +79,9 @@ export default function OnboardingPage() {
                   <SelectValue placeholder="Select your role" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Product Manager">Product Manager</SelectItem>
-                  <SelectItem value="Software Engineer">Software Engineer</SelectItem>
-                  <SelectItem value="Designer">Designer</SelectItem>
+                  <SelectItem value="Stratup Owner">Startup owner</SelectItem>
+                  <SelectItem value="Investor">Investor</SelectItem>
+                  <SelectItem value="Consultant">Consultant</SelectItem>
                   <SelectItem value="Other">Other</SelectItem>
                 </SelectContent>
               </Select>
