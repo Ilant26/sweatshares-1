@@ -23,6 +23,8 @@ export default function MyListingsPage() {
     const [isNewListingModalOpen, setIsNewListingModalOpen] = useState(false);
     const [listingEndDate, setListingEndDate] = useState<Date | undefined>(undefined);
     const [compensationType, setCompensationType] = useState<string>('');
+    const [profileType, setProfileType] = useState<string>('');
+    const [listingType, setListingType] = useState<string>("");
 
     const listings = [
         { id: '1', type: 'Fundraising', role: 'Seed Investor', country: 'France', endDate: 'June 30, 2025', compensation: 'Equity', status: true },
@@ -199,112 +201,229 @@ export default function MyListingsPage() {
             </div>
 
             <Dialog open={isNewListingModalOpen} onOpenChange={setIsNewListingModalOpen}>
-                <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
-                    <DialogHeader>
-                        <DialogTitle>Create New Listing</DialogTitle>
-                        <DialogDescription>
-                            Fill in the details for your new listing.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="listingType" className="text-right">Listing Type</Label>
-                            <Select onValueChange={() => { /* Handle change */ }}>
-                                <SelectTrigger className="col-span-3">
-                                    <SelectValue placeholder="Select listing type" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="fundraising">Fundraising</SelectItem>
-                                    <SelectItem value="partnership">Partnership</SelectItem>
-                                    <SelectItem value="job-offer">Job Offer</SelectItem>
-                                    <SelectItem value="mentor-search">Mentor Search</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="roleNeeded" className="text-right">Role Needed</Label>
-                            <Input id="roleNeeded" defaultValue="Ex: Full-Stack Developer, Seed Investor..." className="col-span-3" />
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="locationCountry" className="text-right">Location</Label>
-                            <div className="col-span-3 flex gap-2">
-                                <Select>
-                                    <SelectTrigger className="w-1/2">
-                                        <SelectValue placeholder="Select a country" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="france">France</SelectItem>
-                                        <SelectItem value="usa">USA</SelectItem>
-                                        <SelectItem value="uk">UK</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                <Input id="locationCity" placeholder="City (optional)" className="w-1/2" />
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="compensationType" className="text-right">Compensation Type</Label>
-                            <div className="col-span-3 flex flex-col gap-2">
-                                <Select onValueChange={setCompensationType}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select a type" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="cash">Cash</SelectItem>
-                                        <SelectItem value="equity">Equity</SelectItem>
-                                        <SelectItem value="salary">Annual Salary</SelectItem>
-                                        <SelectItem value="volunteer">Volunteer</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                {compensationType === 'cash' && (
-                                    <Input placeholder="Cash bonus (ex: 5000€)" />
-                                )}
-                                {compensationType === 'equity' && (
-                                    <Input placeholder="Equity (ex: 5-10%)" />
-                                )}
-                                {compensationType === 'salary' && (
-                                    <Input placeholder="Annual salary (ex: 40-50K)" />
-                                )}
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="listingEndDate" className="text-right">Listing End Date</Label>
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <Button
-                                        variant={"outline"}
-                                        className={cn(
-                                            "col-span-3 justify-start text-left font-normal",
-                                            !listingEndDate && "text-muted-foreground"
-                                        )}
-                                    >
-                                        <CalendarIcon className="mr-2 h-4 w-4" />
-                                        {listingEndDate ? format(listingEndDate, "PPP") : <span>j/mm/aaaa</span>}
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0">
-                                    <Calendar
-                                        mode="single"
-                                        selected={listingEndDate}
-                                        onSelect={setListingEndDate}
-                                        initialFocus
-                                    />
-                                </PopoverContent>
-                            </Popover>
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="requiredSkills" className="text-right">Required Skills</Label>
-                            <Textarea id="requiredSkills" placeholder="Ex: React, Node.js, Digital Marketing..." className="col-span-3" />
-                            <div className="col-span-4 text-right text-xs text-muted-foreground">Separate skills with commas</div>
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="description" className="text-right">Description</Label>
-                            <Textarea id="description" placeholder="Describe your needs in detail..." className="col-span-3" />
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsNewListingModalOpen(false)}>Cancel</Button>
-                        <Button>Create Listing</Button>
-                    </DialogFooter>
+            <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+  <DialogHeader>
+    <DialogTitle>Create New Listing</DialogTitle>
+    <DialogDescription>
+      Fill in the details for your new listing.
+    </DialogDescription>
+  </DialogHeader>
+  <div className="grid gap-4 py-4">
+    {/* Profile Selector */}
+    <div className="grid grid-cols-4 items-center gap-4">
+      <Label htmlFor="profileType" className="text-right">Profile</Label>
+      <Select onValueChange={setProfileType}>
+        <SelectTrigger className="col-span-3">
+          <SelectValue placeholder="Select your profile" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="founder">Founder</SelectItem>
+          <SelectItem value="investor">Investor</SelectItem>
+          <SelectItem value="expert">Expert</SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
+
+    {/* Listing Type - dynamic options */}
+    {profileType && (
+      <div className="grid grid-cols-4 items-center gap-4">
+        <Label htmlFor="listingType" className="text-right">Listing Type</Label>
+        <Select value={listingType} onValueChange={setListingType}>
+          <SelectTrigger className="col-span-3">
+            <SelectValue placeholder="Select listing type" />
+          </SelectTrigger>
+          <SelectContent>
+            {profileType === "founder" && (
+              <>
+                <SelectItem value="find-funding">Find funding</SelectItem>
+                <SelectItem value="cofounder">Find a co-founder</SelectItem>
+                <SelectItem value="expert-freelance">Find an expert/freelancer</SelectItem>
+                <SelectItem value="employee">Find an employee</SelectItem>
+                <SelectItem value="mentor">Find a mentor</SelectItem>
+                <SelectItem value="sell-startup">Sell my startup</SelectItem>
+              </>
+            )}
+            {profileType === "investor" && (
+              <>
+                <SelectItem value="investment-opportunity">Find investment opportunity</SelectItem>
+                <SelectItem value="buy-startup">Buy a startup</SelectItem>
+                <SelectItem value="co-investor">Find a co-investor</SelectItem>
+                <SelectItem value="expert-freelance">Find an expert/freelancer</SelectItem>
+              </>
+            )}
+            {profileType === "expert" && (
+              <>
+                <SelectItem value="mission">Find a mission</SelectItem>
+                <SelectItem value="job">Find a job</SelectItem>
+                <SelectItem value="expert-freelance">Find an expert/freelancer</SelectItem>
+                <SelectItem value="cofounder">Find a co-founder</SelectItem>
+              </>
+            )}
+          </SelectContent>
+        </Select>
+      </div>
+    )}
+
+    {/* Skills */}
+    {!(profileType === "founder" && (["find-funding", "sell-startup"].includes(listingType))) && (profileType === "founder" || profileType === "investor" || profileType === "expert") && (
+      <div className="grid grid-cols-4 items-center gap-4">
+        <Label htmlFor="skills" className="text-right">Skills</Label>
+        <Textarea id="skills" placeholder="Ex: React, Node.js, Digital Marketing..." className="col-span-3" />
+      </div>
+    )}
+    <div className="grid grid-cols-4 items-center gap-4">
+      <Label htmlFor="locationCountry" className="text-right">Location</Label>
+      <div className="col-span-3 flex gap-2">
+        <Select>
+          <SelectTrigger className="w-1/2">
+            <SelectValue placeholder="Select a country" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="france">France</SelectItem>
+            <SelectItem value="usa">USA</SelectItem>
+            <SelectItem value="uk">UK</SelectItem>
+          </SelectContent>
+        </Select>
+        <Input id="locationCity" placeholder="City (optional)" className="w-1/2" />
+      </div>
+    </div>
+    {/* Compensation Type */}
+    {(profileType === "founder" || profileType === "investor" || profileType === "expert") && !(profileType === "founder" && listingType === "sell-startup") && (
+      <div className="grid grid-cols-4 items-center gap-4">
+        <Label htmlFor="compensationType" className="text-right">Compensation Type</Label>
+        <div className="col-span-3 flex flex-col gap-2">
+          <Select value={compensationType} onValueChange={setCompensationType}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select a type" />
+            </SelectTrigger>
+            <SelectContent>
+              {/* Founder-specific compensation options */}
+              {profileType === "founder" && listingType === "find-funding" && (
+                <>
+                  <SelectItem value="equity">Equity</SelectItem>
+                </>
+              )}
+              {profileType === "founder" && (["cofounder", "expert-freelance"].includes(listingType)) && (
+                <>
+                  <SelectItem value="equity">Equity</SelectItem>
+                  <SelectItem value="cash">Cash</SelectItem>
+                  <SelectItem value="hybrid">Hybrid</SelectItem>
+                </>
+              )}
+              {profileType === "founder" && (["employee", "mentor"].includes(listingType)) && (
+                <>
+                  <SelectItem value="salary">Salary</SelectItem>
+                  <SelectItem value="equity">Equity</SelectItem>
+                  <SelectItem value="salary-equity">Salary & Equity</SelectItem>
+                </>
+              )}
+              {/* Expert-specific compensation options */}
+              {profileType === "expert" && ["mission", "cofounder", "job", "expert-freelance"].includes(listingType) ? (
+                <>
+                  {listingType === "mission" && (
+                    <>
+                      <SelectItem value="equity">Equity</SelectItem>
+                      <SelectItem value="cash">Cash</SelectItem>
+                      <SelectItem value="hybrid">Hybrid</SelectItem>
+                    </>
+                  )}
+                  {listingType === "cofounder" && (
+                    <>
+                      <SelectItem value="equity">Equity</SelectItem>
+                      <SelectItem value="cash">Cash</SelectItem>
+                      <SelectItem value="hybrid">Hybrid</SelectItem>
+                    </>
+                  )}
+                  {listingType === "job" && (
+                    <>
+                      <SelectItem value="salary">Annual Salary</SelectItem>
+                      <SelectItem value="equity">Equity</SelectItem>
+                      <SelectItem value="hybrid">Hybrid</SelectItem>
+                    </>
+                  )}
+                  {listingType === "expert-freelance" && (
+                    <SelectItem value="cash">Cash</SelectItem>
+                  )}
+                </>
+              ) :
+                ((profileType !== "founder" && profileType !== "expert") || (profileType === "founder" && !["find-funding", "cofounder", "expert-freelance", "employee", "mentor"].includes(listingType))) ? (
+                  <>
+                    <SelectItem value="cash">Cash</SelectItem>
+                    <SelectItem value="equity">Equity</SelectItem>
+                    <SelectItem value="salary">Annual Salary</SelectItem>
+                    <SelectItem value="volunteer">Volunteer</SelectItem>
+                  </>
+                ) : null
+              }
+            </SelectContent>
+          </Select>
+          {compensationType === 'cash' && (
+            <Input placeholder="Cash bonus (ex: 5000€)" />
+          )}
+          {compensationType === 'equity' && (
+            <Input placeholder="Equity (ex: 5-10%)" />
+          )}
+          {compensationType === 'salary' && (
+            <Input placeholder="Annual salary (ex: 40-50K)" />
+          )}
+        </div>
+      </div>
+    )}
+    {/* Amount (Founder & Investor only) */}
+    {((profileType === "founder" && !["cofounder", "expert-freelance", "employee", "mentor"].includes(listingType)) ||
+      (profileType === "investor") ||
+      (profileType === "expert" && !["mission", "job", "expert-freelance", "cofounder"].includes(listingType))) && (
+      <div className="grid grid-cols-4 items-center gap-4">
+        <Label htmlFor="amount" className="text-right">Amount</Label>
+        <Input id="amount" placeholder="Ex: 10000€" className="col-span-3" />
+      </div>
+    )}
+    {/* Secteur */}
+    <div className="grid grid-cols-4 items-center gap-4">
+      <Label htmlFor="secteur" className="text-right">Sector</Label>
+      <Input id="secteur" placeholder="Ex: Tech, Health, Finance..." className="col-span-3" />
+    </div>
+    {/* Listing End Date */}
+    <div className="grid grid-cols-4 items-center gap-4">
+      <Label htmlFor="listingEndDate" className="text-right">Listing End Date</Label>
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            variant={"outline"}
+            className={cn(
+              "col-span-3 justify-start text-left font-normal",
+              !listingEndDate && "text-muted-foreground"
+            )}
+          >
+            <CalendarIcon className="mr-2 h-4 w-4" />
+            {listingEndDate ? format(listingEndDate, "PPP") : <span>j/mm/aaaa</span>}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0">
+          <Calendar
+            mode="single"
+            selected={listingEndDate}
+            onSelect={setListingEndDate}
+            initialFocus
+          />
+        </PopoverContent>
+      </Popover>
+    </div>
+    {/* Required Skills */}
+    <div className="grid grid-cols-4 items-center gap-4">
+      <Label htmlFor="title" className="text-right">Title</Label>
+      <Input id="title" placeholder="Ex: React, Node.js, Digital Marketing..." className="col-span-3" />
+    </div>
+    {/* Description */}
+    <div className="grid grid-cols-4 items-center gap-4">
+      <Label htmlFor="description" className="text-right">Description</Label>
+      <Textarea id="description" placeholder="Describe your needs in detail..." className="col-span-3" />
+    </div>
+  </div>
+  <DialogFooter>
+    <Button variant="outline" onClick={() => setIsNewListingModalOpen(false)}>Cancel</Button>
+    <Button>Create Listing</Button>
+  </DialogFooter>
                 </DialogContent>
             </Dialog>
         </div>

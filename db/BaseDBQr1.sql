@@ -10,15 +10,6 @@ CREATE TABLE profiles (
     bio TEXT
 );
 
--- Create friendships table
-CREATE TABLE friendships (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
-    friend_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
-    status TEXT CHECK (status IN ('pending', 'accepted', 'rejected')),
-    UNIQUE(user_id, friend_id)
-);
 
 -- Create messages table
 CREATE TABLE messages (

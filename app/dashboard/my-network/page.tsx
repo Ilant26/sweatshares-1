@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -13,53 +13,167 @@ import Link from "next/link";
 
 export default function MyNetworkPage() {
     const [activeTab, setActiveTab] = useState('connections');
+    const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:3001";
 
-    const connections = [
-        { id: '1', name: 'Sophie Dubois', role: 'Directrice Marketing', company: 'MediTech Solutions', tags: ['Marketing', 'Partenaire'], avatar: 'https://randomuser.me/api/portraits/women/1.jpg', connectedDate: 'Depuis le 1 mars 2023' },
-        { id: '2', name: 'Philippe Laurent', role: 'Investisseur, Business Angel', company: 'Venture Capital Partners', tags: ['Investisseur', 'Mentor'], avatar: 'https://randomuser.me/api/portraits/men/2.jpg', connectedDate: 'Depuis le 3 mars 2023' },
-        { id: '3', name: 'Lucas Martin', role: 'Développeur full-stack', company: 'TechnoInnovate', tags: ['Co-fondateur', 'Freelancer'], avatar: 'https://randomuser.me/api/portraits/men/3.jpg', connectedDate: 'Depuis le 28 avril 2023' },
-        { id: '4', name: 'Émilie Rousseau', role: 'CEO & Fondatrice', company: 'EcoSolutions', tags: ['Co-fondateur', 'Mentor'], avatar: 'https://randomuser.me/api/portraits/women/4.jpg', connectedDate: 'Depuis le 5 janvier 2023' },
-        { id: '5', name: 'Camille Lefevre', role: 'UX/UI Designer', company: 'DesignWorks', tags: ['Marketing', 'Partenaire'], avatar: 'https://randomuser.me/api/portraits/men/5.jpg', connectedDate: 'Depuis le 2 mai 2023' },
-        { id: '6', name: 'Antoine Bernard', role: 'Directeur Commercial', company: 'GlobalTech', tags: ['Parrainage'], avatar: 'https://randomuser.me/api/portraits/men/6.jpg', connectedDate: 'Depuis le 22 fevrier 2023' },
-        { id: '7', name: 'Léa Dubois', role: 'Chef de Projet', company: 'Innovate Corp', tags: ['Management', 'Technologie'], avatar: 'https://randomuser.me/api/portraits/women/7.jpg', connectedDate: 'Depuis le 10 juin 2023' },
-        { id: '8', name: 'Thomas Durand', role: 'Analyste Financier', company: 'Finance Global', tags: ['Finance', 'Investissement'], avatar: 'https://randomuser.me/api/portraits/men/8.jpg', connectedDate: 'Depuis le 15 juillet 2023' },
-    ];
+    // State for data
+    const [connections, setConnections] = useState<any[]>([]);
+    const [receivedInvitations, setReceivedInvitations] = useState<any[]>([]);
+    const [sentInvitations, setSentInvitations] = useState<any[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
-    const renderConnectionCards = (data: typeof connections) => (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {data.map(connection => (
-                <Card key={connection.id}>
-                    <CardHeader className="flex flex-row items-center gap-4 space-y-0 pb-2">
-                        <Avatar className="h-16 w-16">
-                            <AvatarImage src={connection.avatar} alt={connection.name} />
-                            <AvatarFallback>{connection.name.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                            <CardTitle className="text-lg">{connection.name}</CardTitle>
-                            <CardDescription>{connection.role}</CardDescription>
-                            <p className="text-sm text-muted-foreground">{connection.company}</p>
-                        </div>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                        <div className="flex flex-wrap gap-2">
-                            {connection.tags.map(tag => (
-                                <span key={tag} className="text-xs bg-muted px-2 py-1 rounded-full">{tag}</span>
-                            ))}
-                        </div>
-                        <p className="text-xs text-muted-foreground">Connected since {connection.connectedDate}</p>
-                        <div className="flex justify-end gap-2">
-                            <Button variant="outline" size="sm">
-                                <MessageCircle className="h-4 w-4 mr-2" /> Message
-                            </Button>
-                            <Button variant="ghost" size="icon">
-                                <Trash2 className="h-4 w-4" />
-                            </Button>
-                        </div>
-                    </CardContent>
-                </Card>
-            ))}
-        </div>
-    );
+    // Fetch data from backend
+    useEffect(() => {
+        const fetchData = async () => {
+            setLoading(true);
+            setError(null);
+            try {
+                if (activeTab === 'connections') {
+                    const res = await fetch(`${API_BASE}/api/network/connections`, { credentials: 'include' });
+                    if (!res.ok) throw new Error('Failed to fetch connections');
+                    const data = await res.json();
+                    setConnections(data);
+                } else if (activeTab === 'received-invitations') {
+                    const res = await fetch(`${API_BASE}/api/network/received`, { credentials: 'include' });
+                    if (!res.ok) throw new Error('Failed to fetch received invitations');
+                    const data = await res.json();
+                    setReceivedInvitations(data);
+                } else if (activeTab === 'sent-invitations') {
+                    const res = await fetch(`${API_BASE}/api/network/sent`, { credentials: 'include' });
+                    if (!res.ok) throw new Error('Failed to fetch sent invitations');
+                    const data = await res.json();
+                    setSentInvitations(data);
+                }
+            } catch (err: any) {
+                setError(err.message);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchData();
+    }, [activeTab]);
+
+    // Render connection cards
+    const renderConnectionCards = (data: any[]) => {
+        if (loading) return <p className="text-muted-foreground">Loading...</p>;
+        if (error) return <p className="text-destructive">{error}</p>;
+        if (!data || data.length === 0) return <p className="text-muted-foreground">You have no connections yet. Start connecting with professionals!</p>;
+        return (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {data.map(connection => (
+                    <Card key={connection.id || connection.connection_id}>
+                        <CardHeader className="flex flex-row items-center gap-4 space-y-0 pb-2">
+                            <Avatar className="h-16 w-16">
+                                <AvatarImage src={connection.avatar || connection.avatar_url} alt={connection.name || connection.full_name || connection.username} />
+                                <AvatarFallback>{(connection.name || connection.full_name || connection.username || '').charAt(0)}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                                <CardTitle className="text-lg">{connection.name || connection.full_name || connection.username}</CardTitle>
+                                <CardDescription>{connection.role || connection.professional_role}</CardDescription>
+                                {connection.company && <p className="text-sm text-muted-foreground">{connection.company}</p>}
+                            </div>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                            {connection.tags && (
+                                <div className="flex flex-wrap gap-2">
+                                    {connection.tags.map((tag: string) => (
+                                        <span key={tag} className="text-xs bg-muted px-2 py-1 rounded-full">{tag}</span>
+                                    ))}
+                                </div>
+                            )}
+                            {connection.connectedDate && <p className="text-xs text-muted-foreground">Connected since {connection.connectedDate}</p>}
+                            <div className="flex justify-end gap-2">
+                                <Button variant="outline" size="sm">
+                                    <MessageCircle className="h-4 w-4 mr-2" /> Message
+                                </Button>
+                                <Button variant="ghost" size="icon">
+                                    <Trash2 className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+                ))}
+            </div>
+        );
+    };
+
+    // Render invitations
+    const renderInvitationCards = (data: any[], type: 'received' | 'sent') => {
+        if (loading) return <p className="text-muted-foreground">Loading...</p>;
+        if (error) return <p className="text-destructive">{error}</p>;
+        if (!data || data.length === 0) {
+            return <p className="text-muted-foreground">{type === 'received' ? 'No new invitations.' : 'No pending sent invitations.'}</p>;
+        }
+        return (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {data.map(invite => (
+                    <Card key={invite.id}>
+                        <CardHeader className="flex flex-row items-center gap-4 space-y-0 pb-2">
+                            <Avatar className="h-16 w-16">
+                                <AvatarImage src={type === 'received' ? invite.sender?.avatar_url : invite.receiver?.avatar_url} alt={type === 'received' ? invite.sender?.full_name : invite.receiver?.full_name} />
+                                <AvatarFallback>{(type === 'received' ? invite.sender?.full_name : invite.receiver?.full_name || '').charAt(0)}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                                <CardTitle className="text-lg">{type === 'received' ? invite.sender?.full_name : invite.receiver?.full_name}</CardTitle>
+                                <CardDescription>{type === 'received' ? invite.sender?.professional_role : invite.receiver?.professional_role}</CardDescription>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                            <div className="flex justify-end gap-2">
+                                {type === 'received' ? (
+                                    <>
+                                        <Button variant="outline" size="sm" onClick={async () => {
+                                            setLoading(true);
+                                            setError(null);
+                                            try {
+                                                const res = await fetch(`${API_BASE}/api/network/accept`, {
+                                                    method: 'POST',
+                                                    headers: { 'Content-Type': 'application/json' },
+                                                    body: JSON.stringify({ connection_id: invite.id })
+                                                });
+                                                if (!res.ok) throw new Error('Failed to accept invitation');
+                                                setReceivedInvitations(prev => prev.filter(i => i.id !== invite.id));
+                                                setConnections(prev => [...prev, invite.sender]);
+                                            } catch (err: any) {
+                                                setError(err.message);
+                                            } finally {
+                                                setLoading(false);
+                                            }
+                                        }}>
+                                            Accept
+                                        </Button>
+                                        <Button variant="ghost" size="sm" onClick={async () => {
+                                            setLoading(true);
+                                            setError(null);
+                                            try {
+                                                const res = await fetch(`${API_BASE}/api/network/reject`, {
+                                                    method: 'POST',
+                                                    headers: { 'Content-Type': 'application/json' },
+                                                    body: JSON.stringify({ connection_id: invite.id })
+                                                });
+                                                if (!res.ok) throw new Error('Failed to reject invitation');
+                                                setReceivedInvitations(prev => prev.filter(i => i.id !== invite.id));
+                                            } catch (err: any) {
+                                                setError(err.message);
+                                            } finally {
+                                                setLoading(false);
+                                            }
+                                        }}>
+                                            Reject
+                                        </Button>
+                                    </>
+                                ) : (
+                                    <Button variant="ghost" size="icon">
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                )}
+                            </div>
+                        </CardContent>
+                    </Card>
+                ))}
+            </div>
+        );
+    };
 
     return (
         <div className="flex-1 space-y-8 p-8 pt-6">
@@ -108,13 +222,13 @@ export default function MyNetworkPage() {
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
                 <TabsList>
                     <TabsTrigger value="connections">
-                        My Connections <span className="ml-2 text-xs font-semibold text-primary">128</span>
+                        My Connections <span className="ml-2 text-xs font-semibold text-primary">{connections.length}</span>
                     </TabsTrigger>
                     <TabsTrigger value="received-invitations">
-                        Received Invitations <span className="ml-2 text-xs font-semibold text-primary">5</span>
+                        Received Invitations <span className="ml-2 text-xs font-semibold text-primary">{receivedInvitations.length}</span>
                     </TabsTrigger>
                     <TabsTrigger value="sent-invitations">
-                        Sent Invitations <span className="ml-2 text-xs font-semibold text-primary">3</span>
+                        Sent Invitations <span className="ml-2 text-xs font-semibold text-primary">{sentInvitations.length}</span>
                     </TabsTrigger>
                     <TabsTrigger value="suggestions">
                         Suggestions <span className="ml-2 text-xs font-semibold text-primary">10</span>
@@ -125,10 +239,10 @@ export default function MyNetworkPage() {
                     {renderConnectionCards(connections)}
                 </TabsContent>
                 <TabsContent value="received-invitations">
-                    <p className="text-muted-foreground">No new invitations.</p>
+                    {renderInvitationCards(receivedInvitations, 'received')}
                 </TabsContent>
                 <TabsContent value="sent-invitations">
-                    <p className="text-muted-foreground">No pending sent invitations.</p>
+                    {renderInvitationCards(sentInvitations, 'sent')}
                 </TabsContent>
                 <TabsContent value="suggestions">
                     <p className="text-muted-foreground">No new suggestions at the moment.</p>

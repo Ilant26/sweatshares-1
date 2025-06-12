@@ -432,7 +432,7 @@ export function AuthUI({
                 Don't have an account?{" "}
                 <Button
                   variant="link"
-                  className="p-0 h-auto font-normal"
+                  className="p-0 h-auto font-normal text-gray-800 dark:text-white"
                   onClick={() => setAuthState("sign-up")}
                 >
                   Sign Up
@@ -444,7 +444,7 @@ export function AuthUI({
                 Already have an account?{" "}
                 <Button
                   variant="link"
-                  className="p-0 h-auto font-normal"
+                  className="p-0 h-auto font-normal text-gray-800 dark:text-white"
                   onClick={() => setAuthState("sign-in")}
                 >
                   Sign In
