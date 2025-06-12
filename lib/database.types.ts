@@ -1,9 +1,3 @@
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import { Database } from './database.types'
-
-export const supabase = createClientComponentClient<Database>()
-
-// Types for our database schema
 export type Json =
   | string
   | number
