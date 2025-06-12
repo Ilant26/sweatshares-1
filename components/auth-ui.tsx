@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useState, useId } from "react";
+import { useState, useId, useEffect } from "react";
 import { Slot } from "@radix-ui/react-slot";
 import * as LabelPrimitive from "@radix-ui/react-label";
 import { cva, type VariantProps } from "class-variance-authority";
@@ -10,6 +10,8 @@ import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { signInWithEmail, signUpWithEmail, resetPassword } from "@/lib/auth";
 import { useRouter, usePathname } from "next/navigation";
+import { useSession } from "@/components/providers/session-provider";
+import Link from "next/link";
 
 // UTILITY: cn function for merging Tailwind classes
 function cn(...inputs: ClassValue[]) {
@@ -386,46 +388,105 @@ const defaultQuote = {
     author: "Sofia Davis"
 }
 
+export function AuthUI({
+  image = defaultImage,
+  quote = defaultQuote,
+}: AuthUIProps) {
+  const [authState, setAuthState] = React.useState<
+    "sign-in" | "sign-up" | "forgot-password"
+  >("sign-in");
 
-export function AuthUI({ image = defaultImage, quote = defaultQuote }: AuthUIProps) {
-  const pathname = usePathname();
-  const initialAuthState = pathname.includes("forgot-password") 
-    ? "forgot-password" 
-    : pathname.includes("sign-up") 
-      ? "sign-up" 
-      : "sign-in";
+  const router = useRouter();
+  const { user, loading } = useSession();
+
+  useEffect(() => {
+    if (!loading && user) {
+      // User is logged in, redirect to dashboard
+      router.replace("/dashboard");
+    }
+  }, [user, loading, router]);
+
+  if (loading || user) {
+    // Show a loading state or nothing while checking session or if already logged in
+    return (
+      <div className="flex h-screen w-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   return (
-    <div className="w-full min-h-screen md:grid md:grid-cols-2">
-      <style>{`
-        input[type="password"]::-ms-reveal,
-        input[type="password"]::-ms-clear {
-          display: none;
-        }
-      `}</style>
-
-      {/* Left Column: The Form */}
-      <div className="flex h-screen items-center justify-center p-6 md:h-auto md:p-0 md:py-12">
-        <AuthFormContainer initialAuthState={initialAuthState} />
+    <div className="relative grid min-h-screen grid-cols-1 overflow-hidden md:grid-cols-2 lg:grid-cols-3">
+      <div className="flex flex-col items-center justify-center p-8 lg:col-span-1">
+        <div className="w-full max-w-md">
+          {authState === "sign-in" && (
+            <SignInForm onForgotPassword={() => setAuthState("forgot-password")} />
+          )}
+          {authState === "sign-up" && <SignUpForm />}
+          {authState === "forgot-password" && (
+            <ForgotPasswordForm onBack={() => setAuthState("sign-in")} />
+          )}
+          <div className="mt-8 text-center text-sm text-muted-foreground">
+            {authState === "sign-in" && (
+              <>
+                Don't have an account?{" "}
+                <Button
+                  variant="link"
+                  className="p-0 h-auto font-normal"
+                  onClick={() => setAuthState("sign-up")}
+                >
+                  Sign Up
+                </Button>
+              </>
+            )}
+            {authState === "sign-up" && (
+              <>
+                Already have an account?{" "}
+                <Button
+                  variant="link"
+                  className="p-0 h-auto font-normal"
+                  onClick={() => setAuthState("sign-in")}
+                >
+                  Sign In
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
       </div>
 
-      {/* Right Column: The Image and Quote */}
       <div
-        className="hidden md:block relative bg-cover bg-center"
-        style={{ backgroundImage: `url(${image.src})` }}
+        className="relative hidden flex-col p-8 text-white dark:border-r md:flex lg:col-span-2"
+        style={{
+          backgroundImage: `url(${image.src})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
       >
-        {/* Overlay for text readability */}
-        <div className="absolute inset-0 bg-black/50" />
-        
-        {/* Centered Quote */}
-        <div className="relative z-10 flex h-full items-center justify-center p-10">
-            <blockquote className="space-y-2 text-center text-white">
-            <p className="text-lg font-medium">"{quote.text}"</p>
-            <cite className="block text-sm font-light text-neutral-300 not-italic">
-                — {quote.author}
-            </cite>
+        <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-background/20 backdrop-brightness-75 md:from-background/70 md:to-background/30" />
+        <Link href="/" className="relative z-20 flex items-center text-lg font-medium text-white md:text-background-foreground">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="mr-2 h-6 w-6"
+          >
+            <path d="M15 6v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3" />
+          </svg>
+          SweatShares
+        </Link>
+        {quote && (
+          <div className="relative z-20 mt-auto text-lg">
+            <blockquote className="space-y-2">
+              <p className="text-xl leading-relaxed text-white">{quote.text}</p>
+              <footer className="font-semibold text-white">{quote.author}</footer>
             </blockquote>
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

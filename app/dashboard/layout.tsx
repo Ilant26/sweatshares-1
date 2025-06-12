@@ -20,6 +20,7 @@ import { ThemeSwitcher } from "@/components/theme-switcher"
 import { usePathname } from 'next/navigation';
 import { ProtectedRoute } from '@/components/protected-route'
 import { useSession } from '@/components/providers/session-provider'
+import { Toaster } from "@/components/ui/toaster"
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state";
 
@@ -91,6 +92,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {children}
         </SidebarInset>
       </SidebarProvider>
+      <Toaster />
     </ProtectedRoute>
   );
 } 
