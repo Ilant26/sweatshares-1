@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { RealtimeChannel } from '@supabase/supabase-js'
 
 export interface Message {
   id: string
@@ -107,22 +108,76 @@ export async function updateUserStatus(isOnline: boolean) {
   if (error) throw error
 }
 
-// Subscribe to new messages
-export function subscribeToMessages(callback: (message: Message) => void) {
-  return supabase
-    .channel('messages')
-    .on(
-      'postgres_changes',
-      {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'messages'
-      },
-      (payload) => {
-        callback(payload.new as Message)
-      }
-    )
-    .subscribe()
+export async function getProfileById(userId: string) {
+    const { data, error } = await supabase
+        .from('profiles')
+        .select('id, username, full_name, avatar_url')
+        .eq('id', userId)
+        .single();
+    if (error) throw error;
+    return data;
+}
+
+let sharedChannel: RealtimeChannel | null = null;
+let messageCallbacks: ((message: any) => void)[] = [];
+
+export function subscribeToMessages(callback: (message: any) => void) {
+    // Add callback to the list
+    messageCallbacks.push(callback);
+
+    // If channel doesn't exist, create it
+    if (!sharedChannel) {
+        try {
+            sharedChannel = supabase
+                .channel('messages')
+                .on(
+                    'postgres_changes',
+                    {
+                        event: 'INSERT',
+                        schema: 'public',
+                        table: 'messages'
+                    },
+                    (payload) => {
+                        // Notify all callbacks
+                        messageCallbacks.forEach(cb => {
+                            try {
+                                cb(payload.new);
+                            } catch (err) {
+                                console.error('Error in message callback:', err);
+                            }
+                        });
+                    }
+                )
+                .subscribe((status) => {
+                    if (status === 'SUBSCRIBED') {
+                        console.log('Successfully subscribed to messages channel');
+                    } else {
+                        console.error('Failed to subscribe to messages channel:', status);
+                    }
+                });
+        } catch (err) {
+            console.error('Error setting up message subscription:', err);
+            throw err;
+        }
+    }
+
+    // Return unsubscribe function
+    return {
+        unsubscribe: () => {
+            // Remove this callback
+            messageCallbacks = messageCallbacks.filter(cb => cb !== callback);
+            
+            // If no more callbacks, unsubscribe from channel
+            if (messageCallbacks.length === 0 && sharedChannel) {
+                try {
+                    sharedChannel.unsubscribe();
+                    sharedChannel = null;
+                } catch (err) {
+                    console.error('Error unsubscribing from channel:', err);
+                }
+            }
+        }
+    };
 }
 
 // Subscribe to user status changes

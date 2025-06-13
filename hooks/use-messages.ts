@@ -28,6 +28,8 @@ export function useMessages({ userId }: UseMessagesProps): UseMessagesReturn {
   useEffect(() => {
     if (!userId) return
 
+    let subscription: { unsubscribe: () => void } | null = null;
+
     // Load initial messages
     const loadMessages = async () => {
       try {
@@ -66,24 +68,28 @@ export function useMessages({ userId }: UseMessagesProps): UseMessagesReturn {
     loadUserStatus()
 
     // Subscribe to new messages
-    const messageSubscription = subscribeToMessages((newMessage) => {
-      setMessages(prev => {
-        // Check if message already exists
-        if (prev.some(msg => msg.id === newMessage.id)) {
-          return prev
-        }
-        
-        // Add new message and mark as read if it's from the current conversation
-        if (newMessage.sender_id === userId) {
-          try {
-            markMessageAsRead(newMessage.id)
-          } catch (err) {
-            console.error('Error marking new message as read:', err, newMessage)
+    try {
+      subscription = subscribeToMessages((newMessage) => {
+        setMessages(prev => {
+          // Check if message already exists
+          if (prev.some(msg => msg.id === newMessage.id)) {
+            return prev
           }
-        }
-        return [...prev, newMessage]
+          
+          // Add new message and mark as read if it's from the current conversation
+          if (newMessage.sender_id === userId) {
+            try {
+              markMessageAsRead(newMessage.id)
+            } catch (err) {
+              console.error('Error marking new message as read:', err, newMessage)
+            }
+          }
+          return [...prev, newMessage]
+        })
       })
-    })
+    } catch (err) {
+      console.error('Error setting up message subscription:', err)
+    }
 
     // Subscribe to user status changes
     const statusSubscription = subscribeToUserStatus(userId, (status) => {
@@ -91,10 +97,12 @@ export function useMessages({ userId }: UseMessagesProps): UseMessagesReturn {
     })
 
     return () => {
-      try {
-        messageSubscription.unsubscribe()
-      } catch (err) {
-        console.error('Error unsubscribing from messageSubscription:', err)
+      if (subscription) {
+        try {
+          subscription.unsubscribe()
+        } catch (err) {
+          console.error('Error unsubscribing from messageSubscription:', err)
+        }
       }
       try {
         statusSubscription.unsubscribe()

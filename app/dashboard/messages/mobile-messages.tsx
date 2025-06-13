@@ -11,7 +11,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { formatDistanceToNow } from 'date-fns';
 import { NewMessageDialog } from '@/components/new-message-dialog';
 import { supabase } from '@/lib/supabase';
-import { Message } from '@/lib/messages';
+import { Message, subscribeToMessages, getProfileById } from '@/lib/messages';
+import { useUser } from '@/hooks/use-user';
 
 interface Conversation {
     id: string;
@@ -24,44 +25,87 @@ interface Conversation {
     isPlaceholder?: boolean;
 }
 
+// Utility to deduplicate messages by id
+function dedupeMessages(messages: Message[]): Message[] {
+    const map = new Map();
+    for (const msg of messages) {
+        map.set(msg.id, msg);
+    }
+    return Array.from(map.values());
+}
+
 export function MobileMessages() {
+    const { user } = useUser();
+    const currentUserId = user?.id;
     const [view, setView] = useState<'conversations' | 'chat'>('conversations');
     const [currentFilter, setCurrentFilter] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
-    const [selectedUserId, setSelectedUserId] = useState<string | undefined>();
+    const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
     const [messageInput, setMessageInput] = useState('');
     const [showNewMessageDialog, setShowNewMessageDialog] = useState(false);
-    const [currentUserId, setCurrentUserId] = useState<string | null>(null);
     const [selectedUserProfile, setSelectedUserProfile] = useState<any>(null);
     const [allMessages, setAllMessages] = useState<Message[]>([]);
     const [isLoadingAllMessages, setIsLoadingAllMessages] = useState(true);
     const [allConnections, setAllConnections] = useState<any[]>([]);
+    const messagesEndRef = React.useRef<HTMLDivElement>(null);
+    const subscriptionRef = React.useRef<{ unsubscribe: () => void } | null>(null);
+
+    // Add subscription for all messages
+    useEffect(() => {
+        if (!currentUserId) return;
+
+        try {
+            // Cleanup previous subscription if it exists
+            if (subscriptionRef.current) {
+                subscriptionRef.current.unsubscribe();
+                subscriptionRef.current = null;
+            }
+
+            // Set up new subscription
+            subscriptionRef.current = subscribeToMessages(async (newMessage: Message) => {
+                // Fetch sender profile if not present
+                if (!newMessage.sender) {
+                    try {
+                        const senderProfile = await getProfileById(newMessage.sender_id);
+                        newMessage.sender = senderProfile;
+                    } catch (err) {
+                        console.error('Failed to fetch sender profile:', err);
+                    }
+                }
+                setAllMessages(prev => dedupeMessages([...prev, newMessage]));
+            });
+        } catch (err) {
+            console.error('Error setting up all messages subscription:', err);
+        }
+
+        return () => {
+            if (subscriptionRef.current) {
+                try {
+                    subscriptionRef.current.unsubscribe();
+                    subscriptionRef.current = null;
+                } catch (err) {
+                    console.error('Error unsubscribing from all messages:', err);
+                }
+            }
+        };
+    }, [currentUserId]);
 
     const {
         messages,
-        sendMessage,
         isLoading,
-        error,
+        sendMessage,
         userStatus
-    } = useMessages({ userId: selectedUserId });
+    } = useMessages({ userId: selectedUserId || undefined });
 
-    useEffect(() => {
-        const fetchCurrentUser = async () => {
-            try {
-                console.log('Fetching current user...');
-                const { data: { user }, error } = await supabase.auth.getUser();
-                if (error) {
-                    console.error('Error fetching current user:', error);
-                    return;
-                }
-                console.log('Current user:', user?.id);
-                if (user) setCurrentUserId(user.id);
-            } catch (error) {
-                console.error('Error in fetchCurrentUser:', error);
-            }
-        };
-        fetchCurrentUser();
+    // Add scroll to bottom function
+    const scrollToBottom = React.useCallback(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, []);
+
+    // Add effect to scroll when messages change
+    React.useEffect(() => {
+        scrollToBottom();
+    }, [messages, scrollToBottom]);
 
     // Add new effect to fetch all messages on mount
     useEffect(() => {
@@ -69,7 +113,6 @@ export function MobileMessages() {
             if (!currentUserId) return;
             try {
                 setIsLoadingAllMessages(true);
-                console.log('Fetching all messages for user:', currentUserId);
                 const { data: messages, error } = await supabase
                     .from('messages')
                     .select(`
@@ -88,9 +131,8 @@ export function MobileMessages() {
                     return;
                 }
                 
-                console.log('Fetched messages:', messages?.length || 0);
                 if (messages) {
-                    setAllMessages(messages);
+                    setAllMessages(prev => dedupeMessages([...prev, ...messages]));
                 }
             } catch (error) {
                 console.error('Error fetching messages:', error);
@@ -259,7 +301,7 @@ export function MobileMessages() {
             if (error) throw error;
             
             if (newMessage) {
-                setAllMessages(prev => [...prev, newMessage]);
+                setAllMessages(prev => dedupeMessages([...prev, newMessage]));
                 setMessageInput('');
             }
         } catch (error) {
@@ -308,7 +350,7 @@ export function MobileMessages() {
                         size="icon" 
                         onClick={() => {
                             setView('conversations');
-                            setSelectedUserId(undefined);
+                            setSelectedUserId(null);
                         }}
                     >
                         <ArrowLeft className="h-5 w-5" />
@@ -339,6 +381,9 @@ export function MobileMessages() {
                             </div>
                         ) : filteredMessages.map((message) => {
                             const isSent = message.sender_id === currentUserId;
+                            const senderName = message.sender?.full_name || message.sender?.username || 'Unknown User';
+                            const senderAvatar = message.sender?.avatar_url || undefined;
+                            
                             return (
                                 <div
                                     key={message.id}
@@ -346,12 +391,12 @@ export function MobileMessages() {
                                 >
                                     {!isSent && (
                                         <Avatar>
-                                            <AvatarImage src={message.sender.avatar_url || undefined} alt={message.sender.full_name || message.sender.username} />
-                                            <AvatarFallback>{(message.sender.full_name || message.sender.username || '?')[0]}</AvatarFallback>
+                                            <AvatarImage src={senderAvatar} alt={senderName} />
+                                            <AvatarFallback>{senderName.charAt(0)}</AvatarFallback>
                                         </Avatar>
                                     )}
                                     <div
-                                        className={`max-w-[80%] rounded-lg p-3 ${
+                                        className={`max-w-[70%] rounded-lg p-3 ${
                                             isSent ? 'bg-blue-500 text-white' : 'bg-muted'
                                         }`}
                                     >
@@ -362,13 +407,14 @@ export function MobileMessages() {
                                     </div>
                                     {isSent && (
                                         <Avatar>
-                                            <AvatarImage src={message.sender.avatar_url || undefined} alt={message.sender.full_name || message.sender.username} />
-                                            <AvatarFallback>{(message.sender.full_name || message.sender.username || '?')[0]}</AvatarFallback>
+                                            <AvatarImage src={senderAvatar} alt={senderName} />
+                                            <AvatarFallback>{senderName.charAt(0)}</AvatarFallback>
                                         </Avatar>
                                     )}
                                 </div>
                             );
                         })}
+                        <div ref={messagesEndRef} />
                     </div>
                 </ScrollArea>
 

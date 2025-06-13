@@ -14,7 +14,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { formatDistanceToNow } from 'date-fns';
 import { NewMessageDialog } from '@/components/new-message-dialog'
 import { supabase } from '@/lib/supabase';
-import { Message } from '@/lib/messages';
+import { Message, subscribeToMessages, getProfileById } from '@/lib/messages';
+import { useUser } from '@/hooks/use-user';
 
 interface Conversation {
     id: string;
@@ -27,44 +28,78 @@ interface Conversation {
     isPlaceholder?: boolean;
 }
 
+// Utility to deduplicate messages by id
+function dedupeMessages(messages: Message[]): Message[] {
+    const map = new Map();
+    for (const msg of messages) {
+        map.set(msg.id, msg);
+    }
+    return Array.from(map.values());
+}
+
 export default function MessagesPage() {
+    const { user } = useUser();
+    const currentUserId = user?.id;
+    const [selectedConversation, setSelectedConversation] = React.useState<string | null>(null);
+    const [searchQuery, setSearchQuery] = React.useState('');
     const isMobile = useIsMobile();
-    const [currentFilter, setCurrentFilter] = useState('all');
-    const [selectedUserId, setSelectedUserId] = useState<string | undefined>();
-    const [messageInput, setMessageInput] = useState('');
-    const [searchQuery, setSearchQuery] = useState('');
-    const [newMessageDialogOpen, setNewMessageDialogOpen] = useState(false);
-    const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-    const [selectedUserProfile, setSelectedUserProfile] = useState<any>(null);
-    const [allConnections, setAllConnections] = useState<any[]>([]);
+    const messagesEndRef = React.useRef<HTMLDivElement>(null);
     const [allMessages, setAllMessages] = useState<Message[]>([]);
     const [isLoadingAllMessages, setIsLoadingAllMessages] = useState(true);
+    const [allConnections, setAllConnections] = useState<any[]>([]);
+    const subscriptionRef = React.useRef<{ unsubscribe: () => void } | null>(null);
+    const [currentFilter, setCurrentFilter] = useState('all');
+    const [messageInput, setMessageInput] = useState('');
+    const [newMessageDialogOpen, setNewMessageDialogOpen] = useState(false);
+    const [selectedUserProfile, setSelectedUserProfile] = useState<any>(null);
 
     const {
         messages,
-        sendMessage,
         isLoading,
+        sendMessage,
         error,
         userStatus
-    } = useMessages({ userId: selectedUserId });
+    } = useMessages({ userId: selectedConversation || undefined });
 
+    // Add subscription for all messages
     useEffect(() => {
-        const fetchCurrentUser = async () => {
-            try {
-                console.log('Fetching current user...');
-                const { data: { user }, error } = await supabase.auth.getUser();
-                if (error) {
-                    console.error('Error fetching current user:', error);
-                    return;
+        if (!currentUserId) return;
+
+        try {
+            // Cleanup previous subscription if it exists
+            if (subscriptionRef.current) {
+                subscriptionRef.current.unsubscribe();
+                subscriptionRef.current = null;
+            }
+
+            // Set up new subscription
+            subscriptionRef.current = subscribeToMessages(async (newMessage: Message) => {
+                // Fetch sender profile if not present
+                if (!newMessage.sender) {
+                    try {
+                        const senderProfile = await getProfileById(newMessage.sender_id);
+                        newMessage.sender = senderProfile;
+                    } catch (err) {
+                        console.error('Failed to fetch sender profile:', err);
+                    }
                 }
-                console.log('Current user:', user?.id);
-                if (user) setCurrentUserId(user.id);
-            } catch (error) {
-                console.error('Error in fetchCurrentUser:', error);
+                setAllMessages(prev => dedupeMessages([...prev, newMessage]));
+            });
+        } catch (err) {
+            console.error('Error setting up all messages subscription:', err);
+        }
+
+        return () => {
+            if (subscriptionRef.current) {
+                try {
+                    subscriptionRef.current.unsubscribe();
+                    subscriptionRef.current = null;
+                } catch (err) {
+                    console.error('Error unsubscribing from all messages:', err);
+                }
             }
         };
-        fetchCurrentUser();
-    }, []);
+    }, [currentUserId]);
 
     // Add new effect to fetch all messages on mount
     useEffect(() => {
@@ -72,7 +107,6 @@ export default function MessagesPage() {
             if (!currentUserId) return;
             try {
                 setIsLoadingAllMessages(true);
-                console.log('Fetching all messages for user:', currentUserId);
                 const { data: messages, error } = await supabase
                     .from('messages')
                     .select(`
@@ -91,9 +125,8 @@ export default function MessagesPage() {
                     return;
                 }
                 
-                console.log('Fetched messages:', messages?.length || 0);
                 if (messages) {
-                    setAllMessages(messages);
+                    setAllMessages(prev => dedupeMessages([...prev, ...messages]));
                 }
             } catch (error) {
                 console.error('Error fetching messages:', error);
@@ -188,13 +221,13 @@ export default function MessagesPage() {
 
     const totalUnreadMessages = conversations.reduce((sum, conv) => sum + (conv.unread || 0), 0);
     const activeConversation = React.useMemo(() => {
-        if (!selectedUserId) return undefined;
+        if (!selectedConversation) return undefined;
         // Try to find an existing conversation
-        const found = conversations.find(conv => conv.id === selectedUserId);
+        const found = conversations.find(conv => conv.id === selectedConversation);
         // If not found, create a placeholder for new conversation
         if (!found) {
             return {
-                id: selectedUserId,
+                id: selectedConversation,
                 name: 'New Conversation',
                 lastMessage: '',
                 time: new Date().toISOString(),
@@ -204,41 +237,41 @@ export default function MessagesPage() {
             };
         }
         return found;
-    }, [conversations, selectedUserId]);
+    }, [conversations, selectedConversation]);
 
     // Filter messages for the active conversation
     const filteredMessages = React.useMemo(() => {
-        if (!selectedUserId || !currentUserId) return [];
+        if (!selectedConversation || !currentUserId) return [];
         return allMessages.filter(
             (msg) =>
-                (msg.sender_id === currentUserId && msg.receiver_id === selectedUserId) ||
-                (msg.sender_id === selectedUserId && msg.receiver_id === currentUserId)
+                (msg.sender_id === currentUserId && msg.receiver_id === selectedConversation) ||
+                (msg.sender_id === selectedConversation && msg.receiver_id === currentUserId)
         );
-    }, [allMessages, selectedUserId, currentUserId]);
+    }, [allMessages, selectedConversation, currentUserId]);
 
-    // Fetch selected user profile when selectedUserId changes and not in conversations
+    // Fetch selected user profile when selectedConversation changes and not in conversations
     useEffect(() => {
         const fetchProfile = async () => {
-            if (!selectedUserId) return;
-            const exists = conversations.some(conv => conv.id === selectedUserId);
+            if (!selectedConversation) return;
+            const exists = conversations.some(conv => conv.id === selectedConversation);
             if (!exists) {
                 const { data } = await supabase
                     .from('profiles')
                     .select('id, username, full_name, avatar_url')
-                    .eq('id', selectedUserId)
+                    .eq('id', selectedConversation)
                     .single();
                 setSelectedUserProfile(data);
             }
         };
         fetchProfile();
-    }, [selectedUserId, conversations]);
+    }, [selectedConversation, conversations]);
 
     // After building conversations
     let allConversations = [...conversations];
-    const userIsInList = allConversations.some(conv => conv.id === selectedUserId);
-    if (selectedUserId && !userIsInList && selectedUserProfile) {
+    const userIsInList = allConversations.some(conv => conv.id === selectedConversation);
+    if (selectedConversation && !userIsInList && selectedUserProfile) {
         allConversations.unshift({
-            id: selectedUserId,
+            id: selectedConversation,
             name: selectedUserProfile.full_name || selectedUserProfile.username,
             avatar: selectedUserProfile.avatar_url,
             lastMessage: '',
@@ -266,14 +299,14 @@ export default function MessagesPage() {
     });
 
     const handleSendMessage = async () => {
-        if (!messageInput.trim() || !selectedUserId || !currentUserId) return;
+        if (!messageInput.trim() || !selectedConversation || !currentUserId) return;
         
         try {
             const { data: newMessage, error } = await supabase
                 .from('messages')
                 .insert({
                     sender_id: currentUserId,
-                    receiver_id: selectedUserId,
+                    receiver_id: selectedConversation,
                     content: messageInput,
                     read: false
                 })
@@ -290,7 +323,7 @@ export default function MessagesPage() {
             if (error) throw error;
             
             if (newMessage) {
-                setAllMessages(prev => [...prev, newMessage]);
+                setAllMessages(prev => dedupeMessages([...prev, newMessage]));
                 setMessageInput('');
             }
         } catch (error) {
@@ -299,12 +332,22 @@ export default function MessagesPage() {
     };
 
     const handleSelectUser = (userId: string) => {
-        setSelectedUserId(userId);
+        setSelectedConversation(userId);
         setNewMessageDialogOpen(false);
     };
 
     // Modify the loading state to consider both allMessages and the selected conversation
     const isLoadingConversations = isLoading || allMessages.length === 0;
+
+    // Add scroll to bottom function
+    const scrollToBottom = React.useCallback(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, []);
+
+    // Add effect to scroll when messages change
+    React.useEffect(() => {
+        scrollToBottom();
+    }, [filteredMessages, scrollToBottom]);
 
     if (isMobile) {
         return <MobileMessages />;
@@ -374,9 +417,9 @@ export default function MessagesPage() {
                                 <div
                                     key={conversation.id}
                                     className={`flex items-center gap-4 p-4 hover:bg-muted cursor-pointer ${
-                                        conversation.id === selectedUserId ? 'bg-muted' : ''
+                                        conversation.id === selectedConversation ? 'bg-muted' : ''
                                     }`}
-                                    onClick={() => setSelectedUserId(conversation.id)}
+                                    onClick={() => setSelectedConversation(conversation.id)}
                                 >
                                     <div className="relative">
                                         <Avatar>
@@ -416,7 +459,7 @@ export default function MessagesPage() {
                 </Card>
 
                 <Card className="flex-1 flex flex-col">
-                    {selectedUserId && activeConversation ? (
+                    {selectedConversation && activeConversation ? (
                         <>
                             <CardHeader className="flex-none">
                                 <div className="flex items-center justify-between space-x-4">
@@ -453,6 +496,9 @@ export default function MessagesPage() {
                                             </div>
                                         ) : filteredMessages.map((message) => {
                                             const isSent = message.sender_id === currentUserId;
+                                            const senderName = message.sender?.full_name || message.sender?.username || 'Unknown User';
+                                            const senderAvatar = message.sender?.avatar_url || undefined;
+                                            
                                             return (
                                                 <div
                                                     key={message.id}
@@ -460,8 +506,8 @@ export default function MessagesPage() {
                                                 >
                                                     {!isSent && (
                                                         <Avatar>
-                                                            <AvatarImage src={message.sender.avatar_url || undefined} alt={message.sender.full_name || message.sender.username} />
-                                                            <AvatarFallback>{(message.sender.full_name || message.sender.username || '?')[0]}</AvatarFallback>
+                                                            <AvatarImage src={senderAvatar} alt={senderName} />
+                                                            <AvatarFallback>{senderName.charAt(0)}</AvatarFallback>
                                                         </Avatar>
                                                     )}
                                                     <div
@@ -476,13 +522,14 @@ export default function MessagesPage() {
                                                     </div>
                                                     {isSent && (
                                                         <Avatar>
-                                                            <AvatarImage src={message.sender.avatar_url || undefined} alt={message.sender.full_name || message.sender.username} />
-                                                            <AvatarFallback>{(message.sender.full_name || message.sender.username || '?')[0]}</AvatarFallback>
+                                                            <AvatarImage src={senderAvatar} alt={senderName} />
+                                                            <AvatarFallback>{senderName.charAt(0)}</AvatarFallback>
                                                         </Avatar>
                                                     )}
                                                 </div>
                                             );
                                         })}
+                                        <div ref={messagesEndRef} />
                                     </div>
                                 </ScrollArea>
                             </CardContent>
@@ -526,7 +573,7 @@ export default function MessagesPage() {
                                         size="icon" 
                                         className="bg-blue-500 hover:bg-blue-600"
                                         onClick={handleSendMessage}
-                                        disabled={!messageInput.trim() || !selectedUserId}
+                                        disabled={!messageInput.trim() || !selectedConversation}
                                     >
                                         <Send className="h-5 w-5" />
                                     </Button>
