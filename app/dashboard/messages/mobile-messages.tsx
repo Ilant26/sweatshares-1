@@ -13,6 +13,7 @@ import { NewMessageDialog } from '@/components/new-message-dialog';
 import { supabase } from '@/lib/supabase';
 import { Message, subscribeToMessages, getProfileById, markMessageAsRead } from '@/lib/messages';
 import { useUser } from '@/hooks/use-user';
+import { useUnreadMessages } from '@/components/providers/session-provider';
 
 interface Conversation {
     id: string;
@@ -49,6 +50,7 @@ export function MobileMessages() {
     const [allConnections, setAllConnections] = useState<any[]>([]);
     const messagesEndRef = React.useRef<HTMLDivElement>(null);
     const subscriptionRef = React.useRef<{ unsubscribe: () => void } | null>(null);
+    const { refreshUnread } = useUnreadMessages();
 
     // Add subscription for all messages
     useEffect(() => {
@@ -366,6 +368,7 @@ export function MobileMessages() {
                     console.error('Error marking message as read:', err);
                 }
             }));
+            refreshUnread();
         };
 
         markMessagesAsRead();
@@ -427,7 +430,7 @@ export function MobileMessages() {
                                         </Avatar>
                                     )}
                                     <div
-                                        className={`max-w-[70%] rounded-lg p-3 ${
+                                        className={`max-w-[70%] rounded-lg p-3 break-all whitespace-pre-line overflow-x-auto ${
                                             isSent ? 'bg-blue-500 text-white' : 'bg-muted'
                                         }`}
                                     >
@@ -582,7 +585,9 @@ export function MobileMessages() {
                         </div>
                         <div className="flex-1">
                             <p className="font-medium">{conversation.name}</p>
-                            <p className="text-sm text-muted-foreground truncate">{conversation.lastMessage}</p>
+                            <p className="text-sm text-muted-foreground truncate max-w-[120px]">
+                                {conversation.lastMessage}
+                            </p>
                         </div>
                         <div className="flex flex-col items-end">
                             <span className="text-xs text-muted-foreground">

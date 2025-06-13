@@ -16,6 +16,7 @@ import { NewMessageDialog } from '@/components/new-message-dialog'
 import { supabase } from '@/lib/supabase';
 import { Message, subscribeToMessages, getProfileById, markMessageAsRead } from '@/lib/messages';
 import { useUser } from '@/hooks/use-user';
+import { useUnreadMessages } from '@/components/providers/session-provider';
 
 interface Conversation {
     id: string;
@@ -52,6 +53,7 @@ export default function MessagesPage() {
     const [messageInput, setMessageInput] = useState('');
     const [newMessageDialogOpen, setNewMessageDialogOpen] = useState(false);
     const [selectedUserProfile, setSelectedUserProfile] = useState<any>(null);
+    const { refreshUnread } = useUnreadMessages();
 
     const {
         messages,
@@ -375,6 +377,7 @@ export default function MessagesPage() {
                     console.error('Error marking message as read:', err);
                 }
             }));
+            refreshUnread();
         };
 
         markMessagesAsRead();
@@ -463,7 +466,7 @@ export default function MessagesPage() {
                                     </div>
                                     <div className="flex-1">
                                         <p className="font-medium">{conversation.name}</p>
-                                        <p className="text-sm text-muted-foreground truncate">
+                                        <p className="text-sm text-muted-foreground truncate max-w-[120px]">
                                             {conversation.lastMessage}
                                         </p>
                                     </div>
@@ -542,7 +545,7 @@ export default function MessagesPage() {
                                                         </Avatar>
                                                     )}
                                                     <div
-                                                        className={`max-w-[70%] rounded-lg p-3 ${
+                                                        className={`max-w-[70%] rounded-lg p-3 break-all whitespace-pre-line overflow-x-auto ${
                                                             isSent ? 'bg-blue-500 text-white' : 'bg-muted'
                                                         }`}
                                                     >

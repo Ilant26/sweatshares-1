@@ -1,6 +1,9 @@
 "use client"
 
 import { type LucideIcon } from "lucide-react"
+import { useUnreadMessages } from '@/components/providers/session-provider';
+import { SidebarMenuBadge, useSidebar } from '@/components/ui/sidebar';
+import Link from "next/link"
 
 import {
   SidebarGroup,
@@ -9,7 +12,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import Link from "next/link"
 
 export function NavMain({
   items,
@@ -25,6 +27,8 @@ export function NavMain({
     }[]
   }[]
 }) {
+  const { unreadCount } = useUnreadMessages();
+  const { state } = useSidebar();
   return (
     <SidebarGroup>
       <SidebarGroupLabel>Platform</SidebarGroupLabel>
@@ -32,12 +36,20 @@ export function NavMain({
         {items.map((item) => (
           <SidebarMenuItem key={item.title}>
             <SidebarMenuButton asChild tooltip={item.title}>
-              <Link href={item.url}>
-                  {item.icon && <item.icon />}
-                  <span>{item.title}</span>
+              <Link href={item.url} className="relative flex items-center">
+                {item.icon && <item.icon />}
+                <span>{item.title}</span>
+                {item.title === 'Messages' && unreadCount > 0 && state === "expanded" && (
+                  <SidebarMenuBadge className="ml-2 bg-destructive text-destructive-foreground">
+                    {unreadCount < 10 ? unreadCount : '9+'}
+                  </SidebarMenuBadge>
+                )}
+                {item.title === 'Messages' && unreadCount > 0 && state === "collapsed" && (
+                  <span className="absolute right-0 top-0 block h-2 w-2 rounded-full bg-destructive" />
+                )}
               </Link>
-                </SidebarMenuButton>
-            </SidebarMenuItem>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
         ))}
       </SidebarMenu>
     </SidebarGroup>
