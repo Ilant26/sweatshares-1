@@ -11,6 +11,18 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { formatDistanceToNow } from 'date-fns';
 import { NewMessageDialog } from '@/components/new-message-dialog';
 import { supabase } from '@/lib/supabase';
+import { Message } from '@/lib/messages';
+
+interface Conversation {
+    id: string;
+    name: string;
+    avatar: string | undefined;
+    lastMessage: string;
+    time: string;
+    unread: number;
+    online: boolean;
+    isPlaceholder?: boolean;
+}
 
 export function MobileMessages() {
     const [view, setView] = useState<'conversations' | 'chat'>('conversations');
@@ -21,6 +33,8 @@ export function MobileMessages() {
     const [showNewMessageDialog, setShowNewMessageDialog] = useState(false);
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
     const [selectedUserProfile, setSelectedUserProfile] = useState<any>(null);
+    const [allMessages, setAllMessages] = useState<Message[]>([]);
+    const [isLoadingAllMessages, setIsLoadingAllMessages] = useState(true);
 
     const {
         messages,
@@ -32,44 +46,97 @@ export function MobileMessages() {
 
     useEffect(() => {
         const fetchCurrentUser = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user) setCurrentUserId(user.id);
+            try {
+                console.log('Fetching current user...');
+                const { data: { user }, error } = await supabase.auth.getUser();
+                if (error) {
+                    console.error('Error fetching current user:', error);
+                    return;
+                }
+                console.log('Current user:', user?.id);
+                if (user) setCurrentUserId(user.id);
+            } catch (error) {
+                console.error('Error in fetchCurrentUser:', error);
+            }
         };
         fetchCurrentUser();
     }, []);
 
+    // Add new effect to fetch all messages on mount
+    useEffect(() => {
+        const fetchAllMessages = async () => {
+            if (!currentUserId) return;
+            try {
+                setIsLoadingAllMessages(true);
+                console.log('Fetching all messages for user:', currentUserId);
+                const { data: messages, error } = await supabase
+                    .from('messages')
+                    .select(`
+                        *,
+                        sender:profiles!sender_id (
+                            username,
+                            full_name,
+                            avatar_url
+                        )
+                    `)
+                    .or(`sender_id.eq.${currentUserId},receiver_id.eq.${currentUserId}`)
+                    .order('created_at', { ascending: true });
+                
+                if (error) {
+                    console.error('Error fetching messages:', error);
+                    return;
+                }
+                
+                console.log('Fetched messages:', messages?.length || 0);
+                if (messages) {
+                    setAllMessages(messages);
+                }
+            } catch (error) {
+                console.error('Error fetching messages:', error);
+            } finally {
+                setIsLoadingAllMessages(false);
+            }
+        };
+        fetchAllMessages();
+    }, [currentUserId]);
+
     // Group messages by conversation (one per user pair)
     const conversations = React.useMemo(() => {
-        const conversationMap = messages.reduce((acc, message) => {
+        if (!currentUserId) return [];
+        
+        const conversationMap = allMessages.reduce((acc, message) => {
             // Determine the other user's info
-            const isCurrentUserSender = message.sender_id !== selectedUserId;
-            const otherUserId = isCurrentUserSender ? message.sender_id : message.receiver_id;
+            const isCurrentUserSender = message.sender_id === currentUserId;
+            const otherUserId = isCurrentUserSender ? message.receiver_id : message.sender_id;
             const otherUser = message.sender;
+            
             if (!acc[otherUserId]) {
                 acc[otherUserId] = {
                     id: otherUserId,
                     name: otherUser.full_name || otherUser.username,
-                    avatar: otherUser.avatar_url,
+                    avatar: otherUser.avatar_url || undefined,
                     lastMessage: message.content,
                     time: message.created_at,
-                    unread: !message.read && message.sender_id === otherUserId ? 1 : 0,
+                    unread: 0,
                     online: false // Will be updated by userStatus
                 };
-            } else {
-                // Update last message if this one is newer
-                if (new Date(message.created_at) > new Date(acc[otherUserId].time)) {
-                    acc[otherUserId].lastMessage = message.content;
-                    acc[otherUserId].time = message.created_at;
-                }
-                // Update unread count
-                if (!message.read && message.sender_id === otherUserId) {
-                    acc[otherUserId].unread++;
-                }
+            }
+            // Update last message if this one is newer
+            if (new Date(message.created_at) > new Date(acc[otherUserId].time)) {
+                acc[otherUserId].lastMessage = message.content;
+                acc[otherUserId].time = message.created_at;
+            }
+            // Count unread messages (only those not sent by the current user)
+            if (!message.read && message.sender_id === otherUserId) {
+                acc[otherUserId].unread = (acc[otherUserId].unread || 0) + 1;
             }
             return acc;
-        }, {} as Record<string, any>);
-        return Object.values(conversationMap);
-    }, [messages, selectedUserId]);
+        }, {} as Record<string, Conversation>);
+        
+        return Object.values(conversationMap).sort((a, b) => 
+            new Date(b.time).getTime() - new Date(a.time).getTime()
+        );
+    }, [allMessages, currentUserId]);
 
     // Fetch selected user profile when selectedUserId changes and not in conversations
     useEffect(() => {
@@ -140,10 +207,36 @@ export function MobileMessages() {
     }, [messages, selectedUserId, currentUserId]);
 
     const handleSendMessage = async () => {
-        if (!messageInput.trim() || !selectedUserId) return;
+        if (!messageInput.trim() || !selectedUserId || !currentUserId) return;
         
-        await sendMessage(messageInput);
-        setMessageInput('');
+        try {
+            const { data: newMessage, error } = await supabase
+                .from('messages')
+                .insert({
+                    sender_id: currentUserId,
+                    receiver_id: selectedUserId,
+                    content: messageInput,
+                    read: false
+                })
+                .select(`
+                    *,
+                    sender:profiles!sender_id (
+                        username,
+                        full_name,
+                        avatar_url
+                    )
+                `)
+                .single();
+
+            if (error) throw error;
+            
+            if (newMessage) {
+                setAllMessages(prev => [...prev, newMessage]);
+                setMessageInput('');
+            }
+        } catch (error) {
+            console.error('Error sending message:', error);
+        }
     };
 
     const handleSelectConversation = (userId: string) => {
@@ -359,11 +452,15 @@ export function MobileMessages() {
 
             {/* Conversations List */}
             <ScrollArea className="flex-1">
-                {isLoading ? (
+                {isLoadingAllMessages ? (
                     <div className="flex items-center justify-center h-32">
                         <span className="text-muted-foreground">Loading conversations...</span>
                     </div>
-                ) : allConversations.map((conversation) => (
+                ) : filteredConversations.length === 0 ? (
+                    <div className="flex items-center justify-center h-32">
+                        <span className="text-muted-foreground">No conversations yet</span>
+                    </div>
+                ) : filteredConversations.map((conversation) => (
                     <div
                         key={conversation.id}
                         className="flex items-center gap-4 p-4 hover:bg-muted cursor-pointer border-b"
@@ -384,7 +481,7 @@ export function MobileMessages() {
                         </div>
                         <div className="flex flex-col items-end">
                             <span className="text-xs text-muted-foreground">
-                                {formatDistanceToNow(new Date(conversation.time), { addSuffix: true })}
+                                {conversation.time ? formatDistanceToNow(new Date(conversation.time), { addSuffix: true }) : '-'}
                             </span>
                             {conversation.unread > 0 && (
                                 <span className="mt-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">

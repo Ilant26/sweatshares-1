@@ -262,10 +262,36 @@ export default function MessagesPage() {
     });
 
     const handleSendMessage = async () => {
-        if (!messageInput.trim() || !selectedUserId) return;
+        if (!messageInput.trim() || !selectedUserId || !currentUserId) return;
         
-        await sendMessage(messageInput);
-        setMessageInput('');
+        try {
+            const { data: newMessage, error } = await supabase
+                .from('messages')
+                .insert({
+                    sender_id: currentUserId,
+                    receiver_id: selectedUserId,
+                    content: messageInput,
+                    read: false
+                })
+                .select(`
+                    *,
+                    sender:profiles!sender_id (
+                        username,
+                        full_name,
+                        avatar_url
+                    )
+                `)
+                .single();
+
+            if (error) throw error;
+            
+            if (newMessage) {
+                setAllMessages(prev => [...prev, newMessage]);
+                setMessageInput('');
+            }
+        } catch (error) {
+            console.error('Error sending message:', error);
+        }
     };
 
     const handleSelectUser = (userId: string) => {
@@ -281,10 +307,10 @@ export default function MessagesPage() {
     }
 
     return (
-        <div className="flex flex-col flex-1 h-full bg-background p-8 pt-6">
-            <div className="flex h-full gap-4">
+        <div className="flex flex-col h-screen bg-background">
+            <div className="flex h-full gap-4 p-4">
                 <Card className="w-1/3 flex flex-col">
-                    <CardHeader>
+                    <CardHeader className="flex-none">
                         <div className="flex justify-between items-center">
                             <div className="relative w-full flex-1 mr-4">
                                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -330,7 +356,7 @@ export default function MessagesPage() {
                             </Button>
                         </div>
                     </CardHeader>
-                    <CardContent className="flex-1 p-0">
+                    <CardContent className="flex-1 p-0 overflow-hidden">
                         <ScrollArea className="h-full pr-4">
                             {isLoadingAllMessages ? (
                                 <div className="flex items-center justify-center h-32">
@@ -388,32 +414,34 @@ export default function MessagesPage() {
                 <Card className="flex-1 flex flex-col">
                     {selectedUserId && activeConversation ? (
                         <>
-                            <CardHeader className="flex flex-row items-center justify-between space-x-4 pb-2">
-                                <div className="flex items-center space-x-4">
-                                    <Avatar>
-                                        <AvatarImage src={activeConversation.avatar || undefined} alt={activeConversation.name} />
-                                        <AvatarFallback>{(activeConversation.name || '?')[0]}</AvatarFallback>
-                                    </Avatar>
-                                    <div>
-                                        <CardTitle>{activeConversation.name}</CardTitle>
-                                        <p className="text-sm text-muted-foreground">
-                                            {userStatus?.is_online ? 'Online' : userStatus?.last_seen ? 
-                                                `Last seen ${formatDistanceToNow(new Date(userStatus.last_seen), { addSuffix: true })}` : 
-                                                'Offline'}
-                                        </p>
+                            <CardHeader className="flex-none">
+                                <div className="flex items-center justify-between space-x-4">
+                                    <div className="flex items-center space-x-4">
+                                        <Avatar>
+                                            <AvatarImage src={activeConversation.avatar || undefined} alt={activeConversation.name} />
+                                            <AvatarFallback>{(activeConversation.name || '?')[0]}</AvatarFallback>
+                                        </Avatar>
+                                        <div>
+                                            <CardTitle>{activeConversation.name}</CardTitle>
+                                            <p className="text-sm text-muted-foreground">
+                                                {userStatus?.is_online ? 'Online' : userStatus?.last_seen ? 
+                                                    `Last seen ${formatDistanceToNow(new Date(userStatus.last_seen), { addSuffix: true })}` : 
+                                                    'Offline'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="flex space-x-2">
+                                        <Button variant="ghost" size="icon" title="Create group conversation">
+                                            <Users className="h-4 w-4" />
+                                        </Button>
+                                        <Button variant="ghost" size="icon" title="View profile">
+                                            <User className="h-4 w-4" />
+                                        </Button>
                                     </div>
                                 </div>
-                                <div className="flex space-x-2">
-                                    <Button variant="ghost" size="icon" title="Create group conversation">
-                                        <Users className="h-4 w-4" />
-                                    </Button>
-                                    <Button variant="ghost" size="icon" title="View profile">
-                                        <User className="h-4 w-4" />
-                                    </Button>
-                                </div>
                             </CardHeader>
-                            <CardContent className="flex-1 overflow-y-auto p-4 flex flex-col-reverse">
-                                <ScrollArea className="h-full w-full">
+                            <CardContent className="flex-1 p-4 overflow-hidden">
+                                <ScrollArea className="h-full">
                                     <div className="flex flex-col gap-4 pr-4">
                                         {filteredMessages.length === 0 ? (
                                             <div className="text-center text-muted-foreground py-8">
@@ -454,49 +482,51 @@ export default function MessagesPage() {
                                     </div>
                                 </ScrollArea>
                             </CardContent>
-                            <div className="p-4 border-t flex items-center gap-2">
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" size="icon" title="Attach file or action">
-                                            <Paperclip className="h-4 w-4 text-gray-500" />
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent side="top" align="start">
-                                        <DropdownMenuLabel>Attachment Options</DropdownMenuLabel>
-                                        <DropdownMenuSeparator />
-                                        <DropdownMenuItem>
-                                            <input id="file-input" type="file" className="hidden" multiple />
-                                            <label htmlFor="file-input" className="flex items-center cursor-pointer w-full">
-                                                <FileText className="mr-2 h-4 w-4" /> Upload from device
-                                            </label>
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem>Select from My Vault</DropdownMenuItem>
-                                        <DropdownMenuSeparator />
-                                        <DropdownMenuItem>
-                                            <CreditCard className="mr-2 h-4 w-4" /> Generate payment link
-                                        </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                                <Input 
-                                    placeholder="Type your message..." 
-                                    className="flex-1"
-                                    value={messageInput}
-                                    onChange={(e) => setMessageInput(e.target.value)}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter' && !e.shiftKey) {
-                                            e.preventDefault();
-                                            handleSendMessage();
-                                        }
-                                    }}
-                                />
-                                <Button 
-                                    size="icon" 
-                                    className="bg-blue-500 hover:bg-blue-600"
-                                    onClick={handleSendMessage}
-                                    disabled={!messageInput.trim() || !selectedUserId}
-                                >
-                                    <Send className="h-5 w-5" />
-                                </Button>
+                            <div className="p-4 border-t flex-none">
+                                <div className="flex items-center gap-2">
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="icon" title="Attach file or action">
+                                                <Paperclip className="h-4 w-4 text-gray-500" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent side="top" align="start">
+                                            <DropdownMenuLabel>Attachment Options</DropdownMenuLabel>
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuItem>
+                                                <input id="file-input" type="file" className="hidden" multiple />
+                                                <label htmlFor="file-input" className="flex items-center cursor-pointer w-full">
+                                                    <FileText className="mr-2 h-4 w-4" /> Upload from device
+                                                </label>
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem>Select from My Vault</DropdownMenuItem>
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuItem>
+                                                <CreditCard className="mr-2 h-4 w-4" /> Generate payment link
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                    <Input 
+                                        placeholder="Type your message..." 
+                                        className="flex-1"
+                                        value={messageInput}
+                                        onChange={(e) => setMessageInput(e.target.value)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' && !e.shiftKey) {
+                                                e.preventDefault();
+                                                handleSendMessage();
+                                            }
+                                        }}
+                                    />
+                                    <Button 
+                                        size="icon" 
+                                        className="bg-blue-500 hover:bg-blue-600"
+                                        onClick={handleSendMessage}
+                                        disabled={!messageInput.trim() || !selectedUserId}
+                                    >
+                                        <Send className="h-5 w-5" />
+                                    </Button>
+                                </div>
                             </div>
                         </>
                     ) : (
