@@ -11,7 +11,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { formatDistanceToNow } from 'date-fns';
 import { NewMessageDialog } from '@/components/new-message-dialog';
 import { supabase } from '@/lib/supabase';
-import { Message, subscribeToMessages, getProfileById } from '@/lib/messages';
+import { Message, subscribeToMessages, getProfileById, markMessageAsRead } from '@/lib/messages';
 import { useUser } from '@/hooks/use-user';
 
 interface Conversation {
@@ -340,11 +340,42 @@ export function MobileMessages() {
         });
     }
 
+    // Mark messages as read when a conversation is selected
+    useEffect(() => {
+        const markMessagesAsRead = async () => {
+            if (!currentUserId || !selectedUserId) return;
+
+            // Find unread messages in this conversation sent to the current user
+            const unreadMessages = allMessages.filter(
+                msg =>
+                    !msg.read &&
+                    msg.sender_id === selectedUserId &&
+                    msg.receiver_id === currentUserId
+            );
+
+            // Mark each as read in the DB and update local state
+            await Promise.all(unreadMessages.map(async (msg) => {
+                try {
+                    await markMessageAsRead(msg.id);
+                    setAllMessages(prev =>
+                        prev.map(m =>
+                            m.id === msg.id ? { ...m, read: true } : m
+                        )
+                    );
+                } catch (err) {
+                    console.error('Error marking message as read:', err);
+                }
+            }));
+        };
+
+        markMessagesAsRead();
+    }, [selectedUserId, currentUserId, allMessages]);
+
     if (view === 'chat' && selectedUserId && activeConversation) {
         return (
             <div className="flex flex-col h-full bg-background">
                 {/* Chat Header */}
-                <div className="flex items-center gap-4 p-4 border-b">
+                <div className="sticky top-0 z-10 bg-background flex items-center gap-4 p-4 border-b">
                     <Button 
                         variant="ghost" 
                         size="icon" 

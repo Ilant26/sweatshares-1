@@ -14,7 +14,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { formatDistanceToNow } from 'date-fns';
 import { NewMessageDialog } from '@/components/new-message-dialog'
 import { supabase } from '@/lib/supabase';
-import { Message, subscribeToMessages, getProfileById } from '@/lib/messages';
+import { Message, subscribeToMessages, getProfileById, markMessageAsRead } from '@/lib/messages';
 import { useUser } from '@/hooks/use-user';
 
 interface Conversation {
@@ -348,6 +348,37 @@ export default function MessagesPage() {
     React.useEffect(() => {
         scrollToBottom();
     }, [filteredMessages, scrollToBottom]);
+
+    // Mark messages as read when a conversation is selected
+    useEffect(() => {
+        const markMessagesAsRead = async () => {
+            if (!currentUserId || !selectedConversation) return;
+
+            // Find unread messages in this conversation sent to the current user
+            const unreadMessages = allMessages.filter(
+                msg =>
+                    !msg.read &&
+                    msg.sender_id === selectedConversation &&
+                    msg.receiver_id === currentUserId
+            );
+
+            // Mark each as read in the DB and update local state
+            await Promise.all(unreadMessages.map(async (msg) => {
+                try {
+                    await markMessageAsRead(msg.id);
+                    setAllMessages(prev =>
+                        prev.map(m =>
+                            m.id === msg.id ? { ...m, read: true } : m
+                        )
+                    );
+                } catch (err) {
+                    console.error('Error marking message as read:', err);
+                }
+            }));
+        };
+
+        markMessagesAsRead();
+    }, [selectedConversation, currentUserId, allMessages]);
 
     if (isMobile) {
         return <MobileMessages />;

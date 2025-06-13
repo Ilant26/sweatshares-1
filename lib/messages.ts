@@ -71,15 +71,12 @@ export async function getMessages(userId: string) {
 }
 
 export async function markMessageAsRead(messageId: string) {
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from('messages')
     .update({ read: true })
     .eq('id', messageId)
-    .select()
-    .single()
 
   if (error) throw error
-  return data
 }
 
 export async function getUserStatus(userId: string): Promise<UserStatus | null> {
