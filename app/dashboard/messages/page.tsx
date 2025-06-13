@@ -135,13 +135,17 @@ export default function MessagesPage() {
             // Determine the other user's info
             const isCurrentUserSender = message.sender_id === currentUserId;
             const otherUserId = isCurrentUserSender ? message.receiver_id : message.sender_id;
-            const otherUser = message.sender;
+            
+            // Get the other user's profile from the message
+            const otherUser = isCurrentUserSender 
+                ? allConnections.find(conn => conn.id === otherUserId)
+                : message.sender;
             
             if (!acc[otherUserId]) {
                 acc[otherUserId] = {
                     id: otherUserId,
-                    name: otherUser.full_name || otherUser.username,
-                    avatar: otherUser.avatar_url || undefined,
+                    name: otherUser?.full_name || otherUser?.username || 'Unknown User',
+                    avatar: otherUser?.avatar_url || undefined,
                     lastMessage: message.content,
                     time: message.created_at,
                     unread: 0,
@@ -163,7 +167,7 @@ export default function MessagesPage() {
         return Object.values(conversationMap).sort((a, b) => 
             new Date(b.time).getTime() - new Date(a.time).getTime()
         );
-    }, [allMessages, currentUserId]);
+    }, [allMessages, currentUserId, allConnections]);
 
     // Filtering logic for tabs
     const filteredConversations = React.useMemo(() => {

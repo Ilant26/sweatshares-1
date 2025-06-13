@@ -35,6 +35,7 @@ export function MobileMessages() {
     const [selectedUserProfile, setSelectedUserProfile] = useState<any>(null);
     const [allMessages, setAllMessages] = useState<Message[]>([]);
     const [isLoadingAllMessages, setIsLoadingAllMessages] = useState(true);
+    const [allConnections, setAllConnections] = useState<any[]>([]);
 
     const {
         messages,
@@ -100,6 +101,29 @@ export function MobileMessages() {
         fetchAllMessages();
     }, [currentUserId]);
 
+    // Fetch all accepted connections and their profiles on mount
+    useEffect(() => {
+        const fetchConnections = async () => {
+            if (!currentUserId) return;
+            const { data: connectionData } = await supabase
+                .from('connections')
+                .select('sender_id, receiver_id')
+                .eq('status', 'accepted')
+                .or(`sender_id.eq.${currentUserId},receiver_id.eq.${currentUserId}`);
+            if (!connectionData) return;
+            const connectedUserIds = connectionData.map(conn =>
+                conn.sender_id === currentUserId ? conn.receiver_id : conn.sender_id
+            );
+            if (connectedUserIds.length === 0) return;
+            const { data: profiles } = await supabase
+                .from('profiles')
+                .select('id, username, full_name, avatar_url')
+                .in('id', connectedUserIds);
+            setAllConnections(profiles || []);
+        };
+        fetchConnections();
+    }, [currentUserId]);
+
     // Group messages by conversation (one per user pair)
     const conversations = React.useMemo(() => {
         if (!currentUserId) return [];
@@ -108,13 +132,17 @@ export function MobileMessages() {
             // Determine the other user's info
             const isCurrentUserSender = message.sender_id === currentUserId;
             const otherUserId = isCurrentUserSender ? message.receiver_id : message.sender_id;
-            const otherUser = message.sender;
+            
+            // Get the other user's profile from the message
+            const otherUser = isCurrentUserSender 
+                ? allConnections.find(conn => conn.id === otherUserId)
+                : message.sender;
             
             if (!acc[otherUserId]) {
                 acc[otherUserId] = {
                     id: otherUserId,
-                    name: otherUser.full_name || otherUser.username,
-                    avatar: otherUser.avatar_url || undefined,
+                    name: otherUser?.full_name || otherUser?.username || 'Unknown User',
+                    avatar: otherUser?.avatar_url || undefined,
                     lastMessage: message.content,
                     time: message.created_at,
                     unread: 0,
@@ -136,7 +164,7 @@ export function MobileMessages() {
         return Object.values(conversationMap).sort((a, b) => 
             new Date(b.time).getTime() - new Date(a.time).getTime()
         );
-    }, [allMessages, currentUserId]);
+    }, [allMessages, currentUserId, allConnections]);
 
     // Fetch selected user profile when selectedUserId changes and not in conversations
     useEffect(() => {
