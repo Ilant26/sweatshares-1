@@ -1,7 +1,8 @@
 "use client"
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useMessages } from '@/hooks/use-messages';
 import { MobileMessages } from './mobile-messages';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -10,44 +11,270 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { MessageCircle, Send, Paperclip, Search, Plus, User, FileText, CreditCard, Users } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { formatDistanceToNow } from 'date-fns';
+import { NewMessageDialog } from '@/components/new-message-dialog'
+import { supabase } from '@/lib/supabase';
+import { Message } from '@/lib/messages';
+
+interface Conversation {
+    id: string;
+    name: string;
+    avatar: string | undefined;
+    lastMessage: string;
+    time: string;
+    unread: number;
+    online: boolean;
+    isPlaceholder?: boolean;
+}
 
 export default function MessagesPage() {
     const isMobile = useIsMobile();
-    const [currentFilter, setCurrentFilter] = React.useState('all');
+    const [currentFilter, setCurrentFilter] = useState('all');
+    const [selectedUserId, setSelectedUserId] = useState<string | undefined>();
+    const [messageInput, setMessageInput] = useState('');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [newMessageDialogOpen, setNewMessageDialogOpen] = useState(false);
+    const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+    const [selectedUserProfile, setSelectedUserProfile] = useState<any>(null);
+    const [allConnections, setAllConnections] = useState<any[]>([]);
+    const [allMessages, setAllMessages] = useState<Message[]>([]);
+    const [isLoadingAllMessages, setIsLoadingAllMessages] = useState(true);
 
-    // Sample data for conversations
-    const conversations = [
-        { id: '1', name: 'Sophie Dubois', lastMessage: `Excellent! Let's discuss this next week.`, time: '10:30 AM', avatar: 'https://randomuser.me/api/portraits/women/1.jpg', unread: 0, online: true },
-        { id: '2', name: 'Philippe Laurent', lastMessage: 'See you at 2 PM', time: 'Yesterday', avatar: 'https://randomuser.me/api/portraits/men/2.jpg', unread: 1, online: false },
-        { id: '3', name: 'Lucas Martin', lastMessage: 'Thanks for the help!', time: 'Monday', avatar: 'https://randomuser.me/api/portraits/men/3.jpg', unread: 0, online: true },
-        { id: '4', name: 'Émilie Rousseau', lastMessage: `Okay, I'll send the details soon.`, time: '05/01/2024', avatar: 'https://randomuser.me/api/portraits/women/4.jpg', unread: 2, online: false },
-        { id: '5', name: 'Camille Lefevre', lastMessage: `Great! Let's start working on it.`, time: '04/28/2024', avatar: 'https://randomuser.me/api/portraits/women/5.jpg', unread: 0, online: true },
-    ];
+    const {
+        messages,
+        sendMessage,
+        isLoading,
+        error,
+        userStatus
+    } = useMessages({ userId: selectedUserId });
 
-    // Sample data for messages in a conversation
-    const messages = [
-        { id: '1', sender: 'Sophie Dubois', content: 'Hello Thomas, I hope you are doing well.', time: '01 May 2023' },
-        { id: '2', sender: 'You', content: 'I have received your proposal for the marketing campaign and I find it very interesting.', time: '01 May 2023' },
-        { id: '3', sender: 'Sophie Dubois', content: 'Hello Sophie, thanks for your return! I am sure that the proposed solution will please you.', time: '01 May 2023' },
-        { id: '4', sender: 'You', content: 'I have a few questions regarding the budget allocated to the SEO part. Could you give me more details on the breakdown you envision?', time: '01 May 2023' },
-        { id: '5', sender: 'Sophie Dubois', content: `And also, concerning the calendar of deployment, is this what the launch date is firm or can we help you adjust it?`, time: '01 May 2023' },
-        { id: '6', sender: 'You', content: 'For the SEO budget, we envision about 30% of the total budget, i.e., €15,000.', time: '10:18 AM' },
-    ];
+    useEffect(() => {
+        const fetchCurrentUser = async () => {
+            try {
+                console.log('Fetching current user...');
+                const { data: { user }, error } = await supabase.auth.getUser();
+                if (error) {
+                    console.error('Error fetching current user:', error);
+                    return;
+                }
+                console.log('Current user:', user?.id);
+                if (user) setCurrentUserId(user.id);
+            } catch (error) {
+                console.error('Error in fetchCurrentUser:', error);
+            }
+        };
+        fetchCurrentUser();
+    }, []);
 
-    const activeConversation = conversations[0]; // For demonstration, display the first conversation
-    const totalUnreadMessages = conversations.reduce((sum, conv) => sum + conv.unread, 0);
+    // Add new effect to fetch all messages on mount
+    useEffect(() => {
+        const fetchAllMessages = async () => {
+            if (!currentUserId) return;
+            try {
+                setIsLoadingAllMessages(true);
+                console.log('Fetching all messages for user:', currentUserId);
+                const { data: messages, error } = await supabase
+                    .from('messages')
+                    .select(`
+                        *,
+                        sender:profiles!sender_id (
+                            username,
+                            full_name,
+                            avatar_url
+                        )
+                    `)
+                    .or(`sender_id.eq.${currentUserId},receiver_id.eq.${currentUserId}`)
+                    .order('created_at', { ascending: true });
+                
+                if (error) {
+                    console.error('Error fetching messages:', error);
+                    return;
+                }
+                
+                console.log('Fetched messages:', messages?.length || 0);
+                if (messages) {
+                    setAllMessages(messages);
+                }
+            } catch (error) {
+                console.error('Error fetching messages:', error);
+            } finally {
+                setIsLoadingAllMessages(false);
+            }
+        };
+        fetchAllMessages();
+    }, [currentUserId]);
 
-    const filteredConversations = conversations.filter(conversation => {
+    // Fetch all accepted connections and their profiles on mount
+    useEffect(() => {
+        const fetchConnections = async () => {
+            if (!currentUserId) return;
+            const { data: connectionData } = await supabase
+                .from('connections')
+                .select('sender_id, receiver_id')
+                .eq('status', 'accepted')
+                .or(`sender_id.eq.${currentUserId},receiver_id.eq.${currentUserId}`);
+            if (!connectionData) return;
+            const connectedUserIds = connectionData.map(conn =>
+                conn.sender_id === currentUserId ? conn.receiver_id : conn.sender_id
+            );
+            if (connectedUserIds.length === 0) return;
+            const { data: profiles } = await supabase
+                .from('profiles')
+                .select('id, username, full_name, avatar_url')
+                .in('id', connectedUserIds);
+            setAllConnections(profiles || []);
+        };
+        fetchConnections();
+    }, [currentUserId]);
+
+    // Modify conversations to use allMessages instead of messages
+    const conversations = React.useMemo(() => {
+        if (!currentUserId) return [];
+        
+        const conversationMap = allMessages.reduce((acc, message) => {
+            // Determine the other user's info
+            const isCurrentUserSender = message.sender_id === currentUserId;
+            const otherUserId = isCurrentUserSender ? message.receiver_id : message.sender_id;
+            const otherUser = message.sender;
+            
+            if (!acc[otherUserId]) {
+                acc[otherUserId] = {
+                    id: otherUserId,
+                    name: otherUser.full_name || otherUser.username,
+                    avatar: otherUser.avatar_url || undefined,
+                    lastMessage: message.content,
+                    time: message.created_at,
+                    unread: 0,
+                    online: false // Will be updated by userStatus
+                };
+            }
+            // Update last message if this one is newer
+            if (new Date(message.created_at) > new Date(acc[otherUserId].time)) {
+                acc[otherUserId].lastMessage = message.content;
+                acc[otherUserId].time = message.created_at;
+            }
+            // Count unread messages (only those not sent by the current user)
+            if (!message.read && message.sender_id === otherUserId) {
+                acc[otherUserId].unread = (acc[otherUserId].unread || 0) + 1;
+            }
+            return acc;
+        }, {} as Record<string, Conversation>);
+        
+        return Object.values(conversationMap).sort((a, b) => 
+            new Date(b.time).getTime() - new Date(a.time).getTime()
+        );
+    }, [allMessages, currentUserId]);
+
+    // Filtering logic for tabs
+    const filteredConversations = React.useMemo(() => {
+        let filtered = conversations;
         if (currentFilter === 'unread') {
-            return conversation.unread > 0;
+            filtered = conversations.filter(conv => conv.unread > 0);
         } else if (currentFilter === 'read') {
-            return conversation.unread === 0; // Assuming read messages have 0 unread count
-        } else if (currentFilter === 'important') {
-            // TODO: Implement logic for important messages (e.g., a flag in conversation data)
-            return true; // For now, show all
+            filtered = conversations.filter(conv => conv.unread === 0);
         }
-        return true; // 'all' filter
+        if (searchQuery) {
+            filtered = filtered.filter(conversation =>
+                conversation.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                conversation.lastMessage.toLowerCase().includes(searchQuery.toLowerCase())
+            );
+        }
+        return filtered;
+    }, [conversations, currentFilter, searchQuery]);
+
+    const totalUnreadMessages = conversations.reduce((sum, conv) => sum + (conv.unread || 0), 0);
+    const activeConversation = React.useMemo(() => {
+        if (!selectedUserId) return undefined;
+        // Try to find an existing conversation
+        const found = conversations.find(conv => conv.id === selectedUserId);
+        // If not found, create a placeholder for new conversation
+        if (!found) {
+            return {
+                id: selectedUserId,
+                name: 'New Conversation',
+                lastMessage: '',
+                time: new Date().toISOString(),
+                avatar: '',
+                unread: 0,
+                online: false
+            };
+        }
+        return found;
+    }, [conversations, selectedUserId]);
+
+    // Filter messages for the active conversation
+    const filteredMessages = React.useMemo(() => {
+        if (!selectedUserId || !currentUserId) return [];
+        return allMessages.filter(
+            (msg) =>
+                (msg.sender_id === currentUserId && msg.receiver_id === selectedUserId) ||
+                (msg.sender_id === selectedUserId && msg.receiver_id === currentUserId)
+        );
+    }, [allMessages, selectedUserId, currentUserId]);
+
+    // Fetch selected user profile when selectedUserId changes and not in conversations
+    useEffect(() => {
+        const fetchProfile = async () => {
+            if (!selectedUserId) return;
+            const exists = conversations.some(conv => conv.id === selectedUserId);
+            if (!exists) {
+                const { data } = await supabase
+                    .from('profiles')
+                    .select('id, username, full_name, avatar_url')
+                    .eq('id', selectedUserId)
+                    .single();
+                setSelectedUserProfile(data);
+            }
+        };
+        fetchProfile();
+    }, [selectedUserId, conversations]);
+
+    // After building conversations
+    let allConversations = [...conversations];
+    const userIsInList = allConversations.some(conv => conv.id === selectedUserId);
+    if (selectedUserId && !userIsInList && selectedUserProfile) {
+        allConversations.unshift({
+            id: selectedUserId,
+            name: selectedUserProfile.full_name || selectedUserProfile.username,
+            avatar: selectedUserProfile.avatar_url,
+            lastMessage: '',
+            time: '',
+            unread: 0,
+            online: false,
+            isPlaceholder: true,
+        });
+    }
+
+    // Merge allConnections into allConversations (if not already present)
+    allConnections.forEach(profile => {
+        if (!allConversations.some(conv => conv.id === profile.id)) {
+            allConversations.push({
+                id: profile.id,
+                name: profile.full_name || profile.username,
+                avatar: profile.avatar_url,
+                lastMessage: '',
+                time: '',
+                unread: 0,
+                online: false,
+                isPlaceholder: true,
+            });
+        }
     });
+
+    const handleSendMessage = async () => {
+        if (!messageInput.trim() || !selectedUserId) return;
+        
+        await sendMessage(messageInput);
+        setMessageInput('');
+    };
+
+    const handleSelectUser = (userId: string) => {
+        setSelectedUserId(userId);
+        setNewMessageDialogOpen(false);
+    };
+
+    // Modify the loading state to consider both allMessages and the selected conversation
+    const isLoadingConversations = isLoading || allMessages.length === 0;
 
     if (isMobile) {
         return <MobileMessages />;
@@ -58,27 +285,68 @@ export default function MessagesPage() {
             <div className="flex h-full gap-4">
                 <Card className="w-1/3 flex flex-col">
                     <CardHeader>
-                        <div className="relative w-full">
-                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                            <Input placeholder="Search your messages..." className="pl-8 w-full" />
+                        <div className="flex justify-between items-center">
+                            <div className="relative w-full flex-1 mr-4">
+                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                <Input 
+                                    placeholder="Search your messages..." 
+                                    className="pl-8 w-full"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                />
+                            </div>
+                            <Button 
+                                variant="outline"
+                                onClick={() => setNewMessageDialogOpen(true)}
+                            >
+                                New Message
+                            </Button>
                         </div>
                         <div className="flex justify-between items-center mt-4">
                             <h3 className="font-semibold">All Messages</h3>
                             <span className="text-sm text-primary">{totalUnreadMessages} unread messages</span>
                         </div>
                         <div className="flex space-x-2 mt-2">
-                            <Button variant={currentFilter === 'all' ? 'secondary' : 'ghost'} size="sm" onClick={() => setCurrentFilter('all')}>All Messages</Button>
-                            <Button variant={currentFilter === 'unread' ? 'secondary' : 'ghost'} size="sm" onClick={() => setCurrentFilter('unread')}>Unread <span className="ml-1 text-xs font-semibold">{totalUnreadMessages}</span></Button>
-                            <Button variant={currentFilter === 'read' ? 'secondary' : 'ghost'} size="sm" onClick={() => setCurrentFilter('read')}>Read</Button>
-                            <Button variant={currentFilter === 'important' ? 'secondary' : 'ghost'} size="sm" onClick={() => setCurrentFilter('important')}>Important</Button>
+                            <Button 
+                                variant={currentFilter === 'all' ? 'secondary' : 'ghost'} 
+                                size="sm" 
+                                onClick={() => setCurrentFilter('all')}
+                            >
+                                All Messages
+                            </Button>
+                            <Button 
+                                variant={currentFilter === 'unread' ? 'secondary' : 'ghost'} 
+                                size="sm" 
+                                onClick={() => setCurrentFilter('unread')}
+                            >
+                                Unread <span className="ml-1 text-xs font-semibold">{totalUnreadMessages}</span>
+                            </Button>
+                            <Button 
+                                variant={currentFilter === 'read' ? 'secondary' : 'ghost'} 
+                                size="sm" 
+                                onClick={() => setCurrentFilter('read')}
+                            >
+                                Read
+                            </Button>
                         </div>
                     </CardHeader>
                     <CardContent className="flex-1 p-0">
                         <ScrollArea className="h-full pr-4">
-                            {filteredConversations.map((conversation) => (
+                            {isLoadingAllMessages ? (
+                                <div className="flex items-center justify-center h-32">
+                                    <span className="text-muted-foreground">Loading conversations...</span>
+                                </div>
+                            ) : filteredConversations.length === 0 ? (
+                                <div className="flex items-center justify-center h-32">
+                                    <span className="text-muted-foreground">No conversations yet</span>
+                                </div>
+                            ) : filteredConversations.map((conversation) => (
                                 <div
                                     key={conversation.id}
-                                    className={`flex items-center gap-4 p-4 hover:bg-muted cursor-pointer ${conversation.id === activeConversation.id ? 'bg-muted' : ''}`}
+                                    className={`flex items-center gap-4 p-4 hover:bg-muted cursor-pointer ${
+                                        conversation.id === selectedUserId ? 'bg-muted' : ''
+                                    }`}
+                                    onClick={() => setSelectedUserId(conversation.id)}
                                 >
                                     <div className="relative">
                                         <Avatar>
@@ -91,10 +359,20 @@ export default function MessagesPage() {
                                     </div>
                                     <div className="flex-1">
                                         <p className="font-medium">{conversation.name}</p>
-                                        <p className="text-sm text-muted-foreground truncate">{conversation.lastMessage}</p>
+                                        <p className="text-sm text-muted-foreground truncate">
+                                            {conversation.lastMessage}
+                                        </p>
                                     </div>
                                     <div className="flex flex-col items-end">
-                                        <span className="text-xs text-muted-foreground">{conversation.time}</span>
+                                        <span className="text-xs text-muted-foreground">
+                                            {conversation.time ? (() => {
+                                                try {
+                                                    return formatDistanceToNow(new Date(conversation.time), { addSuffix: true });
+                                                } catch {
+                                                    return '-';
+                                                }
+                                            })() : '-'}
+                                        </span>
                                         {conversation.unread > 0 && (
                                             <span className="mt-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
                                                 {conversation.unread}
@@ -108,81 +386,129 @@ export default function MessagesPage() {
                 </Card>
 
                 <Card className="flex-1 flex flex-col">
-                    <CardHeader className="flex flex-row items-center justify-between space-x-4 pb-2">
-                        <div className="flex items-center space-x-4">
-                            <Avatar>
-                                <AvatarImage src={activeConversation.avatar} />
-                                <AvatarFallback>{activeConversation.name.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                            <div>
-                                <CardTitle>{activeConversation.name}</CardTitle>
-                                <p className="text-sm text-muted-foreground">
-                                    {activeConversation.online ? 'Online' : 'Offline'}
-                                </p>
-                            </div>
-                        </div>
-                        <div className="flex space-x-2">
-                            <Button variant="ghost" size="icon" title="Create group conversation">
-                                <Users className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" title="View profile">
-                                <User className="h-4 w-4" />
-                            </Button>
-                        </div>
-                    </CardHeader>
-                    <CardContent className="flex-1 overflow-y-auto p-4 flex flex-col-reverse">
-                        <ScrollArea className="h-full w-full">
-                            <div className="flex flex-col gap-4 pr-4">
-                                {messages.slice().reverse().map((message) => (
-                                    <div
-                                        key={message.id}
-                                        className={`flex ${message.sender === 'You' ? 'justify-end' : 'justify-start'}`}
-                                    >
-                                        <div
-                                            className={`max-w-[70%] rounded-lg p-3 ${message.sender === 'You'
-                                                ? 'bg-blue-500 text-white'
-                                                : 'bg-muted'
-                                            }`}
-                                        >
-                                            <p className="text-sm">{message.content}</p>
-                                            <p className="text-xs text-muted-foreground text-right mt-1">{message.time}</p>
-                                        </div>
+                    {selectedUserId && activeConversation ? (
+                        <>
+                            <CardHeader className="flex flex-row items-center justify-between space-x-4 pb-2">
+                                <div className="flex items-center space-x-4">
+                                    <Avatar>
+                                        <AvatarImage src={activeConversation.avatar || undefined} alt={activeConversation.name} />
+                                        <AvatarFallback>{(activeConversation.name || '?')[0]}</AvatarFallback>
+                                    </Avatar>
+                                    <div>
+                                        <CardTitle>{activeConversation.name}</CardTitle>
+                                        <p className="text-sm text-muted-foreground">
+                                            {userStatus?.is_online ? 'Online' : userStatus?.last_seen ? 
+                                                `Last seen ${formatDistanceToNow(new Date(userStatus.last_seen), { addSuffix: true })}` : 
+                                                'Offline'}
+                                        </p>
                                     </div>
-                                ))}
-                            </div>
-                        </ScrollArea>
-                    </CardContent>
-                    <div className="p-4 border-t flex items-center gap-2">
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" title="Attach file or action">
-                                    <Paperclip className="h-4 w-4 text-gray-500" />
+                                </div>
+                                <div className="flex space-x-2">
+                                    <Button variant="ghost" size="icon" title="Create group conversation">
+                                        <Users className="h-4 w-4" />
+                                    </Button>
+                                    <Button variant="ghost" size="icon" title="View profile">
+                                        <User className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            </CardHeader>
+                            <CardContent className="flex-1 overflow-y-auto p-4 flex flex-col-reverse">
+                                <ScrollArea className="h-full w-full">
+                                    <div className="flex flex-col gap-4 pr-4">
+                                        {filteredMessages.length === 0 ? (
+                                            <div className="text-center text-muted-foreground py-8">
+                                                No messages yet. Say hello!
+                                            </div>
+                                        ) : filteredMessages.map((message) => {
+                                            const isSent = message.sender_id === currentUserId;
+                                            return (
+                                                <div
+                                                    key={message.id}
+                                                    className={`flex items-end gap-2 ${isSent ? 'justify-end' : 'justify-start'}`}
+                                                >
+                                                    {!isSent && (
+                                                        <Avatar>
+                                                            <AvatarImage src={message.sender.avatar_url || undefined} alt={message.sender.full_name || message.sender.username} />
+                                                            <AvatarFallback>{(message.sender.full_name || message.sender.username || '?')[0]}</AvatarFallback>
+                                                        </Avatar>
+                                                    )}
+                                                    <div
+                                                        className={`max-w-[70%] rounded-lg p-3 ${
+                                                            isSent ? 'bg-blue-500 text-white' : 'bg-muted'
+                                                        }`}
+                                                    >
+                                                        <p className="text-sm">{message.content}</p>
+                                                        <p className="text-xs text-muted-foreground text-right mt-1">
+                                                            {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
+                                                        </p>
+                                                    </div>
+                                                    {isSent && (
+                                                        <Avatar>
+                                                            <AvatarImage src={message.sender.avatar_url || undefined} alt={message.sender.full_name || message.sender.username} />
+                                                            <AvatarFallback>{(message.sender.full_name || message.sender.username || '?')[0]}</AvatarFallback>
+                                                        </Avatar>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </ScrollArea>
+                            </CardContent>
+                            <div className="p-4 border-t flex items-center gap-2">
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" size="icon" title="Attach file or action">
+                                            <Paperclip className="h-4 w-4 text-gray-500" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent side="top" align="start">
+                                        <DropdownMenuLabel>Attachment Options</DropdownMenuLabel>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem>
+                                            <input id="file-input" type="file" className="hidden" multiple />
+                                            <label htmlFor="file-input" className="flex items-center cursor-pointer w-full">
+                                                <FileText className="mr-2 h-4 w-4" /> Upload from device
+                                            </label>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem>Select from My Vault</DropdownMenuItem>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem>
+                                            <CreditCard className="mr-2 h-4 w-4" /> Generate payment link
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                                <Input 
+                                    placeholder="Type your message..." 
+                                    className="flex-1"
+                                    value={messageInput}
+                                    onChange={(e) => setMessageInput(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && !e.shiftKey) {
+                                            e.preventDefault();
+                                            handleSendMessage();
+                                        }
+                                    }}
+                                />
+                                <Button 
+                                    size="icon" 
+                                    className="bg-blue-500 hover:bg-blue-600"
+                                    onClick={handleSendMessage}
+                                    disabled={!messageInput.trim() || !selectedUserId}
+                                >
+                                    <Send className="h-5 w-5" />
                                 </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent side="top" align="start">
-                                <DropdownMenuLabel>Attachment Options</DropdownMenuLabel>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem>
-                                    <input id="file-input" type="file" className="hidden" multiple />
-                                    <label htmlFor="file-input" className="flex items-center cursor-pointer w-full">
-                                        <FileText className="mr-2 h-4 w-4" /> Upload from device
-                                    </label>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem>Select from My Vault</DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem>
-                                    <CreditCard className="mr-2 h-4 w-4" /> Generate payment link (escrow protected)
-                                </DropdownMenuItem>
-                                <DropdownMenuItem>
-                                    <Plus className="mr-2 h-4 w-4" /> Create a new invoice
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                        <Input placeholder="Type your message..." className="flex-1" />
-                        <Button size="icon" className="bg-blue-500 hover:bg-blue-600">
-                            <Send className="h-4 w-4" />
-                        </Button>
-                    </div>
+                            </div>
+                        </>
+                    ) : (
+                        <div className="flex flex-1 items-center justify-center text-muted-foreground">
+                            Select a conversation or start a new message.
+                        </div>
+                    )}
+                    <NewMessageDialog 
+                        open={newMessageDialogOpen} 
+                        onOpenChange={setNewMessageDialogOpen} 
+                        onSelectUser={handleSelectUser} 
+                    />
                 </Card>
             </div>
         </div>
