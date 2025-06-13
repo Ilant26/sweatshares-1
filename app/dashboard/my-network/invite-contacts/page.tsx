@@ -5,8 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Search, UserPlus, MessageCircle } from 'lucide-react';
-import { sendFriendRequest } from '@/lib/friends';
+import { Search, UserPlus, MessageCircle, Check } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
@@ -19,27 +18,59 @@ interface User {
   company?: string;
 }
 
+interface ConnectionStatus {
+  [key: string]: 'none' | 'pending' | 'accepted' | 'rejected'
+}
+
 export default function InviteContactsPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
+    const [currentUser, setCurrentUser] = useState<string | null>(null);
+    const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>({});
 
     useEffect(() => {
-        fetchUsers();
+        const fetchCurrentUser = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                setCurrentUser(user.id);
+            }
+        };
+
+        fetchCurrentUser();
     }, []);
+
+    useEffect(() => {
+        if (currentUser) {
+            fetchUsers();
+        }
+    }, [currentUser]);
 
     const fetchUsers = async () => {
         try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return;
-
+            setLoading(true);
             const { data, error } = await supabase
                 .from('profiles')
                 .select('*')
-                .neq('id', user.id);
+                .neq('id', currentUser);
 
             if (error) throw error;
             setUsers(data || []);
+
+            // Fetch connection statuses for all users
+            if (currentUser && data) {
+                const { data: connections } = await supabase
+                    .from('connections')
+                    .select('*')
+                    .or(`sender_id.eq.${currentUser},receiver_id.eq.${currentUser}`);
+
+                const statusMap: ConnectionStatus = {};
+                connections?.forEach(conn => {
+                    const otherUserId = conn.sender_id === currentUser ? conn.receiver_id : conn.sender_id;
+                    statusMap[otherUserId] = conn.status;
+                });
+                setConnectionStatus(statusMap);
+            }
         } catch (error) {
             console.error('Error fetching users:', error);
             toast.error('Failed to load users');
@@ -49,13 +80,73 @@ export default function InviteContactsPage() {
     };
 
     const handleConnect = async (userId: string) => {
+        if (!currentUser) return;
+
         try {
-            await sendFriendRequest(userId);
-            toast.success('Friend request sent successfully');
+            const { data, error } = await supabase
+                .from('connections')
+                .insert({
+                    sender_id: currentUser,
+                    receiver_id: userId,
+                    status: 'pending'
+                })
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            // Update local state
+            setConnectionStatus(prev => ({
+                ...prev,
+                [userId]: 'pending'
+            }));
+
+            // Create notification for the receiver
+            await supabase
+                .from('notifications')
+                .insert({
+                    user_id: userId,
+                    type: 'connection_request',
+                    content: 'sent you a connection request',
+                    sender_id: currentUser,
+                    read: false
+                });
+
+            toast.success('Connection request sent successfully');
         } catch (error) {
-            console.error('Error sending friend request:', error);
-            toast.error('Failed to send friend request');
+            console.error('Error sending connection request:', error);
+            toast.error('Failed to send connection request');
         }
+    };
+
+    const getConnectionButton = (user: User) => {
+        const status = connectionStatus[user.id] || 'none';
+
+        if (status === 'pending') {
+            return (
+                <Button variant="outline" size="sm" disabled>
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Connection sent
+                </Button>
+            );
+        }
+        if (status === 'accepted') {
+            return (
+                <Button variant="ghost" size="sm" disabled>
+                    <Check className="h-4 w-4 mr-2" />
+                    Connected
+                </Button>
+            );
+        }
+        if (status === 'rejected') {
+            return null;
+        }
+        return (
+            <Button size="sm" onClick={() => handleConnect(user.id)}>
+                <UserPlus className="h-4 w-4 mr-2" />
+                Connect
+            </Button>
+        );
     };
 
     const filteredUsers = users.filter(user =>
@@ -103,9 +194,7 @@ export default function InviteContactsPage() {
                                     <Button variant="outline" size="sm">
                                         <MessageCircle className="h-4 w-4 mr-2" /> Message
                                     </Button>
-                                    <Button size="sm" onClick={() => handleConnect(user.id)}>
-                                        <UserPlus className="h-4 w-4 mr-2" /> Connect
-                                    </Button>
+                                    {getConnectionButton(user)}
                                 </div>
                             </CardContent>
                         </Card>
