@@ -45,7 +45,7 @@ export function NavMain({
                   </SidebarMenuBadge>
                 )}
                 {item.title === 'Messages' && unreadCount > 0 && state === "collapsed" && (
-                  <span className="absolute right-0 top-0 block h-2 w-2 rounded-full bg-destructive" />
+                  <span className="absolute right-0.5 top-0.5 block h-2 w-2 rounded-full bg-destructive" />
                 )}
               </Link>
             </SidebarMenuButton>
