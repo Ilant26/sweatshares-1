@@ -9,6 +9,7 @@ import { Menu } from '@/components/blocks/menu';
 import FooterSection from '@/components/blocks/footer';
 import { Separator } from '@/components/ui/separator';
 import { ProfileCard } from './profile-card';
+import ContentSection from '@/components/content-listing-bottom';
 
 export default async function ListingPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -177,6 +178,7 @@ export default async function ListingPage({ params }: { params: Promise<{ id: st
           <ProfileCard profile={profile} />
         </div>
       </div>
+      <ContentSection />
       <FooterSection />
     </div>
   );

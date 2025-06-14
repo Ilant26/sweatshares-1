@@ -138,7 +138,6 @@ export const Menu = () => {
                                                             variant="outline"
                                                             className="w-full">
                                                             <Link href="/dashboard" className="flex items-center gap-2">
-                                                                <LayoutDashboard className="h-4 w-4" />
                                                                 Dashboard
                                                             </Link>
                                                         </Button>
@@ -185,7 +184,6 @@ export const Menu = () => {
                                         variant="outline"
                                         size="sm">
                                         <Link href="/dashboard" className="flex items-center gap-2">
-                                            <LayoutDashboard className="h-4 w-4" />
                                             Dashboard
                                         </Link>
                                     </Button>

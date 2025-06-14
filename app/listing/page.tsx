@@ -17,6 +17,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import ContentSection from "@/components/content-listing-bottom";
+import { useSession } from '@/components/providers/session-provider';
 
 const transitionVariants = {
     item: {
@@ -89,6 +91,7 @@ export default function ListingsPage() {
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const [listingType, setListingType] = useState<ListingType | "">("");
+  const { user } = useSession();
 
   useEffect(() => {
     const fetchListings = async () => {
@@ -148,7 +151,7 @@ export default function ListingsPage() {
                 </Link>
 
                 <h1 className="mt-8 max-w-4xl mx-auto text-balance text-4xl md:text-5xl lg:mt-16 xl:text-6xl">
-                  Find the perfect opportunity to collaborate and grow
+                  {!user && 'Find the perfect opportunity to collaborate and grow'}
                 </h1>
                 <p className="mx-auto mt-8 max-w-2xl text-balance text-lg">
                   Browse through our curated list of opportunities from founders, experts, and investors looking to collaborate on innovative projects.
@@ -301,6 +304,7 @@ export default function ListingsPage() {
           </div>
         )}
       </section>
+      <ContentSection />
       <FooterSection />
     </div>
   );
