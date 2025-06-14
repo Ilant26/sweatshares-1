@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, MapPin, DollarSign, Building2, Briefcase, ArrowLeft } from 'lucide-react';
+import { Calendar, MapPin, DollarSign, Building2, Briefcase, ArrowLeft, Clock, Users, Target, Award } from 'lucide-react';
 import Link from 'next/link';
 import { Menu } from '@/components/blocks/menu';
 import FooterSection from '@/components/blocks/footer';
@@ -34,9 +34,9 @@ export default async function ListingPage({ params }: { params: Promise<{ id: st
   return (
     <div className="min-h-screen flex flex-col bg-zinc-50 dark:bg-background">
       <Menu />
-      <div className="max-w-4xl mx-auto p-4 space-y-8 flex-1 w-full">
+      <div className="max-w-5xl mx-auto p-4 space-y-8 flex-1 w-full">
         <div className="pt-20">
-          <Button variant="ghost" size="sm" asChild className="mb-6">
+          <Button variant="ghost" size="sm" asChild className="mb-6 hover:bg-muted/50">
             <Link href="/listing" className="flex items-center gap-2">
               <ArrowLeft className="h-4 w-4" />
               Back to Listings
@@ -44,45 +44,60 @@ export default async function ListingPage({ params }: { params: Promise<{ id: st
           </Button>
 
           {/* Listing Card */}
-          <Card className="mb-8 border-none shadow-sm">
+          <Card className="mb-8 border-none shadow-lg bg-white dark:bg-zinc-900/50">
             <CardHeader className="pb-4">
               <div className="flex flex-wrap gap-2 mb-4">
-                <Badge variant="default" className="text-sm">{listing.profile_type}</Badge>
-                <Badge variant="secondary" className="text-sm">{listing.listing_type}</Badge>
-                {listing.sector && <Badge variant="outline" className="text-sm">{listing.sector}</Badge>}
+                <Badge variant="default" className="text-sm px-3 py-1">{listing.profile_type}</Badge>
+                <Badge variant="secondary" className="text-sm px-3 py-1">{listing.listing_type}</Badge>
+                {listing.sector && <Badge variant="outline" className="text-sm px-3 py-1">{listing.sector}</Badge>}
               </div>
-              <CardTitle className="text-3xl font-bold">{listing.title}</CardTitle>
+              <CardTitle className="text-3xl font-bold tracking-tight">{listing.title}</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-8">
               {/* Key Information */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Calendar className="h-4 w-4" />
-                  <span>Ends: {listing.end_date ? new Date(listing.end_date).toLocaleDateString() : 'N/A'}</span>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                  <Calendar className="h-5 w-5 text-primary" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">End Date</p>
+                    <p className="font-medium">{listing.end_date ? new Date(listing.end_date).toLocaleDateString() : 'N/A'}</p>
+                  </div>
                 </div>
                 {listing.amount && (
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <DollarSign className="h-4 w-4" />
-                    <span>Amount: <span className="font-medium text-foreground">{listing.amount}</span></span>
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                    <DollarSign className="h-5 w-5 text-primary" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">Amount</p>
+                      <p className="font-medium">{listing.amount}</p>
+                    </div>
                   </div>
                 )}
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <MapPin className="h-4 w-4" />
-                  <span>{listing.location_country} {listing.location_city && `, ${listing.location_city}`}</span>
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                  <MapPin className="h-5 w-5 text-primary" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Location</p>
+                    <p className="font-medium">{listing.location_country} {listing.location_city && `, ${listing.location_city}`}</p>
+                  </div>
                 </div>
                 {listing.funding_stage && (
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Building2 className="h-4 w-4" />
-                    <span>Stage: <span className="font-medium text-foreground">{listing.funding_stage}</span></span>
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                    <Building2 className="h-5 w-5 text-primary" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">Stage</p>
+                      <p className="font-medium">{listing.funding_stage}</p>
+                    </div>
                   </div>
                 )}
               </div>
 
-              <Separator />
+              <Separator className="my-8" />
 
               {/* Description */}
-              <div>
-                <h4 className="text-lg font-semibold mb-4">Description</h4>
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Target className="h-5 w-5 text-primary" />
+                  <h4 className="text-xl font-semibold">Description</h4>
+                </div>
                 <div 
                   className="prose prose-sm max-w-none dark:prose-invert prose-headings:font-semibold prose-p:text-muted-foreground prose-a:text-primary hover:prose-a:text-primary/80 prose-img:rounded-md prose-img:shadow-md
                   [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:my-1
@@ -98,12 +113,15 @@ export default async function ListingPage({ params }: { params: Promise<{ id: st
               {/* Skills */}
               {listing.skills && (
                 <>
-                  <Separator />
-                  <div>
-                    <h4 className="text-lg font-semibold mb-4">Required Skills</h4>
+                  <Separator className="my-8" />
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2">
+                      <Award className="h-5 w-5 text-primary" />
+                      <h4 className="text-xl font-semibold">Skills</h4>
+                    </div>
                     <div className="flex flex-wrap gap-2">
                       {listing.skills.split(',').map((skill: string, index: number) => (
-                        <Badge key={index} variant="secondary" className="text-sm">
+                        <Badge key={index} variant="secondary" className="text-sm px-3 py-1">
                           {skill.trim()}
                         </Badge>
                       ))}
@@ -113,11 +131,13 @@ export default async function ListingPage({ params }: { params: Promise<{ id: st
               )}
 
               {/* Compensation */}
-              <Separator />
-              <div className="flex items-center gap-2">
-                <Briefcase className="h-4 w-4 text-muted-foreground" />
-                <span className="text-muted-foreground">Compensation:</span>
-                <span className="font-medium">{listing.compensation_type} {listing.compensation_value && `- ${listing.compensation_value}`}</span>
+              <Separator className="my-8" />
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                <Briefcase className="h-5 w-5 text-primary" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Compensation</p>
+                  <p className="font-medium">{listing.compensation_type} {listing.compensation_value && `- ${listing.compensation_value}`}</p>
+                </div>
               </div>
             </CardContent>
           </Card>

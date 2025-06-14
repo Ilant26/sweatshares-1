@@ -10,6 +10,7 @@ import { MapPin, Heart, Share2, Mail, Briefcase, ArrowRight, ListFilter, Setting
 import FooterSection from "@/components/blocks/footer";
 import { Menu } from "@/components/blocks/menu";
 import { AnimatedGroup } from "@/components/ui/animated-group";
+import { motion, AnimatePresence } from "framer-motion";
 import { Transition } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -35,6 +36,49 @@ const transitionVariants = {
             } as Transition,
         },
     },
+};
+
+const cardVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    transition: {
+      type: "spring",
+      bounce: 0.3,
+      duration: 0.8
+    }
+  },
+  hover: {
+    y: -5,
+    transition: {
+      type: "spring",
+      bounce: 0.4,
+      duration: 0.3
+    }
+  }
+};
+
+const contentVariants = {
+  hidden: { opacity: 0 },
+  visible: { 
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, x: -20 },
+  visible: { 
+    opacity: 1, 
+    x: 0,
+    transition: {
+      type: "spring",
+      bounce: 0.3
+    }
+  }
 };
 
 type ListingType = "Job" | "Project" | "Investment" | "Partnership";
@@ -168,91 +212,115 @@ export default function ListingsPage() {
           <div className="text-center text-muted-foreground py-12">No listings found.</div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {listings.map((listing) => (
-              <Card
-                key={listing.id}
-                className="group flex flex-col justify-between h-full bg-muted/50 border border-border/50 shadow-sm hover:shadow-md transition-all duration-200 hover:border-border"
-              >
-                <CardContent className="p-4 flex flex-col h-full">
-                  {/* Header Section */}
-                  <div className="space-y-1.5 mb-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <Briefcase className="h-4 w-4" />
-                        <span className="text-xs">
-                          {listing.created_at ? new Date(listing.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : ''}
-                        </span>
-                      </div>
-                      <Badge variant="secondary" className="text-xs">
-                        {listing.listing_type}
-                      </Badge>
-                    </div>
-                    <h2 className="text-lg font-semibold line-clamp-2 group-hover:text-primary transition-colors">
-                      {listing.title}
-                    </h2>
-                  </div>
-
-                  {/* Profile Section */}
-                  <div className="flex items-center gap-3 mb-3">
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage src={listing.profiles?.avatar_url || undefined} alt={listing.profiles?.full_name || "User"} />
-                      <AvatarFallback>{listing.profiles?.full_name?.charAt(0) || "U"}</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                      <div className="font-medium text-sm">
-                        {listing.profiles?.full_name || "Unknown"}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {listing.profiles?.professional_role}
-                      </div>
-                    </div>
-                    {listing.profiles?.country && (
-                      <Badge variant="outline" className="text-xs">
-                        {listing.profiles.country}
-                      </Badge>
-                    )}
-                  </div>
-
-                  {/* Description */}
-                  <div 
-                    className="mb-3 text-sm text-muted-foreground line-clamp-3 prose prose-sm max-w-none dark:prose-invert prose-headings:font-semibold prose-p:text-muted-foreground prose-a:text-primary hover:prose-a:text-primary/80 prose-img:rounded-md prose-img:shadow-md"
-                    dangerouslySetInnerHTML={{ __html: listing.description || '' }}
-                  />
-
-                  {/* Location and Details */}
-                  <div className="space-y-1.5 mb-3">
-                    <div className="flex items-center gap-2 text-muted-foreground text-sm">
-                      <MapPin className="h-4 w-4" />
-                      <span>{listing.location_city ? `${listing.location_city}, ` : ""}{listing.location_country}</span>
-                    </div>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="mt-auto pt-3 border-t">
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        className="flex-1"
-                        onClick={() => router.push(`/listing/${listing.id}`)}
+            <AnimatePresence>
+              {listings.map((listing, index) => (
+                <motion.div
+                  key={listing.id}
+                  variants={cardVariants}
+                  initial="hidden"
+                  animate="visible"
+                  whileHover="hover"
+                  custom={index}
+                  className="h-full"
+                >
+                  <Card className="group flex flex-col justify-between h-full bg-muted/50 border border-border/50 shadow-sm hover:shadow-md transition-all duration-200 hover:border-border overflow-hidden">
+                    <CardContent className="p-0 flex flex-col h-full">
+                      <motion.div 
+                        variants={contentVariants}
+                        className="flex flex-col h-full"
                       >
-                        View Details
-                      </Button>
-                      <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Favorite">
-                          <Heart className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Share">
-                          <Share2 className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Contact">
-                          <Mail className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                        {/* Header with Badge */}
+                        <motion.div variants={itemVariants} className="p-4 pb-2">
+                          <div className="flex items-center justify-between mb-2">
+                            <Badge variant="secondary" className="text-xs">
+                              {listing.listing_type}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground">
+                              {listing.created_at ? new Date(listing.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : ''}
+                            </span>
+                          </div>
+                          <h2 className="text-lg font-semibold line-clamp-2 group-hover:text-primary transition-colors">
+                            {listing.title}
+                          </h2>
+                        </motion.div>
+
+                        {/* Description */}
+                        <motion.div 
+                          variants={itemVariants}
+                          className="px-4 text-sm text-muted-foreground line-clamp-3 prose prose-sm max-w-none dark:prose-invert prose-headings:font-semibold prose-p:text-muted-foreground prose-a:text-primary hover:prose-a:text-primary/80 prose-img:rounded-md prose-img:shadow-md"
+                          dangerouslySetInnerHTML={{ __html: listing.description || '' }}
+                        />
+
+                        {/* Location */}
+                        <motion.div variants={itemVariants} className="px-4 mt-2">
+                          <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                            <MapPin className="h-4 w-4" />
+                            <span>{listing.location_city ? `${listing.location_city}, ` : ""}{listing.location_country}</span>
+                          </div>
+                        </motion.div>
+
+                        {/* Profile Section with Divider */}
+                        <motion.div variants={itemVariants} className="mt-4 border-t border-border/50">
+                          <div className="p-4">
+                            <div className="flex items-center gap-3">
+                              <Avatar className="h-10 w-10">
+                                <AvatarImage src={listing.profiles?.avatar_url || undefined} alt={listing.profiles?.full_name || "User"} />
+                                <AvatarFallback>{listing.profiles?.full_name?.charAt(0) || "U"}</AvatarFallback>
+                              </Avatar>
+                              <div className="flex-1 min-w-0">
+                                <div className="font-medium text-sm truncate">
+                                  {listing.profiles?.full_name || "Unknown"}
+                                </div>
+                                <div className="text-xs text-muted-foreground truncate">
+                                  {listing.profiles?.professional_role}
+                                </div>
+                              </div>
+                              {listing.profiles?.country && (
+                                <Badge variant="outline" className="text-xs shrink-0">
+                                  {listing.profiles.country}
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        </motion.div>
+
+                        {/* Action Buttons */}
+                        <motion.div variants={itemVariants} className="mt-auto border-t border-border/50">
+                          <div className="p-4">
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="outline"
+                                className="flex-1"
+                                onClick={() => router.push(`/listing/${listing.id}`)}
+                              >
+                                View Details
+                              </Button>
+                              <div className="flex gap-1">
+                                <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Favorite">
+                                    <Heart className="h-4 w-4" />
+                                  </Button>
+                                </motion.div>
+                                <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Share">
+                                    <Share2 className="h-4 w-4" />
+                                  </Button>
+                                </motion.div>
+                                <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Contact">
+                                    <Mail className="h-4 w-4" />
+                                  </Button>
+                                </motion.div>
+                              </div>
+                            </div>
+                          </div>
+                        </motion.div>
+                      </motion.div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ))}
+            </AnimatePresence>
           </div>
         )}
       </section>
