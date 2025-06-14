@@ -264,8 +264,32 @@ export default function MyListingsPage() {
       </div>
     )}
 
+    {/* Funding Stage - Show when founder is looking for funding or investor is looking for investment opportunity */}
+    {(profileType === "founder" && listingType === "find-funding") || 
+     (profileType === "investor" && listingType === "investment-opportunity") && (
+      <div className="grid grid-cols-4 items-center gap-4">
+        <Label htmlFor="fundingStage" className="text-right">Funding Stage</Label>
+        <Select>
+          <SelectTrigger className="col-span-3">
+            <SelectValue placeholder="Select funding stage" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="pre-seed">Pre-seed</SelectItem>
+            <SelectItem value="seed">Seed</SelectItem>
+            <SelectItem value="series-a">Series A</SelectItem>
+            <SelectItem value="series-b">Series B</SelectItem>
+            <SelectItem value="series-c">Series C</SelectItem>
+            <SelectItem value="series-d">Series D</SelectItem>
+            <SelectItem value="growth">Growth</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+    )}
+
     {/* Skills */}
-    {!(profileType === "founder" && (["find-funding", "sell-startup"].includes(listingType))) && (profileType === "founder" || profileType === "investor" || profileType === "expert") && (
+    {!(profileType === "founder" && (["find-funding", "sell-startup"].includes(listingType))) && 
+     !(profileType === "investor" && ["investment-opportunity", "buy-startup", "co-investor"].includes(listingType)) && 
+     (profileType === "founder" || profileType === "investor" || profileType === "expert") && (
       <div className="grid grid-cols-4 items-center gap-4">
         <Label htmlFor="skills" className="text-right">Skills</Label>
         <Textarea id="skills" placeholder="Ex: React, Node.js, Digital Marketing..." className="col-span-3" />
@@ -288,7 +312,9 @@ export default function MyListingsPage() {
       </div>
     </div>
     {/* Compensation Type */}
-    {(profileType === "founder" || profileType === "investor" || profileType === "expert") && !(profileType === "founder" && listingType === "sell-startup") && (
+    {(profileType === "founder" || profileType === "investor" || profileType === "expert") && 
+     !(profileType === "founder" && listingType === "sell-startup") &&
+     !(profileType === "investor" && ["investment-opportunity", "buy-startup", "co-investor"].includes(listingType)) && (
       <div className="grid grid-cols-4 items-center gap-4">
         <Label htmlFor="compensationType" className="text-right">Compensation Type</Label>
         <div className="col-span-3 flex flex-col gap-2">
@@ -315,6 +341,7 @@ export default function MyListingsPage() {
                   <SelectItem value="salary">Salary</SelectItem>
                   <SelectItem value="equity">Equity</SelectItem>
                   <SelectItem value="salary-equity">Salary & Equity</SelectItem>
+                  <SelectItem value="cash-equity">Cash & Equity</SelectItem>
                 </>
               )}
               {/* Expert-specific compensation options */}
@@ -348,10 +375,16 @@ export default function MyListingsPage() {
               ) :
                 ((profileType !== "founder" && profileType !== "expert") || (profileType === "founder" && !["find-funding", "cofounder", "expert-freelance", "employee", "mentor"].includes(listingType))) ? (
                   <>
-                    <SelectItem value="cash">Cash</SelectItem>
-                    <SelectItem value="equity">Equity</SelectItem>
-                    <SelectItem value="salary">Annual Salary</SelectItem>
-                    <SelectItem value="volunteer">Volunteer</SelectItem>
+                    {profileType === "investor" && listingType === "expert-freelance" ? (
+                      <SelectItem value="cash">Cash</SelectItem>
+                    ) : (
+                      <>
+                        <SelectItem value="cash">Cash</SelectItem>
+                        <SelectItem value="equity">Equity</SelectItem>
+                        <SelectItem value="salary">Annual Salary</SelectItem>
+                        <SelectItem value="volunteer">Volunteer</SelectItem>
+                      </>
+                    )}
                   </>
                 ) : null
               }
@@ -366,12 +399,30 @@ export default function MyListingsPage() {
           {compensationType === 'salary' && (
             <Input placeholder="Annual salary (ex: 40-50K)" />
           )}
+          {compensationType === 'hybrid' && (
+            <div className="flex flex-col gap-2">
+              <Input placeholder="Equity (ex: 5-10%)" />
+              <Input placeholder="Cash bonus (ex: 5000€)" />
+            </div>
+          )}
+          {compensationType === 'salary-equity' && (
+            <div className="flex flex-col gap-2">
+              <Input placeholder="Annual salary (ex: 40-50K)" />
+              <Input placeholder="Equity (ex: 5-10%)" />
+            </div>
+          )}
+          {compensationType === 'cash-equity' && (
+            <div className="flex flex-col gap-2">
+              <Input placeholder="Cash amount (ex: 5000€)" />
+              <Input placeholder="Equity (ex: 5-10%)" />
+            </div>
+          )}
         </div>
       </div>
     )}
     {/* Amount (Founder & Investor only) */}
     {((profileType === "founder" && !["cofounder", "expert-freelance", "employee", "mentor"].includes(listingType)) ||
-      (profileType === "investor") ||
+      (profileType === "investor" && !["expert-freelance"].includes(listingType)) ||
       (profileType === "expert" && !["mission", "job", "expert-freelance", "cofounder"].includes(listingType))) && (
       <div className="grid grid-cols-4 items-center gap-4">
         <Label htmlFor="amount" className="text-right">Amount</Label>
@@ -380,7 +431,7 @@ export default function MyListingsPage() {
     )}
     {/* Secteur */}
     <div className="grid grid-cols-4 items-center gap-4">
-      <Label htmlFor="secteur" className="text-right">Sector</Label>
+      <Label htmlFor="secteur" className="text-right">Company Sector</Label>
       <Input id="secteur" placeholder="Ex: Tech, Health, Finance..." className="col-span-3" />
     </div>
     {/* Listing End Date */}
@@ -412,7 +463,7 @@ export default function MyListingsPage() {
     {/* Required Skills */}
     <div className="grid grid-cols-4 items-center gap-4">
       <Label htmlFor="title" className="text-right">Title</Label>
-      <Input id="title" placeholder="Ex: React, Node.js, Digital Marketing..." className="col-span-3" />
+      <Input id="title" placeholder="Input your title" className="col-span-3" />
     </div>
     {/* Description */}
     <div className="grid grid-cols-4 items-center gap-4">
