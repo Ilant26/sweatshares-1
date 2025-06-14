@@ -68,20 +68,18 @@ const data = {
       url: "/dashboard/my-favorites",
       icon: Star,
     },
-  ],
-  projects: [
     {
-      name: "Listings",
+      title: "Listings",
       url: "/dashboard/my-listings",
       icon: List,
     },
     {
-      name: "My Vault",
+      title: "My Vault",
       url: "/dashboard/my-vault",
       icon: Lock,
     },
     {
-      name: "Invoices",
+      title: "Invoices",
       url: "/dashboard/my-invoices",
       icon: ReceiptText,
     },
@@ -101,7 +99,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     <Sidebar collapsible="icon" {...props}>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <NavProjects projects={data.projects} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={userData} />

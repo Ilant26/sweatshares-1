@@ -26,7 +26,6 @@ import { RichTextEditor } from '@/components/ui/rich-text-editor';
 export default function MyListingsPage() {
     const [selectedListings, setSelectedListings] = useState<string[]>([]);
     const [isNewListingModalOpen, setIsNewListingModalOpen] = useState(false);
-    const [listingEndDate, setListingEndDate] = useState<Date | undefined>(undefined);
     const [compensationType, setCompensationType] = useState<string>('');
     const [profileType, setProfileType] = useState<string>('');
     const [listingType, setListingType] = useState<string>("");
@@ -121,7 +120,6 @@ export default function MyListingsPage() {
         );
         setAmount(listing.amount || '');
         setSector(listing.sector || '');
-        setListingEndDate(listing.end_date ? new Date(listing.end_date) : undefined);
         setTitle(listing.title || '');
         setDescription(listing.description || '');
     };
@@ -129,6 +127,11 @@ export default function MyListingsPage() {
     const handleCreateOrUpdateListing = async () => {
         if (!user) {
             toast.error('You must be logged in to create a listing.');
+            return;
+        }
+        if (!profileType || !listingType || !title || !description) {
+            toast.error('Please fill in all mandatory fields: I am a, Looking to, Title, and Description.');
+            setIsCreating(false);
             return;
         }
         setIsCreating(true);
@@ -146,7 +149,6 @@ export default function MyListingsPage() {
                 compensation_value: typeof compensationValue === 'object' ? compensationValue : { value: compensationValue },
                 amount,
                 sector,
-                end_date: listingEndDate ? listingEndDate.toISOString().split('T')[0] : null,
                 title,
                 description: description || '',
             }).eq('id', editingId));
@@ -163,7 +165,6 @@ export default function MyListingsPage() {
                 compensation_value: typeof compensationValue === 'object' ? compensationValue : { value: compensationValue },
                 amount,
                 sector,
-                end_date: listingEndDate ? listingEndDate.toISOString().split('T')[0] : null,
                 title,
                 description: description || '',
             }));
@@ -192,7 +193,6 @@ export default function MyListingsPage() {
             setCompensationValue("");
             setAmount('');
             setSector('');
-            setListingEndDate(undefined);
             setTitle('');
             setDescription('');
         }
@@ -383,7 +383,7 @@ export default function MyListingsPage() {
   <div className="grid gap-4 py-4">
     {/* Profile Selector */}
     <div className="grid grid-cols-4 items-center gap-4">
-      <Label htmlFor="profileType" className="text-right">I am a</Label>
+      <Label htmlFor="profileType" className="text-right">I am a <span className="text-destructive">*</span></Label>
       <Select onValueChange={setProfileType} disabled={editingId !== null}>
         <SelectTrigger className="col-span-3">
           <SelectValue placeholder="Select your profile" />
@@ -399,7 +399,7 @@ export default function MyListingsPage() {
     {/* Listing Type - dynamic options */}
     {profileType && (
       <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="listingType" className="text-right">Looking to</Label>
+        <Label htmlFor="listingType" className="text-right">Looking to <span className="text-destructive">*</span></Label>
         <Select value={listingType} onValueChange={setListingType} disabled={editingId !== null}>
           <SelectTrigger className="col-span-3">
             <SelectValue placeholder="Select listing type" />
@@ -475,9 +475,32 @@ export default function MyListingsPage() {
             <SelectValue placeholder="Select a country" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="france">France</SelectItem>
-            <SelectItem value="usa">USA</SelectItem>
-            <SelectItem value="uk">UK</SelectItem>
+            <SelectItem value="France">France</SelectItem>
+            <SelectItem value="USA">USA</SelectItem>
+            <SelectItem value="UK">UK</SelectItem>
+            <SelectItem value="Germany">Germany</SelectItem>
+            <SelectItem value="Spain">Spain</SelectItem>
+            <SelectItem value="Italy">Italy</SelectItem>
+            <SelectItem value="Portugal">Portugal</SelectItem>
+            <SelectItem value="Belgium">Belgium</SelectItem>
+            <SelectItem value="Netherlands">Netherlands</SelectItem>
+            <SelectItem value="Sweden">Sweden</SelectItem>
+            <SelectItem value="Norway">Norway</SelectItem>
+            <SelectItem value="Denmark">Denmark</SelectItem>
+            <SelectItem value="Finland">Finland</SelectItem>
+            <SelectItem value="Ireland">Ireland</SelectItem>
+            <SelectItem value="Poland">Poland</SelectItem>
+            <SelectItem value="Czech Republic">Czech Republic</SelectItem>
+            <SelectItem value="Hungary">Hungary</SelectItem>
+            <SelectItem value="Greece">Greece</SelectItem>
+            <SelectItem value="Austria">Austria</SelectItem>
+            <SelectItem value="Switzerland">Switzerland</SelectItem>
+            <SelectItem value="Turkey">Turkey</SelectItem>
+            <SelectItem value="Russia">Russia</SelectItem>
+            <SelectItem value="Ukraine">Ukraine</SelectItem>
+            <SelectItem value="Belarus">Belarus</SelectItem>
+            <SelectItem value="Moldova">Moldova</SelectItem>
+            <SelectItem value="Albania">Albania</SelectItem>
           </SelectContent>
         </Select>
         <Input id="locationCity" placeholder="City (optional)" className="w-1/2" value={locationCity} onChange={e => setLocationCity(e.target.value)} />
@@ -569,7 +592,7 @@ export default function MyListingsPage() {
             <Input placeholder="Equity (ex: 5-10%)" value={compensationValue.value || compensationValue || ''} onChange={e => setCompensationValue({ value: e.target.value })} />
           )}
           {compensationType === 'salary' && (
-            <Input placeholder="Annual salary (ex: 40-50K)" value={compensationValue.value || compensationValue || ''} onChange={e => setCompensationValue({ value: e.target.value })} />
+            <Input placeholder="Annual salary (ex: 40-50K€)" value={compensationValue.value || compensationValue || ''} onChange={e => setCompensationValue({ value: e.target.value })} />
           )}
           {compensationType === 'hybrid' && (
             <div className="flex flex-col gap-2">
@@ -579,7 +602,7 @@ export default function MyListingsPage() {
           )}
           {compensationType === 'salary-equity' && (
             <div className="flex flex-col gap-2">
-              <Input placeholder="Annual salary (ex: 40-50K)" value={compensationValue.salary || ''} onChange={e => setCompensationValue((prev: any) => ({ ...prev, salary: e.target.value }))} />
+              <Input placeholder="Annual salary (ex: 40-50K€)" value={compensationValue.salary || ''} onChange={e => setCompensationValue((prev: any) => ({ ...prev, salary: e.target.value }))} />
               <Input placeholder="Equity (ex: 5-10%)" value={compensationValue.equity || ''} onChange={e => setCompensationValue((prev: any) => ({ ...prev, equity: e.target.value }))} />
             </div>
           )}
@@ -606,40 +629,14 @@ export default function MyListingsPage() {
       <Label htmlFor="secteur" className="text-right">Company Sector</Label>
       <Input id="secteur" placeholder="Ex: Tech, Health, Finance..." className="col-span-3" value={sector} onChange={e => setSector(e.target.value)} />
     </div>
-    {/* Listing End Date */}
+    {/* Title */}
     <div className="grid grid-cols-4 items-center gap-4">
-      <Label htmlFor="listingEndDate" className="text-right">Listing End Date</Label>
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button
-            variant={"outline"}
-            className={cn(
-              "col-span-3 justify-start text-left font-normal",
-              !listingEndDate && "text-muted-foreground"
-            )}
-          >
-            <CalendarIcon className="mr-2 h-4 w-4" />
-            {listingEndDate ? format(listingEndDate, "PPP") : <span>j/mm/aaaa</span>}
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-auto p-0">
-          <Calendar
-            mode="single"
-            selected={listingEndDate}
-            onSelect={setListingEndDate}
-            initialFocus
-          />
-        </PopoverContent>
-      </Popover>
-    </div>
-    {/* Required Skills */}
-    <div className="grid grid-cols-4 items-center gap-4">
-      <Label htmlFor="title" className="text-right">Title</Label>
+      <Label htmlFor="title" className="text-right">Title <span className="text-destructive">*</span></Label>
       <Input id="title" placeholder="Input your title" className="col-span-3" value={title} onChange={e => setTitle(e.target.value)} />
     </div>
     {/* Description */}
     <div className="grid grid-cols-4 items-center gap-4">
-      <Label htmlFor="description" className="text-right">Description</Label>
+      <Label htmlFor="description" className="text-right">Description <span className="text-destructive">*</span></Label>
       <div className="col-span-3">
         <RichTextEditor
           content={description}
