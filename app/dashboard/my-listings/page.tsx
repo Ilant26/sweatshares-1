@@ -35,7 +35,7 @@ export default function MyListingsPage() {
     const [skills, setSkills] = useState('');
     const [locationCountry, setLocationCountry] = useState('');
     const [locationCity, setLocationCity] = useState('');
-    const [compensationValue, setCompensationValue] = useState('');
+    const [compensationValue, setCompensationValue] = useState<any>("");
     const [amount, setAmount] = useState('');
     const [sector, setSector] = useState('');
     const [title, setTitle] = useState('');
@@ -107,7 +107,18 @@ export default function MyListingsPage() {
         setLocationCountry(listing.location_country || '');
         setLocationCity(listing.location_city || '');
         setCompensationType(listing.compensation_type || '');
-        setCompensationValue(listing.compensation_value || '');
+        setCompensationValue(
+            (() => {
+                if (!listing.compensation_value) return "";
+                if (typeof listing.compensation_value === "object") return listing.compensation_value;
+                try {
+                    const parsed = JSON.parse(listing.compensation_value);
+                    return parsed;
+                } catch {
+                    return { value: listing.compensation_value };
+                }
+            })()
+        );
         setAmount(listing.amount || '');
         setSector(listing.sector || '');
         setListingEndDate(listing.end_date ? new Date(listing.end_date) : undefined);
@@ -132,7 +143,7 @@ export default function MyListingsPage() {
                 location_country: locationCountry,
                 location_city: locationCity,
                 compensation_type: compensationType,
-                compensation_value: compensationValue,
+                compensation_value: typeof compensationValue === 'object' ? compensationValue : { value: compensationValue },
                 amount,
                 sector,
                 end_date: listingEndDate ? listingEndDate.toISOString().split('T')[0] : null,
@@ -149,7 +160,7 @@ export default function MyListingsPage() {
                 location_country: locationCountry,
                 location_city: locationCity,
                 compensation_type: compensationType,
-                compensation_value: compensationValue,
+                compensation_value: typeof compensationValue === 'object' ? compensationValue : { value: compensationValue },
                 amount,
                 sector,
                 end_date: listingEndDate ? listingEndDate.toISOString().split('T')[0] : null,
@@ -178,7 +189,7 @@ export default function MyListingsPage() {
             setLocationCountry('');
             setLocationCity('');
             setCompensationType('');
-            setCompensationValue('');
+            setCompensationValue("");
             setAmount('');
             setSector('');
             setListingEndDate(undefined);
@@ -552,30 +563,30 @@ export default function MyListingsPage() {
             </SelectContent>
           </Select>
           {compensationType === 'cash' && (
-            <Input placeholder="Cash bonus (ex: 5000€)" value={compensationValue} onChange={e => setCompensationValue(e.target.value)} />
+            <Input placeholder="Cash bonus (ex: 5000€)" value={compensationValue.value || compensationValue || ''} onChange={e => setCompensationValue({ value: e.target.value })} />
           )}
           {compensationType === 'equity' && (
-            <Input placeholder="Equity (ex: 5-10%)" value={compensationValue} onChange={e => setCompensationValue(e.target.value)} />
+            <Input placeholder="Equity (ex: 5-10%)" value={compensationValue.value || compensationValue || ''} onChange={e => setCompensationValue({ value: e.target.value })} />
           )}
           {compensationType === 'salary' && (
-            <Input placeholder="Annual salary (ex: 40-50K)" value={compensationValue} onChange={e => setCompensationValue(e.target.value)} />
+            <Input placeholder="Annual salary (ex: 40-50K)" value={compensationValue.value || compensationValue || ''} onChange={e => setCompensationValue({ value: e.target.value })} />
           )}
           {compensationType === 'hybrid' && (
             <div className="flex flex-col gap-2">
-              <Input placeholder="Equity (ex: 5-10%)" value={compensationValue} onChange={e => setCompensationValue(e.target.value)} />
-              <Input placeholder="Cash bonus (ex: 5000€)" />
+              <Input placeholder="Equity (ex: 5-10%)" value={compensationValue.equity || ''} onChange={e => setCompensationValue((prev: any) => ({ ...prev, equity: e.target.value }))} />
+              <Input placeholder="Cash bonus (ex: 5000€)" value={compensationValue.cash || ''} onChange={e => setCompensationValue((prev: any) => ({ ...prev, cash: e.target.value }))} />
             </div>
           )}
           {compensationType === 'salary-equity' && (
             <div className="flex flex-col gap-2">
-              <Input placeholder="Annual salary (ex: 40-50K)" value={compensationValue} onChange={e => setCompensationValue(e.target.value)} />
-              <Input placeholder="Equity (ex: 5-10%)" />
+              <Input placeholder="Annual salary (ex: 40-50K)" value={compensationValue.salary || ''} onChange={e => setCompensationValue((prev: any) => ({ ...prev, salary: e.target.value }))} />
+              <Input placeholder="Equity (ex: 5-10%)" value={compensationValue.equity || ''} onChange={e => setCompensationValue((prev: any) => ({ ...prev, equity: e.target.value }))} />
             </div>
           )}
           {compensationType === 'cash-equity' && (
             <div className="flex flex-col gap-2">
-              <Input placeholder="Cash amount (ex: 5000€)" value={compensationValue} onChange={e => setCompensationValue(e.target.value)} />
-              <Input placeholder="Equity (ex: 5-10%)" />
+              <Input placeholder="Cash amount (ex: 5000€)" value={compensationValue.cash || ''} onChange={e => setCompensationValue((prev: any) => ({ ...prev, cash: e.target.value }))} />
+              <Input placeholder="Equity (ex: 5-10%)" value={compensationValue.equity || ''} onChange={e => setCompensationValue((prev: any) => ({ ...prev, equity: e.target.value }))} />
             </div>
           )}
         </div>
@@ -586,7 +597,7 @@ export default function MyListingsPage() {
       (profileType === "investor" && !["expert-freelance"].includes(listingType)) ||
       (profileType === "expert" && !["mission", "job", "expert-freelance", "cofounder"].includes(listingType))) && (
       <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="amount" className="text-right">Budget</Label>
+        <Label htmlFor="amount" className="text-right">Investment Amount</Label>
         <Input id="amount" placeholder="Ex: 10000€" className="col-span-3" value={amount} onChange={e => setAmount(e.target.value)} />
       </div>
     )}

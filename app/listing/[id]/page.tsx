@@ -67,7 +67,7 @@ export default async function ListingPage({ params }: { params: Promise<{ id: st
                   <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
                     <DollarSign className="h-5 w-5 text-primary" />
                     <div>
-                      <p className="text-sm text-muted-foreground">Amount</p>
+                      <p className="text-sm text-muted-foreground">Investment Amount</p>
                       <p className="font-medium">{listing.amount}</p>
                     </div>
                   </div>
@@ -136,7 +136,29 @@ export default async function ListingPage({ params }: { params: Promise<{ id: st
                 <Briefcase className="h-5 w-5 text-primary" />
                 <div>
                   <p className="text-sm text-muted-foreground">Compensation</p>
-                  <p className="font-medium">{listing.compensation_type} {listing.compensation_value && `- ${listing.compensation_value}`}</p>
+                  <p className="font-medium">
+                    {listing.compensation_type}
+                    {listing.compensation_value && (
+                      (() => {
+                        if (typeof listing.compensation_value === 'object') {
+                          const val = listing.compensation_value;
+                          // Show all key-value pairs in a readable way
+                          return ' - ' + Object.entries(val).map(([k, v]) => `${k.charAt(0).toUpperCase() + k.slice(1)}: ${v}`).join(' | ');
+                        } else {
+                          try {
+                            const parsed = JSON.parse(listing.compensation_value);
+                            if (typeof parsed === 'object') {
+                              return ' - ' + Object.entries(parsed).map(([k, v]) => `${k.charAt(0).toUpperCase() + k.slice(1)}: ${v}`).join(' | ');
+                            }
+                          } catch {
+                            // fallback to string
+                            return ` - ${listing.compensation_value}`;
+                          }
+                          return ` - ${listing.compensation_value}`;
+                        }
+                      })()
+                    )}
+                  </p>
                 </div>
               </div>
             </CardContent>
