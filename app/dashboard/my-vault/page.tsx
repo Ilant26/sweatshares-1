@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -30,6 +30,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { EllipsisVertical } from 'lucide-react';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { toast } from 'sonner';
 
 import {
   Lock,
@@ -55,91 +57,190 @@ import {
 } from 'lucide-react';
 
 export default function MyVaultPage() {
-  const [activeTab, setActiveTab] = useState('personal-documents');
-  const [addDocumentDialogOpen, setAddDocumentDialogOpen] = useState(false);
+  const supabase = createClientComponentClient<any>();
+  // Types for documents and activities
+  type VaultDocument = {
+    id: string;
+    owner_id: string;
+    filename: string;
+    filepath: string;
+    description?: string;
+    is_encrypted?: boolean;
+    created_at?: string;
+    type?: string;
+  };
+  type SharedDocument = VaultDocument;
+  type Activity = any;
+  const [user, setUser] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState<string>('personal-documents');
+  const [addDocumentDialogOpen, setAddDocumentDialogOpen] = useState<boolean>(false);
+  const [uploading, setUploading] = useState<boolean>(false);
+  const [personalDocuments, setPersonalDocuments] = useState<VaultDocument[]>([]);
+  const [sharedDocuments, setSharedDocuments] = useState<SharedDocument[]>([]);
+  const [recentActivities, setRecentActivities] = useState<Activity[]>([]);
+  const [fileInput, setFileInput] = useState<File | null>(null);
+  const [form, setForm] = useState<{
+    name: string;
+    type: string;
+    description: string;
+    tags: string;
+    file: File | null;
+  }>({
+    name: '',
+    type: '',
+    description: '',
+    tags: '',
+    file: null,
+  });
+  const fileRef = useRef<HTMLInputElement>(null);
 
-  const recentDocuments = [
-    {
-      id: 'd1',
-      name: 'Contract_Partner_A_Revised.docx',
-      type: 'Legal',
-      added: 'May 20, 2025 - 1:23 PM',
-      icon: <FileBadge className="h-5 w-5 text-green-500" />,
-    },
-    {
-      id: 'd2',
-      name: 'Budget_Forecast_2025.xlsx',
-      type: 'Finance',
-      added: 'May 20, 2025 - 9:56 AM',
-      icon: <FileStack className="h-5 w-5 text-blue-500" />,
-    },
-    {
-      id: 'd3',
-      name: 'Status_SweatShares_SAS.pdf',
-      type: 'Legal',
-      added: 'May 20, 2025 - 3:11 PM',
-      icon: <FileBadge className="h-5 w-5 text-green-500" />,
-    },
-    {
-      id: 'd4',
-      name: 'Hosting_Invoice_March.pdf',
-      type: 'Invoice',
-      added: 'May 20, 2025 - 8:30 AM',
-      icon: <FileHeart className="h-5 w-5 text-purple-500" />,
-    },
-  ];
+  // Fetch user on mount
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      setUser(data.user);
+    });
+  }, []);
 
-  const sharedDocuments = [
-    {
-      id: 's1',
-      name: 'Presentation_Investors.pptx',
-      sharedBy: 'Thomas Moreau',
-      sharedDate: 'May 27, 2025, 10:15 AM',
-      icon: <FileText className="h-5 w-5 text-orange-500" />,
-    },
-    {
-      id: 's2',
-      name: 'Analysis_Finance_Q2.xlsx',
-      sharedBy: 'Amina Benali',
-      sharedDate: 'May 26, 2025, 14:32 PM',
-      icon: <FileStack className="h-5 w-5 text-blue-500" />,
-    },
-  ];
+  // Fetch personal documents
+  useEffect(() => {
+    if (!user) return;
+    const fetchDocs = async () => {
+      const { data, error } = await supabase
+        .from('vault_documents')
+        .select('*')
+        .eq('owner_id', user.id)
+        .order('created_at', { ascending: false });
+      if (error) toast.error('Failed to fetch documents');
+      else setPersonalDocuments(data || []);
+    };
+    fetchDocs();
+  }, [user]);
 
-  const recentActivities = [
-    {
-      id: 'a1',
-      action: 'Added',
-      document: 'Contract_Partner_A_Revised.docx',
-      user: 'Thomas Moreau',
-      date: 'May 28, 2025, 14:32',
-      ipAddress: '192.168.1.45',
-    },
-    {
-      id: 'a2',
-      action: 'Shared',
-      document: 'Presentation_Investors.pptx',
-      user: 'Thomas Moreau',
-      date: 'May 27, 2025, 10:15',
-      ipAddress: '192.168.1.45',
-    },
-    {
-      id: 'a3',
-      action: 'Consulted',
-      document: 'Budget_Forecast_2025.xlsx',
-      user: 'Philippe Laurent',
-      date: 'May 26, 2025, 16:45',
-      ipAddress: '78.235.32.91',
-    },
-    {
-      id: 'a4',
-      action: 'Deleted',
-      document: 'Old_Contract_B.pdf',
-      user: 'Thomas Moreau',
-      date: 'May 25, 2025, 09:12',
-      ipAddress: '192.168.1.45',
-    },
-  ];
+  // Fetch shared documents
+  useEffect(() => {
+    if (!user) return;
+    const fetchShared = async () => {
+      const { data, error } = await supabase
+        .from('vault_shares')
+        .select('*, vault_documents(*)')
+        .eq('shared_with_id', user.id)
+        .order('shared_at', { ascending: false });
+      if (error) toast.error('Failed to fetch shared documents');
+      else setSharedDocuments((data || []).map((row: any) => row.vault_documents));
+    };
+    fetchShared();
+  }, [user]);
+
+  // Handle form input
+  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { id, value, files } = e.target as HTMLInputElement;
+    if (id === 'file') {
+      setForm((f) => ({ ...f, file: files ? files[0] : null }));
+    } else {
+      setForm((f) => ({ ...f, [id]: value }));
+    }
+  };
+
+  // Upload document
+  const handleUpload = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!form.file || !form.name || !user) {
+      toast.error('Please fill all required fields');
+      return;
+    }
+    setUploading(true);
+    console.log('user:', user, 'file:', form.file);
+    const fileExt = form.file.name.split('.').pop();
+    const filePath = `${user.id}/${Date.now()}_${form.file.name}`;
+    // Upload to Supabase Storage
+    const { error: uploadError } = await supabase.storage
+      .from('vault')
+      .upload(filePath, form.file, { upsert: false });
+    if (uploadError) {
+      toast.error('Upload failed');
+      setUploading(false);
+      return;
+    }
+    // Insert metadata
+    const { error: insertError } = await supabase
+      .from('vault_documents')
+      .insert({
+        owner_id: user.id,
+        filename: form.name,
+        filepath: filePath,
+        description: form.description,
+        is_encrypted: true,
+        type: form.type,
+      });
+    if (insertError) {
+      toast.error('Failed to save document metadata');
+      setUploading(false);
+      return;
+    }
+    toast.success('Document uploaded!');
+    setAddDocumentDialogOpen(false);
+    setForm({ name: '', type: '', description: '', tags: '', file: null });
+    if (fileRef.current) fileRef.current.value = '';
+    // Refresh list
+    const { data } = await supabase
+      .from('vault_documents')
+      .select('*')
+      .eq('owner_id', user.id)
+      .order('created_at', { ascending: false });
+    setPersonalDocuments(data || []);
+    setUploading(false);
+  };
+
+  // Download document
+  const handleDownload = async (doc: VaultDocument) => {
+    const { data, error } = await supabase.storage.from('vault').download(doc.filepath);
+    if (error) {
+      toast.error('Download failed');
+      return;
+    }
+    const url = window.URL.createObjectURL(data);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = doc.filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  };
+
+  // Delete document
+  const handleDelete = async (doc: VaultDocument) => {
+    if (!window.confirm('Delete this document?')) return;
+    // Remove from storage
+    await supabase.storage.from('vault').remove([doc.filepath]);
+    // Remove from DB
+    await supabase.from('vault_documents').delete().eq('id', doc.id);
+    setPersonalDocuments((docs) => docs.filter((d) => d.id !== doc.id));
+    toast.success('Document deleted');
+  };
+
+  // Share document
+  const handleShare = async (doc: VaultDocument) => {
+    const email = prompt('Enter email of user to share with:');
+    if (!email) return;
+    // Find user by email
+    const { data: profiles, error } = await supabase.from('profiles').select('id').eq('username', email);
+    if (error || !profiles || profiles.length === 0) {
+      toast.error('User not found');
+      return;
+    }
+    const shared_with_id = profiles[0].id;
+    // Insert into vault_shares
+    const { error: shareError } = await supabase.from('vault_shares').insert({
+      document_id: doc.id,
+      shared_with_id,
+    });
+    if (shareError) {
+      toast.error('Failed to share document');
+      return;
+    }
+    toast.success('Document shared!');
+  };
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
@@ -165,18 +266,18 @@ export default function MyVaultPage() {
                   Upload your document and provide necessary details.
                 </DialogDescription>
               </DialogHeader>
-              <div className="grid gap-4 py-4">
+              <form onSubmit={handleUpload} className="grid gap-4 py-4">
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="documentName" className="text-right">
                     Document Name
                   </Label>
-                  <Input id="documentName" placeholder="e.g., Annual Report 2024" className="col-span-3" />
+                  <Input id="name" value={form.name} onChange={handleFormChange} placeholder="e.g., Annual Report 2024" className="col-span-3" required />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="documentType" className="text-right">
                     Document Type
                   </Label>
-                  <Select>
+                  <Select value={form.type} onValueChange={(v) => setForm(f => ({ ...f, type: v }))}>
                     <SelectTrigger className="col-span-3">
                       <SelectValue placeholder="Select document type" />
                     </SelectTrigger>
@@ -192,24 +293,24 @@ export default function MyVaultPage() {
                   <Label htmlFor="description" className="text-right">
                     Description
                   </Label>
-                  <Textarea id="description" placeholder="Brief description of the document" className="col-span-3" />
+                  <Textarea id="description" value={form.description} onChange={handleFormChange} placeholder="Brief description of the document" className="col-span-3" />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="tags" className="text-right">
                     Tags
                   </Label>
-                  <Input id="tags" placeholder="Comma separated tags (e.g., finance, legal)" className="col-span-3" />
+                  <Input id="tags" value={form.tags} onChange={handleFormChange} placeholder="Comma separated tags (e.g., finance, legal)" className="col-span-3" />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="file" className="text-right">
                     File
                   </Label>
-                  <Input id="file" type="file" className="col-span-3" />
+                  <Input id="file" type="file" ref={fileRef} onChange={handleFormChange} className="col-span-3" required />
                 </div>
-              </div>
-              <DialogFooter>
-                <Button type="submit">Upload Document</Button>
-              </DialogFooter>
+                <DialogFooter>
+                  <Button type="submit" disabled={uploading}>{uploading ? 'Uploading...' : 'Upload Document'}</Button>
+                </DialogFooter>
+              </form>
             </DialogContent>
           </Dialog>
         </div>
@@ -282,13 +383,13 @@ export default function MyVaultPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {recentDocuments.map((doc) => (
+                  {personalDocuments.map((doc) => (
                     <TableRow key={doc.id}>
                       <TableCell className="font-medium flex items-center gap-2">
-                        {doc.icon} {doc.name}
+                        <FileText className="h-5 w-5 text-blue-500" /> {doc.filename}
                       </TableCell>
-                      <TableCell><Badge variant="outline">{doc.type}</Badge></TableCell>
-                      <TableCell>{doc.added}</TableCell>
+                      <TableCell><Badge variant="outline">{doc.type || 'N/A'}</Badge></TableCell>
+                      <TableCell>{new Date(doc.created_at).toLocaleString()}</TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -297,11 +398,9 @@ export default function MyVaultPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem className="gap-2"><Eye className="h-4 w-4" /> View</DropdownMenuItem>
-                            <DropdownMenuItem className="gap-2"><Download className="h-4 w-4" /> Download</DropdownMenuItem>
-                            <DropdownMenuItem className="gap-2"><Share2 className="h-4 w-4" /> Share</DropdownMenuItem>
-                            <DropdownMenuItem className="gap-2"><Copy className="h-4 w-4" /> Duplicate</DropdownMenuItem>
-                            <DropdownMenuItem className="gap-2 text-red-600"><Trash2 className="h-4 w-4" /> Delete</DropdownMenuItem>
+                            <DropdownMenuItem className="gap-2" onClick={() => handleDownload(doc)}><Download className="h-4 w-4" /> Download</DropdownMenuItem>
+                            <DropdownMenuItem className="gap-2" onClick={() => handleShare(doc)}><Share2 className="h-4 w-4" /> Share</DropdownMenuItem>
+                            <DropdownMenuItem className="gap-2 text-red-600" onClick={() => handleDelete(doc)}><Trash2 className="h-4 w-4" /> Delete</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -332,10 +431,10 @@ export default function MyVaultPage() {
                   {sharedDocuments.map((doc) => (
                     <TableRow key={doc.id}>
                       <TableCell className="font-medium flex items-center gap-2">
-                        {doc.icon} {doc.name}
+                        <FileText className="h-5 w-5 text-orange-500" /> {doc.filename}
                       </TableCell>
-                      <TableCell className="flex items-center gap-2"><Users className="h-4 w-4 text-muted-foreground" /> {doc.sharedBy}</TableCell>
-                      <TableCell>{doc.sharedDate}</TableCell>
+                      <TableCell className="flex items-center gap-2"><Users className="h-4 w-4 text-muted-foreground" /> {doc.owner_id}</TableCell>
+                      <TableCell>{doc.created_at ? new Date(doc.created_at).toLocaleString() : ''}</TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -344,10 +443,7 @@ export default function MyVaultPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem className="gap-2"><Eye className="h-4 w-4" /> View</DropdownMenuItem>
-                            <DropdownMenuItem className="gap-2"><Download className="h-4 w-4" /> Download</DropdownMenuItem>
-                            <DropdownMenuItem className="gap-2"><Copy className="h-4 w-4" /> Duplicate</DropdownMenuItem>
-                            <DropdownMenuItem className="gap-2 text-red-600"><Trash2 className="h-4 w-4" /> Delete</DropdownMenuItem>
+                            <DropdownMenuItem className="gap-2" onClick={() => handleDownload(doc)}><Download className="h-4 w-4" /> Download</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
