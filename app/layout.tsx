@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "next-themes";
-import Footer from "@/components/blocks/footer";
 import { Inter } from "next/font/google";
 import { SessionProvider } from "@/components/providers/session-provider";
 
@@ -38,6 +37,7 @@ export default function RootLayout({
           defaultTheme="system"
           enableSystem
           disableTransitionOnChange
+          storageKey="sweatshares-theme"
         >
           <SessionProvider>
             {children}

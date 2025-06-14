@@ -34,6 +34,7 @@ interface UserProfile {
     two_factor_enabled: boolean;
     onboarding_completed: boolean;
     email: string;
+    profile_type: string | null;
 }
 
 export default function ProfileSettingsPage() {
@@ -75,7 +76,8 @@ export default function ProfileSettingsPage() {
                     phone_number,
                     email_notifications,
                     two_factor_enabled,
-                    onboarding_completed
+                    onboarding_completed,
+                    profile_type
                 `)
                 .eq('id', user?.id)
                 .single();
@@ -97,6 +99,7 @@ export default function ProfileSettingsPage() {
                 two_factor_enabled: profile?.two_factor_enabled || false,
                 onboarding_completed: profile?.onboarding_completed || false,
                 email: user?.email || '',
+                profile_type: profile?.profile_type || null,
             };
 
             setUserProfile(newProfile);
@@ -188,6 +191,7 @@ export default function ProfileSettingsPage() {
                         email_notifications: userProfile.email_notifications,
                         two_factor_enabled: userProfile.two_factor_enabled,
                         onboarding_completed: userProfile.onboarding_completed,
+                        profile_type: userProfile.profile_type,
                     },
                     { onConflict: 'id' }
                 );
@@ -316,6 +320,27 @@ export default function ProfileSettingsPage() {
                                 onChange={handleInputChange}
                                 placeholder="https://your-website.com"
                             />
+                        </div>
+
+                        <div className="space-y-4">
+                            <div className="grid gap-4">
+                                <div className="grid gap-2">
+                                    <Label htmlFor="profile_type">Profile Type</Label>
+                                    <Select
+                                        value={userProfile.profile_type || ''}
+                                        onValueChange={handleSelectChange('profile_type')}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select your profile type" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="Founder">Founder</SelectItem>
+                                            <SelectItem value="Investor">Investor</SelectItem>
+                                            <SelectItem value="Expert">Expert/Freelancer/Consultant</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
                         </div>
                     </CardContent>
                 </Card>

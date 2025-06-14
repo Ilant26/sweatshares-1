@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -17,6 +17,11 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Plus, Search, ChevronDown, Edit, Trash2, Eye, Settings2, Calendar as CalendarIcon, DollarSign, Filter, ListFilter, SlidersHorizontal, ArrowUpDown, AlignLeft } from 'lucide-react';
 import { Label } from '@/components/ui/label';
+import { supabase } from '@/lib/supabase';
+import { useSession } from '@/components/providers/session-provider';
+import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
+import { RichTextEditor } from '@/components/ui/rich-text-editor';
 
 export default function MyListingsPage() {
     const [selectedListings, setSelectedListings] = useState<string[]>([]);
@@ -25,15 +30,23 @@ export default function MyListingsPage() {
     const [compensationType, setCompensationType] = useState<string>('');
     const [profileType, setProfileType] = useState<string>('');
     const [listingType, setListingType] = useState<string>("");
-
-    const listings = [
-        { id: '1', type: 'Fundraising', role: 'Seed Investor', country: 'France', endDate: 'June 30, 2025', compensation: 'Equity', status: true },
-        { id: '2', type: 'Partnership', role: 'Co-founder', country: 'France', endDate: 'July 15, 2025', compensation: 'Equity', status: true },
-        { id: '3', type: 'Job Offer', role: 'Full-Stack Developer', country: 'France', endDate: 'August 31, 2025', compensation: 'Salary', status: true },
-        { id: '4', type: 'Mentor Search', role: 'Growth Mentor', country: 'Remote', endDate: 'September 15, 2025', compensation: 'Volunteer', status: false },
-        { id: '5', type: 'Fundraising', role: 'Series A Investor', country: 'Europe', endDate: 'May 10, 2026', compensation: 'Equity', status: true },
-        { id: '6', type: 'Partnership', role: 'Marketing Manager', country: 'France', endDate: 'April 10, 2026', compensation: 'Fixed', status: false },
-    ];
+    const { user } = useSession();
+    const [fundingStage, setFundingStage] = useState('');
+    const [skills, setSkills] = useState('');
+    const [locationCountry, setLocationCountry] = useState('');
+    const [locationCity, setLocationCity] = useState('');
+    const [compensationValue, setCompensationValue] = useState('');
+    const [amount, setAmount] = useState('');
+    const [sector, setSector] = useState('');
+    const [title, setTitle] = useState('');
+    const [description, setDescription] = useState('');
+    const [isCreating, setIsCreating] = useState(false);
+    const [listings, setListings] = useState<any[]>([]);
+    const [isLoadingListings, setIsLoadingListings] = useState(false);
+    const [listingsError, setListingsError] = useState<string | null>(null);
+    const router = useRouter();
+    const [deletingId, setDeletingId] = useState<string | null>(null);
+    const [editingId, setEditingId] = useState<string | null>(null);
 
     const handleSelectAll = (checked: boolean) => {
         if (checked) {
@@ -50,6 +63,129 @@ export default function MyListingsPage() {
             setSelectedListings(selectedListings.filter(listingId => listingId !== id));
         }
     };
+
+    const fetchListings = async () => {
+        if (!user) return;
+        setIsLoadingListings(true);
+        setListingsError(null);
+        const { data, error } = await supabase
+            .from('listings')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false });
+        if (error) {
+            setListingsError(error.message);
+        } else {
+            setListings(data || []);
+        }
+        setIsLoadingListings(false);
+    };
+
+    useEffect(() => {
+        if (user) fetchListings();
+    }, [user]);
+
+    const handleDeleteListing = async (id: string) => {
+        setDeletingId(id);
+        const { error } = await supabase.from('listings').delete().eq('id', id);
+        setDeletingId(null);
+        if (error) {
+            toast.error('Failed to delete listing: ' + error.message);
+        } else {
+            toast.success('Listing deleted!');
+            fetchListings();
+        }
+    };
+
+    const handleEditListing = (listing: any) => {
+        setEditingId(listing.id);
+        setIsNewListingModalOpen(true);
+        setProfileType(listing.profile_type || '');
+        setListingType(listing.listing_type || '');
+        setFundingStage(listing.funding_stage || '');
+        setSkills(listing.skills || '');
+        setLocationCountry(listing.location_country || '');
+        setLocationCity(listing.location_city || '');
+        setCompensationType(listing.compensation_type || '');
+        setCompensationValue(listing.compensation_value || '');
+        setAmount(listing.amount || '');
+        setSector(listing.sector || '');
+        setListingEndDate(listing.end_date ? new Date(listing.end_date) : undefined);
+        setTitle(listing.title || '');
+        setDescription(listing.description || '');
+    };
+
+    const handleCreateOrUpdateListing = async () => {
+        if (!user) {
+            toast.error('You must be logged in to create a listing.');
+            return;
+        }
+        setIsCreating(true);
+        let error;
+        if (editingId) {
+            ({ error } = await supabase.from('listings').update({
+                user_id: user.id,
+                profile_type: profileType,
+                listing_type: listingType,
+                funding_stage: fundingStage,
+                skills,
+                location_country: locationCountry,
+                location_city: locationCity,
+                compensation_type: compensationType,
+                compensation_value: compensationValue,
+                amount,
+                sector,
+                end_date: listingEndDate ? listingEndDate.toISOString().split('T')[0] : null,
+                title,
+                description: description || '',
+            }).eq('id', editingId));
+        } else {
+            ({ error } = await supabase.from('listings').insert({
+                user_id: user.id,
+                profile_type: profileType,
+                listing_type: listingType,
+                funding_stage: fundingStage,
+                skills,
+                location_country: locationCountry,
+                location_city: locationCity,
+                compensation_type: compensationType,
+                compensation_value: compensationValue,
+                amount,
+                sector,
+                end_date: listingEndDate ? listingEndDate.toISOString().split('T')[0] : null,
+                title,
+                description: description || '',
+            }));
+        }
+        setIsCreating(false);
+        if (error) {
+            toast.error((editingId ? 'Failed to update' : 'Failed to create') + ' listing: ' + error.message);
+        } else {
+            toast.success(editingId ? 'Listing updated!' : 'Listing created!');
+            setIsNewListingModalOpen(false);
+            setEditingId(null);
+            fetchListings();
+        }
+    };
+
+    useEffect(() => {
+        if (!isNewListingModalOpen) {
+            setEditingId(null);
+            setProfileType('');
+            setListingType('');
+            setFundingStage('');
+            setSkills('');
+            setLocationCountry('');
+            setLocationCity('');
+            setCompensationType('');
+            setCompensationValue('');
+            setAmount('');
+            setSector('');
+            setListingEndDate(undefined);
+            setTitle('');
+            setDescription('');
+        }
+    }, [isNewListingModalOpen]);
 
     return (
         <div className="flex-1 space-y-8 p-8 pt-6">
@@ -120,58 +256,64 @@ export default function MyListingsPage() {
             </div>
 
             <div className="rounded-md border">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead className="w-[50px]">
-                                <Checkbox
-                                    checked={selectedListings.length === listings.length}
-                                    onCheckedChange={handleSelectAll}
-                                    aria-label="Select all"
-                                />
-                            </TableHead>
-                            <TableHead>Listing Type</TableHead>
-                            <TableHead>Role Needed</TableHead>
-                            <TableHead>Country</TableHead>
-                            <TableHead>End Date</TableHead>
-                            <TableHead>Compensation</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {listings.map((listing) => (
-                            <TableRow key={listing.id}>
-                                <TableCell>
+                {isLoadingListings ? (
+                    <div className="p-8 text-center text-muted-foreground">Loading listings...</div>
+                ) : listingsError ? (
+                    <div className="p-8 text-center text-destructive">{listingsError}</div>
+                ) : (
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead className="w-[50px]">
                                     <Checkbox
-                                        checked={selectedListings.includes(listing.id)}
-                                        onCheckedChange={(checked: boolean) => handleSelectListing(listing.id, checked)}
-                                        aria-label="Select row"
+                                        checked={selectedListings.length === listings.length && listings.length > 0}
+                                        onCheckedChange={handleSelectAll}
+                                        aria-label="Select all"
                                     />
-                                </TableCell>
-                                <TableCell>{listing.type}</TableCell>
-                                <TableCell>{listing.role}</TableCell>
-                                <TableCell>{listing.country}</TableCell>
-                                <TableCell>{listing.endDate}</TableCell>
-                                <TableCell>{listing.compensation}</TableCell>
-                                <TableCell>
-                                    <Switch checked={listing.status} onCheckedChange={() => { /* Handle status change */ }} />
-                                </TableCell>
-                                <TableCell className="text-right flex items-center justify-end gap-2">
-                                    <Button variant="ghost" size="icon">
-                                        <Eye className="h-4 w-4" />
-                                    </Button>
-                                    <Button variant="ghost" size="icon">
-                                        <Edit className="h-4 w-4" />
-                                    </Button>
-                                    <Button variant="ghost" size="icon">
-                                        <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                </TableCell>
+                                </TableHead>
+                                <TableHead>Looking for</TableHead>
+                                <TableHead>As an</TableHead>
+                                <TableHead>Country</TableHead>
+                                <TableHead>End Date</TableHead>
+                                <TableHead>Compensation</TableHead>
+                                <TableHead>Status</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
+                        </TableHeader>
+                        <TableBody>
+                            {listings.map((listing) => (
+                                <TableRow key={listing.id}>
+                                    <TableCell>
+                                        <Checkbox
+                                            checked={selectedListings.includes(listing.id)}
+                                            onCheckedChange={(checked: boolean) => handleSelectListing(listing.id, checked)}
+                                            aria-label="Select row"
+                                        />
+                                    </TableCell>
+                                    <TableCell>{listing.listing_type}</TableCell>
+                                    <TableCell>{listing.profile_type}</TableCell>
+                                    <TableCell>{listing.location_country}</TableCell>
+                                    <TableCell>{listing.end_date ? new Date(listing.end_date).toLocaleDateString() : ''}</TableCell>
+                                    <TableCell>{listing.compensation_type}</TableCell>
+                                    <TableCell>
+                                        <Switch checked={true} onCheckedChange={() => {}} />
+                                    </TableCell>
+                                    <TableCell className="text-right flex items-center justify-end gap-2">
+                                        <Button variant="ghost" size="icon" onClick={() => router.push(`/listing/${listing.id}`)}>
+                                            <Eye className="h-4 w-4" />
+                                        </Button>
+                                        <Button variant="ghost" size="icon" onClick={() => handleEditListing(listing)}>
+                                            <Edit className="h-4 w-4" />
+                                        </Button>
+                                        <Button variant="ghost" size="icon" onClick={() => handleDeleteListing(listing.id)} disabled={deletingId === listing.id}>
+                                            {deletingId === listing.id ? <span className="animate-spin"><Trash2 className="h-4 w-4" /></span> : <Trash2 className="h-4 w-4" />}
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                )}
             </div>
 
             <div className="flex items-center justify-between text-sm text-muted-foreground">
@@ -211,8 +353,8 @@ export default function MyListingsPage() {
   <div className="grid gap-4 py-4">
     {/* Profile Selector */}
     <div className="grid grid-cols-4 items-center gap-4">
-      <Label htmlFor="profileType" className="text-right">Profile</Label>
-      <Select onValueChange={setProfileType}>
+      <Label htmlFor="profileType" className="text-right">I am a</Label>
+      <Select onValueChange={setProfileType} disabled={editingId !== null}>
         <SelectTrigger className="col-span-3">
           <SelectValue placeholder="Select your profile" />
         </SelectTrigger>
@@ -227,8 +369,8 @@ export default function MyListingsPage() {
     {/* Listing Type - dynamic options */}
     {profileType && (
       <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="listingType" className="text-right">Listing Type</Label>
-        <Select value={listingType} onValueChange={setListingType}>
+        <Label htmlFor="listingType" className="text-right">Looking to</Label>
+        <Select value={listingType} onValueChange={setListingType} disabled={editingId !== null}>
           <SelectTrigger className="col-span-3">
             <SelectValue placeholder="Select listing type" />
           </SelectTrigger>
@@ -269,7 +411,7 @@ export default function MyListingsPage() {
      (profileType === "investor" && listingType === "investment-opportunity") && (
       <div className="grid grid-cols-4 items-center gap-4">
         <Label htmlFor="fundingStage" className="text-right">Funding Stage</Label>
-        <Select>
+        <Select value={fundingStage} onValueChange={setFundingStage}>
           <SelectTrigger className="col-span-3">
             <SelectValue placeholder="Select funding stage" />
           </SelectTrigger>
@@ -292,13 +434,13 @@ export default function MyListingsPage() {
      (profileType === "founder" || profileType === "investor" || profileType === "expert") && (
       <div className="grid grid-cols-4 items-center gap-4">
         <Label htmlFor="skills" className="text-right">Skills</Label>
-        <Textarea id="skills" placeholder="Ex: React, Node.js, Digital Marketing..." className="col-span-3" />
+        <Textarea id="skills" placeholder="Ex: React, Node.js, Digital Marketing..." className="col-span-3" value={skills} onChange={e => setSkills(e.target.value)} />
       </div>
     )}
     <div className="grid grid-cols-4 items-center gap-4">
       <Label htmlFor="locationCountry" className="text-right">Location</Label>
       <div className="col-span-3 flex gap-2">
-        <Select>
+        <Select value={locationCountry} onValueChange={setLocationCountry}>
           <SelectTrigger className="w-1/2">
             <SelectValue placeholder="Select a country" />
           </SelectTrigger>
@@ -308,7 +450,7 @@ export default function MyListingsPage() {
             <SelectItem value="uk">UK</SelectItem>
           </SelectContent>
         </Select>
-        <Input id="locationCity" placeholder="City (optional)" className="w-1/2" />
+        <Input id="locationCity" placeholder="City (optional)" className="w-1/2" value={locationCity} onChange={e => setLocationCity(e.target.value)} />
       </div>
     </div>
     {/* Compensation Type */}
@@ -391,29 +533,29 @@ export default function MyListingsPage() {
             </SelectContent>
           </Select>
           {compensationType === 'cash' && (
-            <Input placeholder="Cash bonus (ex: 5000€)" />
+            <Input placeholder="Cash bonus (ex: 5000€)" value={compensationValue} onChange={e => setCompensationValue(e.target.value)} />
           )}
           {compensationType === 'equity' && (
-            <Input placeholder="Equity (ex: 5-10%)" />
+            <Input placeholder="Equity (ex: 5-10%)" value={compensationValue} onChange={e => setCompensationValue(e.target.value)} />
           )}
           {compensationType === 'salary' && (
-            <Input placeholder="Annual salary (ex: 40-50K)" />
+            <Input placeholder="Annual salary (ex: 40-50K)" value={compensationValue} onChange={e => setCompensationValue(e.target.value)} />
           )}
           {compensationType === 'hybrid' && (
             <div className="flex flex-col gap-2">
-              <Input placeholder="Equity (ex: 5-10%)" />
+              <Input placeholder="Equity (ex: 5-10%)" value={compensationValue} onChange={e => setCompensationValue(e.target.value)} />
               <Input placeholder="Cash bonus (ex: 5000€)" />
             </div>
           )}
           {compensationType === 'salary-equity' && (
             <div className="flex flex-col gap-2">
-              <Input placeholder="Annual salary (ex: 40-50K)" />
+              <Input placeholder="Annual salary (ex: 40-50K)" value={compensationValue} onChange={e => setCompensationValue(e.target.value)} />
               <Input placeholder="Equity (ex: 5-10%)" />
             </div>
           )}
           {compensationType === 'cash-equity' && (
             <div className="flex flex-col gap-2">
-              <Input placeholder="Cash amount (ex: 5000€)" />
+              <Input placeholder="Cash amount (ex: 5000€)" value={compensationValue} onChange={e => setCompensationValue(e.target.value)} />
               <Input placeholder="Equity (ex: 5-10%)" />
             </div>
           )}
@@ -425,14 +567,14 @@ export default function MyListingsPage() {
       (profileType === "investor" && !["expert-freelance"].includes(listingType)) ||
       (profileType === "expert" && !["mission", "job", "expert-freelance", "cofounder"].includes(listingType))) && (
       <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="amount" className="text-right">Amount</Label>
-        <Input id="amount" placeholder="Ex: 10000€" className="col-span-3" />
+        <Label htmlFor="amount" className="text-right">Budget</Label>
+        <Input id="amount" placeholder="Ex: 10000€" className="col-span-3" value={amount} onChange={e => setAmount(e.target.value)} />
       </div>
     )}
     {/* Secteur */}
     <div className="grid grid-cols-4 items-center gap-4">
       <Label htmlFor="secteur" className="text-right">Company Sector</Label>
-      <Input id="secteur" placeholder="Ex: Tech, Health, Finance..." className="col-span-3" />
+      <Input id="secteur" placeholder="Ex: Tech, Health, Finance..." className="col-span-3" value={sector} onChange={e => setSector(e.target.value)} />
     </div>
     {/* Listing End Date */}
     <div className="grid grid-cols-4 items-center gap-4">
@@ -463,17 +605,23 @@ export default function MyListingsPage() {
     {/* Required Skills */}
     <div className="grid grid-cols-4 items-center gap-4">
       <Label htmlFor="title" className="text-right">Title</Label>
-      <Input id="title" placeholder="Input your title" className="col-span-3" />
+      <Input id="title" placeholder="Input your title" className="col-span-3" value={title} onChange={e => setTitle(e.target.value)} />
     </div>
     {/* Description */}
     <div className="grid grid-cols-4 items-center gap-4">
       <Label htmlFor="description" className="text-right">Description</Label>
-      <Textarea id="description" placeholder="Describe your needs in detail..." className="col-span-3" />
+      <div className="col-span-3">
+        <RichTextEditor
+          content={description}
+          onChange={setDescription}
+          placeholder="Describe your needs in detail..."
+        />
+      </div>
     </div>
   </div>
   <DialogFooter>
-    <Button variant="outline" onClick={() => setIsNewListingModalOpen(false)}>Cancel</Button>
-    <Button>Create Listing</Button>
+    <Button variant="outline" onClick={() => setIsNewListingModalOpen(false)} disabled={isCreating}>Cancel</Button>
+    <Button onClick={handleCreateOrUpdateListing} disabled={isCreating}>{isCreating ? (editingId ? 'Updating...' : 'Creating...') : (editingId ? 'Update Listing' : 'Create Listing')}</Button>
   </DialogFooter>
                 </DialogContent>
             </Dialog>
