@@ -19,7 +19,7 @@ import {
 import { ThemeSwitcher } from "@/components/theme-switcher"
 import { usePathname } from 'next/navigation';
 import { ProtectedRoute } from '@/components/protected-route'
-import { useSession, UnreadMessagesProvider } from '@/components/providers/session-provider'
+import { useSession, UnreadMessagesProvider, UnreadInvitationsProvider } from '@/components/providers/session-provider'
 import { Toaster } from "@/components/ui/toaster"
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state";
@@ -48,51 +48,53 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <ProtectedRoute>
       <UnreadMessagesProvider>
-        <SidebarProvider>
-          <AppSidebar />
-          <SidebarInset>
-            <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
-              <div className="flex items-center gap-2 px-4">
-                <SidebarTrigger className="-ml-1" />
-                <Separator
-                  orientation="vertical"
-                  className="mr-2 data-[orientation=vertical]:h-4"
-                />
-                <Breadcrumb>
-                  <BreadcrumbList>
-                    <BreadcrumbItem className="hidden md:block">
-                      <BreadcrumbLink href="/dashboard">
-                        Dashboard
-                      </BreadcrumbLink>
-                    </BreadcrumbItem>
-                    {pathSegments.map((segment, index) => {
-                      const href = '/dashboard/' + pathSegments.slice(0, index + 1).join('/');
-                      const isLast = index === pathSegments.length - 1;
-                      const formattedSegment = formatBreadcrumbSegment(segment);
+        <UnreadInvitationsProvider>
+          <SidebarProvider>
+            <AppSidebar />
+            <SidebarInset>
+              <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
+                <div className="flex items-center gap-2 px-4">
+                  <SidebarTrigger className="-ml-1" />
+                  <Separator
+                    orientation="vertical"
+                    className="mr-2 data-[orientation=vertical]:h-4"
+                  />
+                  <Breadcrumb>
+                    <BreadcrumbList>
+                      <BreadcrumbItem className="hidden md:block">
+                        <BreadcrumbLink href="/dashboard">
+                          Dashboard
+                        </BreadcrumbLink>
+                      </BreadcrumbItem>
+                      {pathSegments.map((segment, index) => {
+                        const href = '/dashboard/' + pathSegments.slice(0, index + 1).join('/');
+                        const isLast = index === pathSegments.length - 1;
+                        const formattedSegment = formatBreadcrumbSegment(segment);
 
-                      return (
-                        <React.Fragment key={href}>
-                          <BreadcrumbSeparator className="hidden md:block" />
-                          <BreadcrumbItem>
-                            {isLast ? (
-                              <BreadcrumbPage>{formattedSegment}</BreadcrumbPage>
-                            ) : (
-                              <BreadcrumbLink href={href}>{formattedSegment}</BreadcrumbLink>
-                            )}
-                          </BreadcrumbItem>
-                        </React.Fragment>
-                      );
-                    })}
-                  </BreadcrumbList>
-                </Breadcrumb>
-              </div>
-              <div className="ml-auto pr-4">
-                <ThemeSwitcher />
-              </div>
-            </header>
-            {children}
-          </SidebarInset>
-        </SidebarProvider>
+                        return (
+                          <React.Fragment key={href}>
+                            <BreadcrumbSeparator className="hidden md:block" />
+                            <BreadcrumbItem>
+                              {isLast ? (
+                                <BreadcrumbPage>{formattedSegment}</BreadcrumbPage>
+                              ) : (
+                                <BreadcrumbLink href={href}>{formattedSegment}</BreadcrumbLink>
+                              )}
+                            </BreadcrumbItem>
+                          </React.Fragment>
+                        );
+                      })}
+                    </BreadcrumbList>
+                  </Breadcrumb>
+                </div>
+                <div className="ml-auto pr-4">
+                  <ThemeSwitcher />
+                </div>
+              </header>
+              {children}
+            </SidebarInset>
+          </SidebarProvider>
+        </UnreadInvitationsProvider>
       </UnreadMessagesProvider>
       <Toaster />
     </ProtectedRoute>

@@ -216,9 +216,14 @@ export default function MyListingsPage() {
         <div className="flex-1 space-y-8 p-8 pt-6">
             <div className="flex items-center justify-between space-y-2">
                 <h2 className="text-3xl font-bold tracking-tight">Manage Your Listings</h2>
-                <Button onClick={() => setIsNewListingModalOpen(true)}>
-                    <Plus className="mr-2 h-4 w-4" /> New Listing
-                </Button>
+                <div className="flex gap-2">
+                    <Button onClick={() => router.push('/listing')} variant="outline">
+                        View Listings
+                    </Button>
+                    <Button onClick={() => setIsNewListingModalOpen(true)}>
+                        <Plus className="mr-2 h-4 w-4" /> New Listing
+                    </Button>
+                </div>
             </div>
             <p className="text-muted-foreground">Create and manage your professional opportunity listings</p>
 

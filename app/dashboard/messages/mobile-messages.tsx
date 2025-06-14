@@ -226,6 +226,8 @@ export function MobileMessages() {
                     .eq('id', selectedUserId)
                     .single();
                 setSelectedUserProfile(data);
+            } else {
+                setSelectedUserProfile(null);
             }
         };
         fetchProfile();

@@ -266,6 +266,8 @@ export default function MessagesPage() {
                     .eq('id', selectedConversation)
                     .single();
                 setSelectedUserProfile(data);
+            } else {
+                setSelectedUserProfile(null);
             }
         };
         fetchProfile();

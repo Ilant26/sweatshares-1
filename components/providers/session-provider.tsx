@@ -29,6 +29,13 @@ interface UnreadMessagesContextType {
 
 const UnreadMessagesContext = createContext<UnreadMessagesContextType | undefined>(undefined)
 
+interface UnreadInvitationsContextType {
+  unreadInvitations: number;
+  refreshUnreadInvitations: () => void;
+}
+
+const UnreadInvitationsContext = createContext<UnreadInvitationsContextType | undefined>(undefined);
+
 export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
@@ -127,4 +134,38 @@ export function UnreadMessagesProvider({ children }: { children: React.ReactNode
       {children}
     </UnreadMessagesContext.Provider>
   )
+}
+
+export function useUnreadInvitations() {
+  const context = useContext(UnreadInvitationsContext);
+  if (!context) {
+    throw new Error('useUnreadInvitations must be used within an UnreadInvitationsProvider');
+  }
+  return context;
+}
+
+export function UnreadInvitationsProvider({ children }: { children: React.ReactNode }) {
+  const { user } = useSession();
+  const [unreadInvitations, setUnreadInvitations] = useState(0);
+
+  const fetchUnreadInvitations = useCallback(async () => {
+    if (!user) return;
+    const { count, error } = await supabase
+      .from('connections')
+      .select('*', { count: 'exact', head: true })
+      .eq('receiver_id', user.id)
+      .eq('status', 'pending');
+    if (!error && typeof count === 'number') setUnreadInvitations(count);
+  }, [user]);
+
+  useEffect(() => {
+    fetchUnreadInvitations();
+    // Optionally, add a subscription for real-time updates if needed
+  }, [user, fetchUnreadInvitations]);
+
+  return (
+    <UnreadInvitationsContext.Provider value={{ unreadInvitations, refreshUnreadInvitations: fetchUnreadInvitations }}>
+      {children}
+    </UnreadInvitationsContext.Provider>
+  );
 } 

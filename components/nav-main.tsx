@@ -1,7 +1,7 @@
 "use client"
 
 import { type LucideIcon } from "lucide-react"
-import { useUnreadMessages } from '@/components/providers/session-provider';
+import { useUnreadMessages, useUnreadInvitations } from '@/components/providers/session-provider';
 import { SidebarMenuBadge, useSidebar } from '@/components/ui/sidebar';
 import Link from "next/link"
 
@@ -28,6 +28,7 @@ export function NavMain({
   }[]
 }) {
   const { unreadCount } = useUnreadMessages();
+  const { unreadInvitations } = useUnreadInvitations();
   const { state } = useSidebar();
   return (
     <SidebarGroup>
@@ -45,6 +46,14 @@ export function NavMain({
                   </SidebarMenuBadge>
                 )}
                 {item.title === 'Messages' && unreadCount > 0 && state === "collapsed" && (
+                  <span className="absolute right-0.5 top-0.5 block h-2 w-2 rounded-full bg-destructive" />
+                )}
+                {item.title === 'Network' && unreadInvitations > 0 && state === "expanded" && (
+                  <SidebarMenuBadge className="ml-2 bg-destructive text-destructive-foreground">
+                    {unreadInvitations < 10 ? unreadInvitations : '9+'}
+                  </SidebarMenuBadge>
+                )}
+                {item.title === 'Network' && unreadInvitations > 0 && state === "collapsed" && (
                   <span className="absolute right-0.5 top-0.5 block h-2 w-2 rounded-full bg-destructive" />
                 )}
               </Link>
