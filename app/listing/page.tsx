@@ -97,6 +97,7 @@ export default function ListingsPage() {
       let query = supabase
         .from("listings")
         .select("*, profiles(full_name, professional_role, avatar_url, country)")
+        .eq("status", "active")
         .order("created_at", { ascending: false });
 
       if (listingType) {

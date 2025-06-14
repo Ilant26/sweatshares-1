@@ -187,6 +187,20 @@ export default function MyListingsPage() {
         }
     }, [isNewListingModalOpen]);
 
+    const handleToggleStatus = async (listing: any) => {
+        const newStatus = listing.status === 'active' ? 'inactive' : 'active';
+        const { error } = await supabase
+            .from('listings')
+            .update({ status: newStatus })
+            .eq('id', listing.id);
+        if (error) {
+            toast.error('Failed to update status: ' + error.message);
+        } else {
+            fetchListings();
+            toast.success('Listing status updated!');
+        }
+    };
+
     return (
         <div className="flex-1 space-y-8 p-8 pt-6">
             <div className="flex items-center justify-between space-y-2">
@@ -274,7 +288,8 @@ export default function MyListingsPage() {
                                 <TableHead>Looking for</TableHead>
                                 <TableHead>As an</TableHead>
                                 <TableHead>Country</TableHead>
-                                <TableHead>End Date</TableHead>
+                                <TableHead>Title</TableHead>
+                                <TableHead>Publication Date</TableHead>
                                 <TableHead>Compensation</TableHead>
                                 <TableHead>Status</TableHead>
                                 <TableHead className="text-right">Actions</TableHead>
@@ -293,10 +308,14 @@ export default function MyListingsPage() {
                                     <TableCell>{listing.listing_type}</TableCell>
                                     <TableCell>{listing.profile_type}</TableCell>
                                     <TableCell>{listing.location_country}</TableCell>
-                                    <TableCell>{listing.end_date ? new Date(listing.end_date).toLocaleDateString() : ''}</TableCell>
+                                    <TableCell>{listing.title}</TableCell>
+                                    <TableCell>{new Date(listing.created_at).toLocaleDateString()}</TableCell>
                                     <TableCell>{listing.compensation_type}</TableCell>
                                     <TableCell>
-                                        <Switch checked={true} onCheckedChange={() => {}} />
+                                        <Switch
+                                            checked={listing.status === 'active'}
+                                            onCheckedChange={() => handleToggleStatus(listing)}
+                                        />
                                     </TableCell>
                                     <TableCell className="text-right flex items-center justify-end gap-2">
                                         <Button variant="ghost" size="icon" onClick={() => router.push(`/listing/${listing.id}`)}>
