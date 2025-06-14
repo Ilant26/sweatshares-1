@@ -59,8 +59,8 @@ export default async function ListingPage({ params }: { params: Promise<{ id: st
                 <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
                   <Calendar className="h-5 w-5 text-primary" />
                   <div>
-                    <p className="text-sm text-muted-foreground">End Date</p>
-                    <p className="font-medium">{listing.end_date ? new Date(listing.end_date).toLocaleDateString() : 'N/A'}</p>
+                    <p className="text-sm text-muted-foreground">Publication Date</p>
+                    <p className="font-medium">{listing.created_at ? new Date(listing.created_at).toLocaleDateString() : 'N/A'}</p>
                   </div>
                 </div>
                 {listing.amount && (
