@@ -1,14 +1,14 @@
 import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, MapPin, DollarSign, Building2, Briefcase, ArrowLeft, MessageSquare, UserPlus } from 'lucide-react';
+import { Calendar, MapPin, DollarSign, Building2, Briefcase, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { Menu } from '@/components/blocks/menu';
 import FooterSection from '@/components/blocks/footer';
 import { Separator } from '@/components/ui/separator';
+import { ProfileCard } from './profile-card';
 
 export default async function ListingPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -123,30 +123,7 @@ export default async function ListingPage({ params }: { params: Promise<{ id: st
           </Card>
 
           {/* Profile Card */}
-          <Card className="border-none shadow-sm">
-            <CardContent className="p-6">
-              <div className="flex flex-col md:flex-row items-center gap-6">
-                <Avatar className="h-24 w-24 border-2 border-primary/10">
-                  <AvatarImage src={profile?.avatar_url || '/placeholder-user.jpg'} alt={profile?.full_name || 'User'} />
-                  <AvatarFallback className="text-lg">{profile?.full_name?.[0] || '?'}</AvatarFallback>
-                </Avatar>
-                <div className="flex-1 text-center md:text-left">
-                  <CardTitle className="text-2xl font-bold mb-2">{profile?.full_name || 'Unknown User'}</CardTitle>
-                  <CardDescription className="text-lg mb-4">{profile?.professional_role}</CardDescription>
-                  <div className="flex flex-wrap gap-3 justify-center md:justify-start">
-                    <Button className="gap-2">
-                      <MessageSquare className="h-4 w-4" />
-                      Message
-                    </Button>
-                    <Button variant="outline" className="gap-2">
-                      <UserPlus className="h-4 w-4" />
-                      Connect
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <ProfileCard profile={profile} />
         </div>
       </div>
       <FooterSection />

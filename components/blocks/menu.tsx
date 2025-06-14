@@ -1,12 +1,15 @@
 "use client";
 import React from 'react';
 import Link from 'next/link';
-import { Menu as MenuIcon, X, Home, List, DollarSign, Mail } from 'lucide-react';
+import { Menu as MenuIcon, X, Home, List, DollarSign, Mail, LayoutDashboard, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { ThemeSwitcher } from '@/components/theme-switcher';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useSession } from '@/components/providers/session-provider';
+import { supabase } from '@/lib/supabase';
+import { useRouter } from 'next/navigation';
 
 const menuItems = [
     { name: 'Accueil', href: '/', icon: Home },
@@ -18,6 +21,13 @@ const menuItems = [
 export const Menu = () => {
     const [menuState, setMenuState] = React.useState(false);
     const [isScrolled, setIsScrolled] = React.useState(false);
+    const { user } = useSession();
+    const router = useRouter();
+
+    const handleSignOut = async () => {
+        await supabase.auth.signOut();
+        router.push('/');
+    };
 
     React.useEffect(() => {
         const handleScroll = () => {
@@ -121,23 +131,44 @@ export const Menu = () => {
                                                     <span className="text-sm text-muted-foreground">Theme</span>
                                                     <ThemeSwitcher />
                                                 </div>
-                                                <div className="flex flex-col gap-2">
-                                                    <Button
-                                                        asChild
-                                                        variant="outline"
-                                                        className="w-full">
-                                                        <Link href="/auth/login">
-                                                            Login
-                                                        </Link>
-                                                    </Button>
-                                                    <Button
-                                                        asChild
-                                                        className="w-full">
-                                                        <Link href="/auth/sign-up">
-                                                            Sign Up
-                                                        </Link>
-                                                    </Button>
-                                                </div>
+                                                {user ? (
+                                                    <div className="flex flex-col gap-2">
+                                                        <Button
+                                                            asChild
+                                                            variant="outline"
+                                                            className="w-full">
+                                                            <Link href="/dashboard" className="flex items-center gap-2">
+                                                                <LayoutDashboard className="h-4 w-4" />
+                                                                Dashboard
+                                                            </Link>
+                                                        </Button>
+                                                        <Button
+                                                            variant="outline"
+                                                            className="w-full"
+                                                            onClick={handleSignOut}>
+                                                            <LogOut className="h-4 w-4 mr-2" />
+                                                            Sign Out
+                                                        </Button>
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex flex-col gap-2">
+                                                        <Button
+                                                            asChild
+                                                            variant="outline"
+                                                            className="w-full">
+                                                            <Link href="/auth/login">
+                                                                Login
+                                                            </Link>
+                                                        </Button>
+                                                        <Button
+                                                            asChild
+                                                            className="w-full">
+                                                            <Link href="/auth/sign-up">
+                                                                Sign Up
+                                                            </Link>
+                                                        </Button>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     </div>
@@ -147,21 +178,44 @@ export const Menu = () => {
 
                         <div className="hidden lg:flex items-center gap-4">
                             <ThemeSwitcher />
-                            <Button
-                                asChild
-                                variant="outline"
-                                size="sm">
-                                <Link href="/auth/login">
-                                    Login
-                                </Link>
-                            </Button>
-                            <Button
-                                asChild
-                                size="sm">
-                                <Link href="/auth/sign-up">
-                                    Sign Up
-                                </Link>
-                            </Button>
+                            {user ? (
+                                <>
+                                    <Button
+                                        asChild
+                                        variant="outline"
+                                        size="sm">
+                                        <Link href="/dashboard" className="flex items-center gap-2">
+                                            <LayoutDashboard className="h-4 w-4" />
+                                            Dashboard
+                                        </Link>
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={handleSignOut}>
+                                        <LogOut className="h-4 w-4 mr-2" />
+                                        Sign Out
+                                    </Button>
+                                </>
+                            ) : (
+                                <>
+                                    <Button
+                                        asChild
+                                        variant="outline"
+                                        size="sm">
+                                        <Link href="/auth/login">
+                                            Login
+                                        </Link>
+                                    </Button>
+                                    <Button
+                                        asChild
+                                        size="sm">
+                                        <Link href="/auth/sign-up">
+                                            Sign Up
+                                        </Link>
+                                    </Button>
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>

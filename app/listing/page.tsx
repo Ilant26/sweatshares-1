@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/lib/supabase";
-import { MapPin, Heart, Share2, Mail, Briefcase, ArrowRight } from "lucide-react";
+import { MapPin, Heart, Share2, Mail, Briefcase, ArrowRight, ListFilter, Settings2, Filter, DollarSign } from "lucide-react";
 import FooterSection from "@/components/blocks/footer";
 import { Menu } from "@/components/blocks/menu";
 import { AnimatedGroup } from "@/components/ui/animated-group";
@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Link from "next/link";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const transitionVariants = {
     item: {
@@ -37,7 +38,6 @@ const transitionVariants = {
 };
 
 type ListingType = "Job" | "Project" | "Investment" | "Partnership";
-type Sector = "Technology" | "Healthcare" | "Finance" | "Education" | "Other";
 
 export default function ListingsPage() {
   const [listings, setListings] = useState<any[]>([]);
@@ -45,7 +45,6 @@ export default function ListingsPage() {
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const [listingType, setListingType] = useState<ListingType | "">("");
-  const [sector, setSector] = useState<Sector | "">("");
 
   useEffect(() => {
     const fetchListings = async () => {
@@ -59,9 +58,6 @@ export default function ListingsPage() {
       if (listingType) {
         query = query.eq('listing_type', listingType);
       }
-      if (sector) {
-        query = query.eq('sector', sector);
-      }
 
       const { data, error } = await query;
       if (error) setError(error.message);
@@ -69,7 +65,7 @@ export default function ListingsPage() {
       setLoading(false);
     };
     fetchListings();
-  }, [listingType, sector]);
+  }, [listingType]);
 
   return (
     <div className="min-h-screen flex flex-col bg-zinc-50 dark:bg-background">
@@ -127,30 +123,31 @@ export default function ListingsPage() {
                   ...transitionVariants,
                 }}
                 className="mt-12 flex flex-col items-center justify-center gap-4 md:flex-row">
-                <div className="flex flex-col sm:flex-row gap-4 w-full max-w-xl bg-background p-4 rounded-xl shadow-lg border border-border">
-                  <div className="flex-1">
-                    <label htmlFor="listingType" className="sr-only">Listing Type</label>
+                <div className="w-full max-w-2xl bg-background p-4 rounded-xl shadow-lg border border-border">
+                  <div className="flex flex-col gap-2">
+                    <label htmlFor="listingType" className="text-sm font-medium text-muted-foreground">Filter by Opportunity Type</label>
                     <Select value={listingType} onValueChange={(value: string) => setListingType(value as any)}>
-                      <SelectTrigger id="listingType" className="w-full">
-                        <SelectValue placeholder="Listing Type" />
+                      <SelectTrigger id="listingType" className="w-full h-12 text-base">
+                        <ListFilter className="mr-2 h-5 w-5" />
+                        <SelectValue placeholder="Select an opportunity" />
                       </SelectTrigger>
                       <SelectContent>
-                        {["Job", "Project", "Investment", "Partnership"].map((type) => (
-                          <SelectItem key={type} value={type}>{type}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex-1">
-                    <label htmlFor="sector" className="sr-only">Sector</label>
-                    <Select value={sector} onValueChange={(value: string) => setSector(value as any)}>
-                      <SelectTrigger id="sector" className="w-full">
-                        <SelectValue placeholder="Sector" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {["Technology", "Healthcare", "Finance", "Education", "Other"].map((sector) => (
-                          <SelectItem key={sector} value={sector}>{sector}</SelectItem>
-                        ))}
+                        {/* Founder Options */}
+                        <SelectItem value="find-funding">Funding offer</SelectItem>
+                        <SelectItem value="cofounder">Co-founder offer</SelectItem>
+                        <SelectItem value="expert-freelance">Consultancy and Freelance offers</SelectItem>
+                        <SelectItem value="employee">Job offer</SelectItem>
+                        <SelectItem value="mentor">Mentoring offer</SelectItem>
+                        <SelectItem value="sell-startup">Buy a startup</SelectItem>
+                        
+                        {/* Investor Options */}
+                        <SelectItem value="investment-opportunity">Find investment opportunity</SelectItem>
+                        <SelectItem value="buy-startup">Startup Acquisition</SelectItem>
+                        <SelectItem value="co-investor">Co-investor offers</SelectItem>
+                        
+                        {/* Expert Options */}
+                        <SelectItem value="mission">Find a mission</SelectItem>
+                        <SelectItem value="job">Available for work</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -162,7 +159,7 @@ export default function ListingsPage() {
       </section>
 
       {/* Main Content */}
-      <section className="flex-1 w-full max-w-6xl mx-auto px-4 py-8">
+      <section className="flex-1 w-full max-w-7xl mx-auto px-4 py-8">
         {loading ? (
           <div className="text-center text-muted-foreground py-12">Loading...</div>
         ) : error ? (
@@ -170,54 +167,88 @@ export default function ListingsPage() {
         ) : listings.length === 0 ? (
           <div className="text-center text-muted-foreground py-12">No listings found.</div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {listings.map((listing) => (
               <Card
                 key={listing.id}
-                className="flex flex-col justify-between h-full bg-muted/50 border border-border/50 shadow-sm hover:shadow-md transition-all duration-200"
+                className="group flex flex-col justify-between h-full bg-muted/50 border border-border/50 shadow-sm hover:shadow-md transition-all duration-200 hover:border-border"
               >
-                <CardContent className="p-6 flex flex-col h-full">
-                  <div className="flex items-center gap-2 mb-2 text-muted-foreground">
-                    <Briefcase className="h-5 w-5" />
-                    <span className="text-xs">
-                      Added {listing.created_at ? new Date(listing.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : ''}
-                    </span>
+                <CardContent className="p-4 flex flex-col h-full">
+                  {/* Header Section */}
+                  <div className="space-y-1.5 mb-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Briefcase className="h-4 w-4" />
+                        <span className="text-xs">
+                          {listing.created_at ? new Date(listing.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : ''}
+                        </span>
+                      </div>
+                      <Badge variant="secondary" className="text-xs">
+                        {listing.listing_type}
+                      </Badge>
+                    </div>
+                    <h2 className="text-lg font-semibold line-clamp-2 group-hover:text-primary transition-colors">
+                      {listing.title}
+                    </h2>
                   </div>
-                  <h2 className="text-xl font-semibold mb-1 line-clamp-2">{listing.title}</h2>
-                  <div className="mb-2 text-sm text-muted-foreground">
-                    {listing.profiles?.full_name || "Unknown"}
+
+                  {/* Profile Section */}
+                  <div className="flex items-center gap-3 mb-3">
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage src={listing.profiles?.avatar_url || undefined} alt={listing.profiles?.full_name || "User"} />
+                      <AvatarFallback>{listing.profiles?.full_name?.charAt(0) || "U"}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                      <div className="font-medium text-sm">
+                        {listing.profiles?.full_name || "Unknown"}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {listing.profiles?.professional_role}
+                      </div>
+                    </div>
                     {listing.profiles?.country && (
-                      <>
-                        {" "}
-                        &bull; {listing.profiles.country}
-                      </>
+                      <Badge variant="outline" className="text-xs">
+                        {listing.profiles.country}
+                      </Badge>
                     )}
                   </div>
+
+                  {/* Description */}
                   <div 
-                    className="mb-4 text-sm text-muted-foreground line-clamp-3 prose prose-sm max-w-none dark:prose-invert prose-headings:font-semibold prose-p:text-muted-foreground prose-a:text-primary hover:prose-a:text-primary/80 prose-img:rounded-md prose-img:shadow-md"
+                    className="mb-3 text-sm text-muted-foreground line-clamp-3 prose prose-sm max-w-none dark:prose-invert prose-headings:font-semibold prose-p:text-muted-foreground prose-a:text-primary hover:prose-a:text-primary/80 prose-img:rounded-md prose-img:shadow-md"
                     dangerouslySetInnerHTML={{ __html: listing.description || '' }}
                   />
-                  <div className="flex items-center gap-2 mb-4 text-muted-foreground">
-                    <MapPin className="h-4 w-4" />
-                    <span>{listing.location_city ? `${listing.location_city}, ` : ""}{listing.location_country}</span>
+
+                  {/* Location and Details */}
+                  <div className="space-y-1.5 mb-3">
+                    <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                      <MapPin className="h-4 w-4" />
+                      <span>{listing.location_city ? `${listing.location_city}, ` : ""}{listing.location_country}</span>
+                    </div>
                   </div>
-                  <div className="mt-auto flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      className="flex-1"
-                      onClick={() => router.push(`/listing/${listing.id}`)}
-                    >
-                      View Listing
-                    </Button>
-                    <Button variant="ghost" size="icon" aria-label="Favorite">
-                      <Heart className="h-5 w-5" />
-                    </Button>
-                    <Button variant="ghost" size="icon" aria-label="Share">
-                      <Share2 className="h-5 w-5" />
-                    </Button>
-                    <Button variant="ghost" size="icon" aria-label="Contact">
-                      <Mail className="h-5 w-5" />
-                    </Button>
+
+                  {/* Action Buttons */}
+                  <div className="mt-auto pt-3 border-t">
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() => router.push(`/listing/${listing.id}`)}
+                      >
+                        View Details
+                      </Button>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Favorite">
+                          <Heart className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Share">
+                          <Share2 className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Contact">
+                          <Mail className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>

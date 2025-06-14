@@ -14,6 +14,7 @@ import { supabase } from '@/lib/supabase';
 import { Message, subscribeToMessages, getProfileById, markMessageAsRead } from '@/lib/messages';
 import { useUser } from '@/hooks/use-user';
 import { useUnreadMessages } from '@/components/providers/session-provider';
+import { useSearchParams } from 'next/navigation';
 
 interface Conversation {
     id: string;
@@ -38,10 +39,12 @@ function dedupeMessages(messages: Message[]): Message[] {
 export function MobileMessages() {
     const { user } = useUser();
     const currentUserId = user?.id;
-    const [view, setView] = useState<'conversations' | 'chat'>('conversations');
+    const searchParams = useSearchParams();
+    const userIdFromUrl = searchParams.get('userId');
+    const [view, setView] = useState<'conversations' | 'chat'>(userIdFromUrl ? 'chat' : 'conversations');
     const [currentFilter, setCurrentFilter] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
-    const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+    const [selectedUserId, setSelectedUserId] = useState<string | null>(userIdFromUrl);
     const [messageInput, setMessageInput] = useState('');
     const [showNewMessageDialog, setShowNewMessageDialog] = useState(false);
     const [selectedUserProfile, setSelectedUserProfile] = useState<any>(null);
@@ -96,6 +99,7 @@ export function MobileMessages() {
         messages,
         isLoading,
         sendMessage,
+        error,
         userStatus
     } = useMessages({ userId: selectedUserId || undefined });
 
@@ -604,4 +608,4 @@ export function MobileMessages() {
             </ScrollArea>
         </div>
     );
-} 
+}

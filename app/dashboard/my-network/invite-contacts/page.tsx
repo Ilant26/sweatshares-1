@@ -8,6 +8,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Search, UserPlus, MessageCircle, Check } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
 interface User {
   id: string;
@@ -28,6 +30,8 @@ export default function InviteContactsPage() {
     const [loading, setLoading] = useState(true);
     const [currentUser, setCurrentUser] = useState<string | null>(null);
     const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>({});
+    const router = useRouter();
+    const supabase = createClientComponentClient();
 
     useEffect(() => {
         const fetchCurrentUser = async () => {
@@ -119,6 +123,10 @@ export default function InviteContactsPage() {
         }
     };
 
+    const handleMessage = (userId: string) => {
+        router.push(`/dashboard/messages?userId=${userId}`);
+    };
+
     const getConnectionButton = (user: User) => {
         const status = connectionStatus[user.id] || 'none';
 
@@ -191,7 +199,7 @@ export default function InviteContactsPage() {
                             </CardHeader>
                             <CardContent className="space-y-3">
                                 <div className="flex justify-end gap-2">
-                                    <Button variant="outline" size="sm">
+                                    <Button variant="outline" size="sm" onClick={() => handleMessage(user.id)}>
                                         <MessageCircle className="h-4 w-4 mr-2" /> Message
                                     </Button>
                                     {getConnectionButton(user)}

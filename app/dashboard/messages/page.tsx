@@ -17,6 +17,7 @@ import { supabase } from '@/lib/supabase';
 import { Message, subscribeToMessages, getProfileById, markMessageAsRead } from '@/lib/messages';
 import { useUser } from '@/hooks/use-user';
 import { useUnreadMessages } from '@/components/providers/session-provider';
+import { useSearchParams } from 'next/navigation';
 
 interface Conversation {
     id: string;
@@ -41,7 +42,9 @@ function dedupeMessages(messages: Message[]): Message[] {
 export default function MessagesPage() {
     const { user } = useUser();
     const currentUserId = user?.id;
-    const [selectedConversation, setSelectedConversation] = React.useState<string | null>(null);
+    const searchParams = useSearchParams();
+    const userIdFromUrl = searchParams.get('userId');
+    const [selectedConversation, setSelectedConversation] = React.useState<string | null>(userIdFromUrl);
     const [searchQuery, setSearchQuery] = React.useState('');
     const isMobile = useIsMobile();
     const messagesEndRef = React.useRef<HTMLDivElement>(null);
