@@ -47,6 +47,28 @@ export default function MyListingsPage() {
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const [editingId, setEditingId] = useState<string | null>(null);
 
+    // Add useEffect to handle automatic compensation type selection
+    useEffect(() => {
+        if (profileType && listingType) {
+            // Founder looking for funding
+            if (profileType === "founder" && listingType === "find-funding") {
+                setCompensationType("Equity");
+            }
+            // Founder looking for expert/freelancer
+            else if (profileType === "founder" && listingType === "expert-freelance") {
+                setCompensationType("Cash");
+            }
+            // Investor looking for expert/freelancer
+            else if (profileType === "investor" && listingType === "expert-freelance") {
+                setCompensationType("Cash");
+            }
+            // Expert looking for expert/freelancer
+            else if (profileType === "expert" && listingType === "expert-freelance") {
+                setCompensationType("Cash");
+            }
+        }
+    }, [profileType, listingType]);
+
     const handleSelectAll = (checked: boolean) => {
         if (checked) {
             setSelectedListings(listings.map(listing => listing.id));
@@ -442,8 +464,8 @@ export default function MyListingsPage() {
     )}
 
     {/* Funding Stage - Show when founder is looking for funding or investor is looking for investment opportunity */}
-    {(profileType === "founder" && listingType === "find-funding") || 
-     (profileType === "investor" && listingType === "investment-opportunity") && (
+    {((profileType === "founder" && listingType === "find-funding") || 
+     (profileType === "investor" && listingType === "investment-opportunity")) && (
       <div className="grid grid-cols-4 items-center gap-4">
         <Label htmlFor="fundingStage" className="text-right">Funding Stage</Label>
         <Select value={fundingStage} onValueChange={setFundingStage}>
@@ -451,13 +473,13 @@ export default function MyListingsPage() {
             <SelectValue placeholder="Select funding stage" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="pre-seed">Pre-seed</SelectItem>
-            <SelectItem value="seed">Seed</SelectItem>
-            <SelectItem value="series-a">Series A</SelectItem>
-            <SelectItem value="series-b">Series B</SelectItem>
-            <SelectItem value="series-c">Series C</SelectItem>
-            <SelectItem value="series-d">Series D</SelectItem>
-            <SelectItem value="growth">Growth</SelectItem>
+            <SelectItem value="Pre-seed">Pre-seed</SelectItem>
+            <SelectItem value="Seed">Seed</SelectItem>
+            <SelectItem value="Series A">Series A</SelectItem>
+            <SelectItem value="Series B">Series B</SelectItem>
+            <SelectItem value="Series C">Series C</SelectItem>
+            <SelectItem value="Series D">Series D</SelectItem>
+            <SelectItem value="Growth">Growth</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -506,6 +528,7 @@ export default function MyListingsPage() {
             <SelectItem value="Belarus">Belarus</SelectItem>
             <SelectItem value="Moldova">Moldova</SelectItem>
             <SelectItem value="Albania">Albania</SelectItem>
+
           </SelectContent>
         </Select>
         <Input id="locationCity" placeholder="City (optional)" className="w-1/2" value={locationCity} onChange={e => setLocationCity(e.target.value)} />
@@ -526,22 +549,22 @@ export default function MyListingsPage() {
               {/* Founder-specific compensation options */}
               {profileType === "founder" && listingType === "find-funding" && (
                 <>
-                  <SelectItem value="equity">Equity</SelectItem>
+                  <SelectItem value="Equity">Equity</SelectItem>
                 </>
               )}
               {profileType === "founder" && (["cofounder", "expert-freelance"].includes(listingType)) && (
                 <>
-                  <SelectItem value="equity">Equity</SelectItem>
-                  <SelectItem value="cash">Cash</SelectItem>
-                  <SelectItem value="hybrid">Hybrid</SelectItem>
+                  <SelectItem value="Equity">Equity</SelectItem>
+                  <SelectItem value="Cash">Cash</SelectItem>
+                  <SelectItem value="Hybrid">Hybrid</SelectItem>
                 </>
               )}
               {profileType === "founder" && (["employee", "mentor"].includes(listingType)) && (
                 <>
-                  <SelectItem value="salary">Salary</SelectItem>
-                  <SelectItem value="equity">Equity</SelectItem>
-                  <SelectItem value="salary-equity">Salary & Equity</SelectItem>
-                  <SelectItem value="cash-equity">Cash & Equity</SelectItem>
+                  <SelectItem value="Salary">Salary</SelectItem>
+                  <SelectItem value="Equity">Equity</SelectItem>
+                  <SelectItem value="Salary & Equity">Salary & Equity</SelectItem>
+                  <SelectItem value="Cash & Equity">Cash & Equity</SelectItem>
                 </>
               )}
               {/* Expert-specific compensation options */}
@@ -549,40 +572,40 @@ export default function MyListingsPage() {
                 <>
                   {listingType === "mission" && (
                     <>
-                      <SelectItem value="equity">Equity</SelectItem>
-                      <SelectItem value="cash">Cash</SelectItem>
-                      <SelectItem value="hybrid">Hybrid</SelectItem>
+                      <SelectItem value="Equity">Equity</SelectItem>
+                      <SelectItem value="Cash">Cash</SelectItem>
+                      <SelectItem value="Hybrid">Hybrid</SelectItem>
                     </>
                   )}
                   {listingType === "cofounder" && (
                     <>
-                      <SelectItem value="equity">Equity</SelectItem>
-                      <SelectItem value="cash">Cash</SelectItem>
-                      <SelectItem value="hybrid">Hybrid</SelectItem>
+                      <SelectItem value="Equity">Equity</SelectItem>
+                      <SelectItem value="Cash">Cash</SelectItem>
+                      <SelectItem value="Hybrid">Hybrid</SelectItem>
                     </>
                   )}
                   {listingType === "job" && (
                     <>
-                      <SelectItem value="salary">Annual Salary</SelectItem>
-                      <SelectItem value="equity">Equity</SelectItem>
-                      <SelectItem value="hybrid">Hybrid</SelectItem>
+                      <SelectItem value="Salary">Annual Salary</SelectItem>
+                      <SelectItem value="Equity">Equity</SelectItem>
+                      <SelectItem value="Hybrid">Hybrid</SelectItem>
                     </>
                   )}
                   {listingType === "expert-freelance" && (
-                    <SelectItem value="cash">Cash</SelectItem>
+                    <SelectItem value="Cash">Cash</SelectItem>
                   )}
                 </>
               ) :
                 ((profileType !== "founder" && profileType !== "expert") || (profileType === "founder" && !["find-funding", "cofounder", "expert-freelance", "employee", "mentor"].includes(listingType))) ? (
                   <>
                     {profileType === "investor" && listingType === "expert-freelance" ? (
-                      <SelectItem value="cash">Cash</SelectItem>
+                      <SelectItem value="Cash">Cash</SelectItem>
                     ) : (
                       <>
-                        <SelectItem value="cash">Cash</SelectItem>
-                        <SelectItem value="equity">Equity</SelectItem>
-                        <SelectItem value="salary">Annual Salary</SelectItem>
-                        <SelectItem value="volunteer">Volunteer</SelectItem>
+                        <SelectItem value="Cash">Cash</SelectItem>
+                        <SelectItem value="Equity">Equity</SelectItem>
+                        <SelectItem value="Salary">Annual Salary</SelectItem>
+                        <SelectItem value="Volunteer">Volunteer</SelectItem>
                       </>
                     )}
                   </>
@@ -590,28 +613,28 @@ export default function MyListingsPage() {
               }
             </SelectContent>
           </Select>
-          {compensationType === 'cash' && (
+          {compensationType === 'Cash' && (
             <Input placeholder="Cash bonus (ex: 5000€)" value={compensationValue.value || compensationValue || ''} onChange={e => setCompensationValue({ value: e.target.value })} />
           )}
-          {compensationType === 'equity' && (
+          {compensationType === 'Equity' && (
             <Input placeholder="Equity (ex: 5-10%)" value={compensationValue.value || compensationValue || ''} onChange={e => setCompensationValue({ value: e.target.value })} />
           )}
-          {compensationType === 'salary' && (
+          {compensationType === 'Salary' && (
             <Input placeholder="Annual salary (ex: 40-50K€)" value={compensationValue.value || compensationValue || ''} onChange={e => setCompensationValue({ value: e.target.value })} />
           )}
-          {compensationType === 'hybrid' && (
+          {compensationType === 'Hybrid' && (
             <div className="flex flex-col gap-2">
               <Input placeholder="Equity (ex: 5-10%)" value={compensationValue.equity || ''} onChange={e => setCompensationValue((prev: any) => ({ ...prev, equity: e.target.value }))} />
               <Input placeholder="Cash bonus (ex: 5000€)" value={compensationValue.cash || ''} onChange={e => setCompensationValue((prev: any) => ({ ...prev, cash: e.target.value }))} />
             </div>
           )}
-          {compensationType === 'salary-equity' && (
+          {compensationType === 'Salary & Equity' && (
             <div className="flex flex-col gap-2">
               <Input placeholder="Annual salary (ex: 40-50K€)" value={compensationValue.salary || ''} onChange={e => setCompensationValue((prev: any) => ({ ...prev, salary: e.target.value }))} />
               <Input placeholder="Equity (ex: 5-10%)" value={compensationValue.equity || ''} onChange={e => setCompensationValue((prev: any) => ({ ...prev, equity: e.target.value }))} />
             </div>
           )}
-          {compensationType === 'cash-equity' && (
+          {compensationType === 'Cash & Equity' && (
             <div className="flex flex-col gap-2">
               <Input placeholder="Cash amount (ex: 5000€)" value={compensationValue.cash || ''} onChange={e => setCompensationValue((prev: any) => ({ ...prev, cash: e.target.value }))} />
               <Input placeholder="Equity (ex: 5-10%)" value={compensationValue.equity || ''} onChange={e => setCompensationValue((prev: any) => ({ ...prev, equity: e.target.value }))} />
