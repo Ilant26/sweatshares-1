@@ -10,26 +10,30 @@ import FooterSection from '@/components/blocks/footer';
 import { Separator } from '@/components/ui/separator';
 import { ProfileCard } from './profile-card';
 import ContentSection from '@/components/content-listing-bottom';
-import { motion } from 'framer-motion';
+import { motion, Variants } from 'framer-motion';
 
 // Animation variants
-const containerVariants = {
+const containerVariants: Variants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.1
+      staggerChildren: 0.15,
+      duration: 0.8
     }
   }
 };
 
-const itemVariants = {
+const itemVariants: Variants = {
   hidden: { y: 20, opacity: 0 },
   visible: {
     y: 0,
     opacity: 1,
     transition: {
-      duration: 0.5
+      duration: 0.8,
+      type: "spring",
+      bounce: 0.2,
+      stiffness: 50
     }
   }
 };
