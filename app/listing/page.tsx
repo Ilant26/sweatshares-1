@@ -10,7 +10,7 @@ import { MapPin, Heart, Share2, Mail, Briefcase, ArrowRight, ListFilter, Setting
 import FooterSection from "@/components/blocks/footer";
 import { Menu } from "@/components/blocks/menu";
 import { AnimatedGroup } from "@/components/ui/animated-group";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, Variants } from "framer-motion";
 import { Transition } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -40,45 +40,163 @@ const transitionVariants = {
     },
 };
 
-const cardVariants = {
+const cardVariants: Variants = {
   hidden: { opacity: 0, y: 20 },
-  visible: { 
-    opacity: 1, 
+  visible: {
+    opacity: 1,
     y: 0,
     transition: {
       type: "spring",
-      bounce: 0.3,
-      duration: 0.8
+      bounce: 0.2,
+      duration: 0.8,
+      stiffness: 50
     }
   },
   hover: {
     y: -5,
     transition: {
       type: "spring",
-      bounce: 0.4,
+      bounce: 0.2,
       duration: 0.3
     }
   }
 };
 
-const contentVariants = {
-  hidden: { opacity: 0 },
-  visible: { 
+const slideInLeft: Variants = {
+  hidden: { opacity: 0, x: -20 },
+  visible: {
     opacity: 1,
+    x: 0,
     transition: {
-      staggerChildren: 0.1
+      type: "spring",
+      bounce: 0.2,
+      duration: 0.8,
+      stiffness: 50
     }
   }
 };
 
-const itemVariants = {
-  hidden: { opacity: 0, x: -20 },
-  visible: { 
-    opacity: 1, 
+const slideInRight: Variants = {
+  hidden: { opacity: 0, x: 20 },
+  visible: {
+    opacity: 1,
     x: 0,
     transition: {
       type: "spring",
-      bounce: 0.3
+      bounce: 0.2,
+      duration: 0.8,
+      stiffness: 50
+    }
+  }
+};
+
+const fadeIn: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      type: "spring",
+      bounce: 0.2,
+      duration: 0.8,
+      stiffness: 50
+    }
+  }
+};
+
+const scaleIn: Variants = {
+  hidden: { opacity: 0, scale: 0.9 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    transition: {
+      type: "spring",
+      bounce: 0.2,
+      duration: 0.8,
+      stiffness: 50
+    }
+  }
+};
+
+const contentVariants: Variants = {
+  hidden: { opacity: 0, x: -20 },
+  visible: {
+    opacity: 1,
+    x: 0,
+    transition: {
+      type: "spring",
+      bounce: 0.2,
+      duration: 0.8,
+      stiffness: 50
+    }
+  }
+};
+
+const filterVariants: Variants = {
+  hidden: { opacity: 0, x: 20 },
+  visible: {
+    opacity: 1,
+    x: 0,
+    transition: {
+      type: "spring",
+      bounce: 0.2,
+      duration: 0.8,
+      stiffness: 50
+    }
+  }
+};
+
+const searchVariants: Variants = {
+  hidden: { opacity: 0, x: 20 },
+  visible: {
+    opacity: 1,
+    x: 0,
+    transition: {
+      type: "spring",
+      bounce: 0.2,
+      duration: 0.8,
+      stiffness: 50
+    }
+  }
+};
+
+const buttonVariants: Variants = {
+  hidden: { opacity: 0, x: 20 },
+  visible: {
+    opacity: 1,
+    x: 0,
+    transition: {
+      type: "spring",
+      bounce: 0.2,
+      duration: 0.8,
+      stiffness: 50
+    }
+  }
+};
+
+const statsVariants: Variants = {
+  hidden: { opacity: 0, x: 20 },
+  visible: {
+    opacity: 1,
+    x: 0,
+    transition: {
+      type: "spring",
+      bounce: 0.2,
+      duration: 0.8,
+      stiffness: 50
+    }
+  }
+};
+
+const itemVariants: Variants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      type: "spring",
+      bounce: 0.2,
+      duration: 0.8,
+      stiffness: 50
     }
   }
 };
@@ -234,7 +352,7 @@ export default function ListingsPage() {
                         className="flex flex-col h-full"
                       >
                         {/* Header with Badge and Avatar */}
-                        <motion.div variants={itemVariants} className="p-4 pb-2 flex items-center gap-3 border-b border-border/30">
+                        <motion.div variants={slideInLeft} className="p-4 pb-2 flex items-center gap-3 border-b border-border/30">
                           <Avatar className="h-12 w-12 border-2 border-primary/30">
                             <AvatarImage src={listing.profiles?.avatar_url || undefined} alt={listing.profiles?.full_name || 'User'} />
                             <AvatarFallback>{listing.profiles?.full_name?.charAt(0) || 'U'}</AvatarFallback>
@@ -247,27 +365,27 @@ export default function ListingsPage() {
                         </motion.div>
 
                         {/* Title and Publication Date */}
-                        <motion.div variants={itemVariants} className="px-4 pt-3 pb-1">
+                        <motion.div variants={slideInRight} className="px-4 pt-3 pb-1">
                           <h2 className="text-lg font-bold line-clamp-2 group-hover:text-primary transition-colors mb-1">{listing.title}</h2>
                           <span className="text-xs text-muted-foreground">{listing.created_at ? new Date(listing.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : ''}</span>
                         </motion.div>
 
                         {/* Description Preview */}
                         <motion.div 
-                          variants={itemVariants}
+                          variants={fadeIn}
                           className="px-4 text-sm text-muted-foreground line-clamp-3 mb-2 prose prose-sm max-w-none dark:prose-invert prose-headings:font-semibold prose-p:text-muted-foreground prose-a:text-primary hover:prose-a:text-primary/80 prose-img:rounded-md prose-img:shadow-md"
                           dangerouslySetInnerHTML={{ __html: listing.description || '' }}
                         />
 
                         {/* Location and Sector */}
-                        <motion.div variants={itemVariants} className="px-4 flex items-center gap-3 text-muted-foreground text-xs mb-2">
+                        <motion.div variants={slideInRight} className="px-4 flex items-center gap-3 text-muted-foreground text-xs mb-2">
                           <MapPin className="h-4 w-4" />
                           <span>{listing.location_city ? `${listing.location_city}, ` : ""}{listing.location_country}</span>
                           {listing.sector && <><span className="mx-2">•</span><Badge variant="outline" className="text-xs">{listing.sector}</Badge></>}
                         </motion.div>
 
                         {/* Action Buttons */}
-                        <motion.div variants={itemVariants} className="mt-auto border-t border-border/30">
+                        <motion.div variants={scaleIn} className="mt-auto border-t border-border/30">
                           <div className="p-4 flex items-center gap-2">
                             <Button
                               variant="default"
