@@ -32,6 +32,11 @@ import { Badge } from '@/components/ui/badge';
 import { EllipsisVertical } from 'lucide-react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { toast } from 'sonner';
+import type { Database } from '@/lib/database.types';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Checkbox } from '@/components/ui/checkbox';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
 
 import {
   Lock,
@@ -51,24 +56,42 @@ import {
   Download,
   Share2,
   Copy,
-  Users, // For shared documents
+  Users,
   HardDrive,
-  Settings
+  Settings,
+  Image as FileImage,
+  FileText as FileWord,
+  Table as FileSpreadsheet,
+  Presentation as FilePresentation,
+  Code as FileCode,
+  Archive as FileArchive,
+  Video as FileVideo,
+  Music as FileAudio,
+  File
 } from 'lucide-react';
 
+interface UserProfile {
+  full_name: string;
+  avatar_url: string | null;
+}
+
+interface VaultDocument {
+  id: string;
+  filename: string;
+  filepath: string;
+  type?: string;
+  size?: number;
+  owner_id: string;
+  created_at: string;
+  shared_with_id?: string;
+  shared_at?: string;
+  shared_by?: UserProfile;
+  shared_with?: UserProfile;
+}
+
 export default function MyVaultPage() {
-  const supabase = createClientComponentClient<any>();
+  const supabase = createClientComponentClient<Database>();
   // Types for documents and activities
-  type VaultDocument = {
-    id: string;
-    owner_id: string;
-    filename: string;
-    filepath: string;
-    description?: string;
-    is_encrypted?: boolean;
-    created_at?: string;
-    type?: string;
-  };
   type SharedDocument = VaultDocument;
   type Activity = any;
   const [user, setUser] = useState<any>(null);
@@ -76,7 +99,9 @@ export default function MyVaultPage() {
   const [addDocumentDialogOpen, setAddDocumentDialogOpen] = useState<boolean>(false);
   const [uploading, setUploading] = useState<boolean>(false);
   const [personalDocuments, setPersonalDocuments] = useState<VaultDocument[]>([]);
-  const [sharedDocuments, setSharedDocuments] = useState<SharedDocument[]>([]);
+  const [sharedWithMe, setSharedWithMe] = useState<VaultDocument[]>([]);
+  const [sharedByMe, setSharedByMe] = useState<VaultDocument[]>([]);
+  const [sharedTab, setSharedTab] = useState<string>('shared-with-me');
   const [recentActivities, setRecentActivities] = useState<Activity[]>([]);
   const [fileInput, setFileInput] = useState<File | null>(null);
   const [form, setForm] = useState<{
@@ -93,6 +118,13 @@ export default function MyVaultPage() {
     file: null,
   });
   const fileRef = useRef<HTMLInputElement>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
+  const [documentToDelete, setDocumentToDelete] = useState<VaultDocument | null>(null);
+  const [shareDialogOpen, setShareDialogOpen] = useState<boolean>(false);
+  const [documentToShare, setDocumentToShare] = useState<VaultDocument | null>(null);
+  const [connections, setConnections] = useState<any[]>([]);
+  const [selectedConnections, setSelectedConnections] = useState<string[]>([]);
+  const [sharing, setSharing] = useState<boolean>(false);
 
   // Fetch user on mount
   useEffect(() => {
@@ -120,16 +152,91 @@ export default function MyVaultPage() {
   useEffect(() => {
     if (!user) return;
     const fetchShared = async () => {
-      const { data, error } = await supabase
+      // Fetch documents shared with me (where I am the receiver)
+      const { data: receivedShares, error: receivedError } = await supabase
         .from('vault_shares')
-        .select('*, vault_documents(*)')
+        .select(`
+          *,
+          vault_documents!inner(
+            *,
+            owner:profiles!vault_documents_owner_id_fkey(
+              full_name,
+              avatar_url
+            )
+          )
+        `)
         .eq('shared_with_id', user.id)
         .order('shared_at', { ascending: false });
-      if (error) toast.error('Failed to fetch shared documents');
-      else setSharedDocuments((data || []).map((row: any) => row.vault_documents));
+
+      if (receivedError) {
+        console.error('Error fetching received shares:', receivedError);
+        toast.error('Failed to fetch received shares');
+      } else {
+        console.log('Received shares:', receivedShares);
+        setSharedWithMe((receivedShares || []).map((share: any) => ({
+          ...share.vault_documents,
+          shared_by: share.vault_documents.owner
+        })));
+      }
+
+      // Fetch documents I've shared (where I am the owner)
+      const { data: sentShares, error: sentError } = await supabase
+        .from('vault_shares')
+        .select(`
+          *,
+          vault_documents!inner(*),
+          shared_with:profiles!vault_shares_shared_with_id_fkey(
+            full_name,
+            avatar_url
+          )
+        `)
+        .eq('vault_documents.owner_id', user.id)
+        .order('shared_at', { ascending: false });
+
+      if (sentError) {
+        console.error('Error fetching sent shares:', sentError);
+        toast.error('Failed to fetch sent shares');
+      } else {
+        console.log('Sent shares:', sentShares);
+        setSharedByMe((sentShares || []).map((share: any) => ({
+          ...share.vault_documents,
+          shared_with: share.shared_with
+        })));
+      }
     };
     fetchShared();
   }, [user]);
+
+  // Fetch connections when share dialog opens
+  useEffect(() => {
+    if (shareDialogOpen && user) {
+      const fetchConnections = async () => {
+        const { data, error } = await supabase
+          .from('connections')
+          .select(`
+            *,
+            sender:sender_id(id, username, full_name, avatar_url, professional_role),
+            receiver:receiver_id(id, username, full_name, avatar_url, professional_role)
+          `)
+          .eq('status', 'accepted')
+          .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`);
+
+        if (error) {
+          toast.error('Failed to fetch connections');
+          return;
+        }
+
+        // Get the other user from each connection
+        const otherUsers = data.map(connection => 
+          connection.sender_id === user.id ? connection.receiver : connection.sender
+        ).filter(Boolean);
+
+        setConnections(otherUsers);
+      };
+
+      fetchConnections();
+    }
+  }, [shareDialogOpen, user]);
 
   // Handle form input
   const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -149,46 +256,69 @@ export default function MyVaultPage() {
       return;
     }
     setUploading(true);
-    console.log('user:', user, 'file:', form.file);
-    const fileExt = form.file.name.split('.').pop();
-    const filePath = `${user.id}/${Date.now()}_${form.file.name}`;
-    // Upload to Supabase Storage
-    const { error: uploadError } = await supabase.storage
-      .from('vault')
-      .upload(filePath, form.file, { upsert: false });
-    if (uploadError) {
-      toast.error('Upload failed');
-      setUploading(false);
-      return;
-    }
-    // Insert metadata
-    const { error: insertError } = await supabase
-      .from('vault_documents')
-      .insert({
+    
+    try {
+      // Sanitize filename by replacing spaces and special characters
+      const sanitizedFileName = form.file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+      const filePath = `${user.id}/${Date.now()}_${sanitizedFileName}`;
+      
+      // Upload to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('vault')
+        .upload(filePath, form.file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) {
+        toast.error(`Upload failed: ${uploadError.message}`);
+        setUploading(false);
+        return;
+      }
+
+      // Prepare document data
+      const documentData = {
         owner_id: user.id,
         filename: form.name,
         filepath: filePath,
-        description: form.description,
+        description: form.description || null,
         is_encrypted: true,
-        type: form.type,
-      });
-    if (insertError) {
-      toast.error('Failed to save document metadata');
+        type: form.type || null
+      };
+
+      // Insert metadata
+      const { error: insertError } = await supabase
+        .from('vault_documents')
+        .insert(documentData)
+        .select()
+        .single();
+
+      if (insertError) {
+        // If metadata insert fails, try to delete the uploaded file
+        await supabase.storage.from('vault').remove([filePath]);
+        toast.error(`Failed to save document metadata: ${insertError.message}`);
+        setUploading(false);
+        return;
+      }
+
+      toast.success('Document uploaded!');
+      setAddDocumentDialogOpen(false);
+      setForm({ name: '', type: '', description: '', tags: '', file: null });
+      if (fileRef.current) fileRef.current.value = '';
+
+      // Refresh list
+      const { data: newDocs } = await supabase
+        .from('vault_documents')
+        .select('*')
+        .eq('owner_id', user.id)
+        .order('created_at', { ascending: false });
+      
+      setPersonalDocuments(newDocs || []);
+    } catch (error) {
+      toast.error('An unexpected error occurred during upload');
+    } finally {
       setUploading(false);
-      return;
     }
-    toast.success('Document uploaded!');
-    setAddDocumentDialogOpen(false);
-    setForm({ name: '', type: '', description: '', tags: '', file: null });
-    if (fileRef.current) fileRef.current.value = '';
-    // Refresh list
-    const { data } = await supabase
-      .from('vault_documents')
-      .select('*')
-      .eq('owner_id', user.id)
-      .order('created_at', { ascending: false });
-    setPersonalDocuments(data || []);
-    setUploading(false);
   };
 
   // Download document
@@ -210,36 +340,117 @@ export default function MyVaultPage() {
 
   // Delete document
   const handleDelete = async (doc: VaultDocument) => {
-    if (!window.confirm('Delete this document?')) return;
-    // Remove from storage
-    await supabase.storage.from('vault').remove([doc.filepath]);
-    // Remove from DB
-    await supabase.from('vault_documents').delete().eq('id', doc.id);
-    setPersonalDocuments((docs) => docs.filter((d) => d.id !== doc.id));
-    toast.success('Document deleted');
+    setDocumentToDelete(doc);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!documentToDelete) return;
+    
+    try {
+      // Remove from storage
+      await supabase.storage.from('vault').remove([documentToDelete.filepath]);
+      // Remove from DB
+      await supabase.from('vault_documents').delete().eq('id', documentToDelete.id);
+      setPersonalDocuments((docs) => docs.filter((d) => d.id !== documentToDelete.id));
+      toast.success('Document deleted');
+    } catch (error) {
+      toast.error('Failed to delete document');
+    } finally {
+      setDeleteDialogOpen(false);
+      setDocumentToDelete(null);
+    }
   };
 
   // Share document
   const handleShare = async (doc: VaultDocument) => {
-    const email = prompt('Enter email of user to share with:');
-    if (!email) return;
-    // Find user by email
-    const { data: profiles, error } = await supabase.from('profiles').select('id').eq('username', email);
-    if (error || !profiles || profiles.length === 0) {
-      toast.error('User not found');
-      return;
+    setDocumentToShare(doc);
+    setShareDialogOpen(true);
+    setSelectedConnections([]);
+  };
+
+  const confirmShare = async () => {
+    if (!documentToShare || !user || selectedConnections.length === 0) return;
+    
+    setSharing(true);
+    try {
+      // Share with each selected connection
+      const sharePromises = selectedConnections.map(async (shared_with_id) => {
+        const { error } = await supabase.from('vault_shares').insert({
+          document_id: documentToShare.id,
+          shared_with_id,
+          shared_at: new Date().toISOString()
+        });
+        
+        if (error) {
+          console.error('Share error:', error);
+          throw error;
+        }
+      });
+
+      await Promise.all(sharePromises);
+      toast.success('Document shared successfully!');
+      setShareDialogOpen(false);
+      setDocumentToShare(null);
+      setSelectedConnections([]);
+    } catch (error: any) {
+      console.error('Share error details:', error);
+      toast.error(`Failed to share document: ${error.message || 'Unknown error'}`);
+    } finally {
+      setSharing(false);
     }
-    const shared_with_id = profiles[0].id;
-    // Insert into vault_shares
-    const { error: shareError } = await supabase.from('vault_shares').insert({
-      document_id: doc.id,
-      shared_with_id,
-    });
-    if (shareError) {
-      toast.error('Failed to share document');
-      return;
+  };
+
+  const getFileIcon = (filename: string) => {
+    const extension = filename.split('.').pop()?.toLowerCase();
+    
+    // Image files
+    if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg'].includes(extension || '')) {
+      return <FileImage className="h-5 w-5 text-blue-500" />;
     }
-    toast.success('Document shared!');
+    
+    // Word documents
+    if (['doc', 'docx', 'odt', 'rtf'].includes(extension || '')) {
+      return <FileWord className="h-5 w-5 text-blue-600" />;
+    }
+    
+    // Excel/Spreadsheet files
+    if (['xls', 'xlsx', 'csv', 'ods'].includes(extension || '')) {
+      return <FileSpreadsheet className="h-5 w-5 text-green-600" />;
+    }
+    
+    // PowerPoint files
+    if (['ppt', 'pptx', 'odp'].includes(extension || '')) {
+      return <FilePresentation className="h-5 w-5 text-orange-600" />;
+    }
+    
+    // PDF files
+    if (extension === 'pdf') {
+      return <FileText className="h-5 w-5 text-red-500" />;
+    }
+    
+    // Code files
+    if (['js', 'ts', 'jsx', 'tsx', 'html', 'css', 'py', 'java', 'cpp', 'c', 'php'].includes(extension || '')) {
+      return <FileCode className="h-5 w-5 text-purple-500" />;
+    }
+    
+    // Archive files
+    if (['zip', 'rar', '7z', 'tar', 'gz'].includes(extension || '')) {
+      return <FileArchive className="h-5 w-5 text-yellow-500" />;
+    }
+    
+    // Video files
+    if (['mp4', 'avi', 'mov', 'wmv', 'flv', 'mkv'].includes(extension || '')) {
+      return <FileVideo className="h-5 w-5 text-pink-500" />;
+    }
+    
+    // Audio files
+    if (['mp3', 'wav', 'ogg', 'flac', 'm4a'].includes(extension || '')) {
+      return <FileAudio className="h-5 w-5 text-indigo-500" />;
+    }
+    
+    // Default file icon
+    return <File className="h-5 w-5 text-gray-500" />;
   };
 
   return (
@@ -386,7 +597,7 @@ export default function MyVaultPage() {
                   {personalDocuments.map((doc) => (
                     <TableRow key={doc.id}>
                       <TableCell className="font-medium flex items-center gap-2">
-                        <FileText className="h-5 w-5 text-blue-500" /> {doc.filename}
+                        {getFileIcon(doc.filename)} {doc.filename}
                       </TableCell>
                       <TableCell><Badge variant="outline">{doc.type || 'N/A'}</Badge></TableCell>
                       <TableCell>{doc.created_at ? new Date(doc.created_at).toLocaleString() : 'N/A'}</TableCell>
@@ -418,39 +629,125 @@ export default function MyVaultPage() {
               <CardDescription>Documents shared with you or that you have shared.</CardDescription>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>NAME</TableHead>
-                    <TableHead>SHARED BY</TableHead>
-                    <TableHead>SHARED DATE</TableHead>
-                    <TableHead className="text-right">ACTIONS</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {sharedDocuments.map((doc) => (
-                    <TableRow key={doc.id}>
-                      <TableCell className="font-medium flex items-center gap-2">
-                        <FileText className="h-5 w-5 text-orange-500" /> {doc.filename}
-                      </TableCell>
-                      <TableCell className="flex items-center gap-2"><Users className="h-4 w-4 text-muted-foreground" /> {doc.owner_id}</TableCell>
-                      <TableCell>{doc.created_at ? new Date(doc.created_at).toLocaleString() : ''}</TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <EllipsisVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem className="gap-2" onClick={() => handleDownload(doc)}><Download className="h-4 w-4" /> Download</DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <Tabs defaultValue="shared-with-me" value={sharedTab} onValueChange={setSharedTab} className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="shared-with-me">Shared with Me</TabsTrigger>
+                  <TabsTrigger value="shared-by-me">Shared by Me</TabsTrigger>
+                </TabsList>
+                <TabsContent value="shared-with-me" className="mt-4">
+                  {sharedWithMe.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-8 text-center">
+                      <FileText className="h-12 w-12 text-muted-foreground mb-4" />
+                      <h3 className="text-lg font-semibold">No documents shared with you</h3>
+                      <p className="text-sm text-muted-foreground mt-2">
+                        When someone shares a document with you, it will appear here.
+                      </p>
+                    </div>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>NAME</TableHead>
+                          <TableHead>TYPE</TableHead>
+                          <TableHead>SHARED BY</TableHead>
+                          <TableHead>SHARED DATE</TableHead>
+                          <TableHead className="text-right">ACTIONS</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {sharedWithMe.map((doc) => (
+                          <TableRow key={doc.id}>
+                            <TableCell className="font-medium flex items-center gap-2">
+                              {getFileIcon(doc.filename)} {doc.filename}
+                            </TableCell>
+                            <TableCell><Badge variant="outline">{doc.type || 'N/A'}</Badge></TableCell>
+                            <TableCell className="flex items-center gap-2">
+                              <Avatar className="h-6 w-6">
+                                <AvatarImage src={doc.shared_by?.avatar_url || undefined} />
+                                <AvatarFallback>{doc.shared_by?.full_name?.charAt(0)}</AvatarFallback>
+                              </Avatar>
+                              {doc.shared_by?.full_name || 'Unknown User'}
+                            </TableCell>
+                            <TableCell>{doc.shared_at ? new Date(doc.shared_at).toLocaleString() : 'N/A'}</TableCell>
+                            <TableCell className="text-right">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon">
+                                    <EllipsisVertical className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem className="gap-2" onClick={() => handleDownload(doc)}>
+                                    <Download className="h-4 w-4" /> Download
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </TabsContent>
+                <TabsContent value="shared-by-me" className="mt-4">
+                  {sharedByMe.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-8 text-center">
+                      <Share2 className="h-12 w-12 text-muted-foreground mb-4" />
+                      <h3 className="text-lg font-semibold">No documents shared by you</h3>
+                      <p className="text-sm text-muted-foreground mt-2">
+                        Documents you share with others will appear here.
+                      </p>
+                    </div>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>NAME</TableHead>
+                          <TableHead>TYPE</TableHead>
+                          <TableHead>SHARED WITH</TableHead>
+                          <TableHead>SHARED DATE</TableHead>
+                          <TableHead className="text-right">ACTIONS</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {sharedByMe.map((doc) => (
+                          <TableRow key={doc.id}>
+                            <TableCell className="font-medium flex items-center gap-2">
+                              {getFileIcon(doc.filename)} {doc.filename}
+                            </TableCell>
+                            <TableCell><Badge variant="outline">{doc.type || 'N/A'}</Badge></TableCell>
+                            <TableCell className="flex items-center gap-2">
+                              <Avatar className="h-6 w-6">
+                                <AvatarImage src={doc.shared_with?.avatar_url || undefined} />
+                                <AvatarFallback>{doc.shared_with?.full_name?.charAt(0)}</AvatarFallback>
+                              </Avatar>
+                              {doc.shared_with?.full_name || 'Unknown User'}
+                            </TableCell>
+                            <TableCell>{doc.shared_at ? new Date(doc.shared_at).toLocaleString() : 'N/A'}</TableCell>
+                            <TableCell className="text-right">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon">
+                                    <EllipsisVertical className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem className="gap-2" onClick={() => handleDownload(doc)}>
+                                    <Download className="h-4 w-4" /> Download
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem className="gap-2" onClick={() => handleShare(doc)}>
+                                    <Share2 className="h-4 w-4" /> Share Again
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </TabsContent>
+              </Tabs>
             </CardContent>
           </Card>
         </TabsContent>
@@ -531,6 +828,112 @@ export default function MyVaultPage() {
           <Button><Settings className="mr-2 h-4 w-4" /> Advanced Security Settings</Button>
         </CardFooter>
       </Card>
+
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Delete Document</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete "{documentToDelete?.filename}"? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center gap-2 p-4 bg-destructive/10 rounded-lg">
+            <Trash2 className="h-5 w-5 text-destructive" />
+            <p className="text-sm text-destructive">
+              This will permanently delete the document and remove it from your vault.
+            </p>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setDeleteDialogOpen(false);
+                setDocumentToDelete(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmDelete}
+            >
+              Delete Document
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Share Dialog */}
+      <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Share Document</DialogTitle>
+            <DialogDescription>
+              Share "{documentToShare?.filename}" with your connections
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <ScrollArea className="h-[300px] pr-4">
+              <div className="space-y-4">
+                {connections.map((connection) => (
+                  <div key={connection.id} className="flex items-center space-x-4">
+                    <Checkbox
+                      id={`connection-${connection.id}`}
+                      checked={selectedConnections.includes(connection.id)}
+                      onCheckedChange={(checked) => {
+                        setSelectedConnections(prev =>
+                          checked
+                            ? [...prev, connection.id]
+                            : prev.filter(id => id !== connection.id)
+                        );
+                      }}
+                    />
+                    <label
+                      htmlFor={`connection-${connection.id}`}
+                      className="flex items-center space-x-3 cursor-pointer"
+                    >
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={connection.avatar_url || undefined} />
+                        <AvatarFallback>
+                          {connection.full_name?.charAt(0) || connection.username.charAt(0)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="text-sm font-medium leading-none">
+                          {connection.full_name || connection.username}
+                        </p>
+                        {connection.professional_role && (
+                          <p className="text-sm text-muted-foreground">
+                            {connection.professional_role}
+                          </p>
+                        )}
+                      </div>
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShareDialogOpen(false);
+                setDocumentToShare(null);
+                setSelectedConnections([]);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={confirmShare}
+              disabled={selectedConnections.length === 0 || sharing}
+            >
+              {sharing ? 'Sharing...' : 'Share Document'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -117,6 +117,41 @@ export interface Database {
           created_at?: string
         }
       }
+      vault_documents: {
+        Row: {
+          id: string
+          owner_id: string
+          filename: string
+          filepath: string
+          description: string | null
+          is_encrypted: boolean
+          type: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          owner_id: string
+          filename: string
+          filepath: string
+          description?: string | null
+          is_encrypted?: boolean
+          type?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          owner_id?: string
+          filename?: string
+          filepath?: string
+          description?: string | null
+          is_encrypted?: boolean
+          type?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never
