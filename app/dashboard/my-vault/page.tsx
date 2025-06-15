@@ -389,7 +389,7 @@ export default function MyVaultPage() {
                         <FileText className="h-5 w-5 text-blue-500" /> {doc.filename}
                       </TableCell>
                       <TableCell><Badge variant="outline">{doc.type || 'N/A'}</Badge></TableCell>
-                      <TableCell>{new Date(doc.created_at).toLocaleString()}</TableCell>
+                      <TableCell>{doc.created_at ? new Date(doc.created_at).toLocaleString() : 'N/A'}</TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
