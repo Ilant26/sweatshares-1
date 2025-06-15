@@ -66,8 +66,33 @@ export default function MyListingsPage() {
             else if (profileType === "expert" && listingType === "expert-freelance") {
                 setCompensationType("Cash");
             }
+            // Set default compensation type for other cases
+            else if (!compensationType) {
+                if (profileType === "founder" && ["employee", "mentor"].includes(listingType)) {
+                    setCompensationType("Salary");
+                } else if (profileType === "founder" && ["cofounder"].includes(listingType)) {
+                    setCompensationType("Equity");
+                } else if (profileType === "expert" && ["mission", "cofounder"].includes(listingType)) {
+                    setCompensationType("Equity");
+                } else if (profileType === "expert" && ["job"].includes(listingType)) {
+                    setCompensationType("Salary");
+                }
+            }
         }
-    }, [profileType, listingType]);
+    }, [profileType, listingType, compensationType]);
+
+    // Add useEffect to set default sector
+    useEffect(() => {
+        if (!sector && profileType) {
+            if (profileType === "founder") {
+                setSector("Technology");
+            } else if (profileType === "investor") {
+                setSector("Finance");
+            } else if (profileType === "expert") {
+                setSector("Professional Services");
+            }
+        }
+    }, [profileType, sector]);
 
     const handleSelectAll = (checked: boolean) => {
         if (checked) {
@@ -655,7 +680,59 @@ export default function MyListingsPage() {
     {/* Secteur */}
     <div className="grid grid-cols-4 items-center gap-4">
       <Label htmlFor="secteur" className="text-right">Company Sector</Label>
-      <Input id="secteur" placeholder="Ex: Tech, Health, Finance..." className="col-span-3" value={sector} onChange={e => setSector(e.target.value)} />
+      <Select value={sector} onValueChange={setSector}>
+        <SelectTrigger className="col-span-3">
+          <SelectValue placeholder="Select a sector" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="Technology">Technology</SelectItem>
+          <SelectItem value="Healthcare">Healthcare</SelectItem>
+          <SelectItem value="Finance">Finance</SelectItem>
+          <SelectItem value="Education">Education</SelectItem>
+          <SelectItem value="Retail">Retail</SelectItem>
+          <SelectItem value="Manufacturing">Manufacturing</SelectItem>
+          <SelectItem value="Real Estate">Real Estate</SelectItem>
+          <SelectItem value="Energy">Energy</SelectItem>
+          <SelectItem value="Transportation">Transportation</SelectItem>
+          <SelectItem value="Media & Entertainment">Media & Entertainment</SelectItem>
+          <SelectItem value="Telecommunications">Telecommunications</SelectItem>
+          <SelectItem value="Agriculture">Agriculture</SelectItem>
+          <SelectItem value="Construction">Construction</SelectItem>
+          <SelectItem value="Hospitality">Hospitality</SelectItem>
+          <SelectItem value="Professional Services">Professional Services</SelectItem>
+          <SelectItem value="Biotechnology">Biotechnology</SelectItem>
+          <SelectItem value="Artificial Intelligence">Artificial Intelligence</SelectItem>
+          <SelectItem value="Blockchain">Blockchain</SelectItem>
+          <SelectItem value="Clean Energy">Clean Energy</SelectItem>
+          <SelectItem value="E-commerce">E-commerce</SelectItem>
+          <SelectItem value="Food & Beverage">Food & Beverage</SelectItem>
+          <SelectItem value="Fashion">Fashion</SelectItem>
+          <SelectItem value="Sports">Sports</SelectItem>
+          <SelectItem value="Travel">Travel</SelectItem>
+          <SelectItem value="Insurance">Insurance</SelectItem>
+          <SelectItem value="Legal Services">Legal Services</SelectItem>
+          <SelectItem value="Marketing & Advertising">Marketing & Advertising</SelectItem>
+          <SelectItem value="Pharmaceuticals">Pharmaceuticals</SelectItem>
+          <SelectItem value="Renewable Energy">Renewable Energy</SelectItem>
+          <SelectItem value="Software Development">Software Development</SelectItem>
+          <SelectItem value="Cybersecurity">Cybersecurity</SelectItem>
+          <SelectItem value="Data Analytics">Data Analytics</SelectItem>
+          <SelectItem value="Digital Media">Digital Media</SelectItem>
+          <SelectItem value="Environmental Services">Environmental Services</SelectItem>
+          <SelectItem value="Fitness & Wellness">Fitness & Wellness</SelectItem>
+          <SelectItem value="Gaming">Gaming</SelectItem>
+          <SelectItem value="Hardware">Hardware</SelectItem>
+          <SelectItem value="Internet of Things">Internet of Things</SelectItem>
+          <SelectItem value="Logistics">Logistics</SelectItem>
+          <SelectItem value="Mobile Apps">Mobile Apps</SelectItem>
+          <SelectItem value="Robotics">Robotics</SelectItem>
+          <SelectItem value="SaaS">SaaS</SelectItem>
+          <SelectItem value="Social Impact">Social Impact</SelectItem>
+          <SelectItem value="Space Technology">Space Technology</SelectItem>
+          <SelectItem value="Virtual Reality">Virtual Reality</SelectItem>
+          <SelectItem value="Wearable Technology">Wearable Technology</SelectItem>
+        </SelectContent>
+      </Select>
     </div>
     {/* Title */}
     <div className="grid grid-cols-4 items-center gap-4">
