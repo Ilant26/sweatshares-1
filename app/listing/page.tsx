@@ -377,6 +377,39 @@ export default function ListingsPage() {
                           dangerouslySetInnerHTML={{ __html: listing.description || '' }}
                         />
 
+                        {/* Funding Stage and Compensation */}
+                        <motion.div variants={slideInRight} className="px-4 mb-2">
+                          <div className="flex flex-wrap gap-2">
+                            {listing.funding_stage && (
+                              <div className="flex items-center gap-1.5 bg-primary/5 text-primary px-2.5 py-1 rounded-full text-xs font-medium">
+                                <Briefcase className="h-3.5 w-3.5" />
+                                <span>{listing.funding_stage}</span>
+                              </div>
+                            )}
+                            {listing.compensation_type && (
+                              <div className="flex items-center gap-1.5 bg-primary/5 text-primary px-2.5 py-1 rounded-full text-xs font-medium">
+                                <DollarSign className="h-3.5 w-3.5" />
+                                <span>{listing.compensation_type}</span>
+                                {listing.compensation_value && (
+                                  <span className="text-primary/80">
+                                    {typeof listing.compensation_value === 'object' 
+                                      ? Object.entries(listing.compensation_value)
+                                          .map(([key, value]) => `${value}`)
+                                          .join(' + ')
+                                      : listing.compensation_value}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                            {listing.amount && (
+                              <div className="flex items-center gap-1.5 bg-primary/5 text-primary px-2.5 py-1 rounded-full text-xs font-medium">
+                                <DollarSign className="h-3.5 w-3.5" />
+                                <span>Amount: {listing.amount}</span>
+                              </div>
+                            )}
+                          </div>
+                        </motion.div>
+
                         {/* Location and Sector */}
                         <motion.div variants={slideInRight} className="px-4 flex items-center gap-3 text-muted-foreground text-xs mb-2">
                           <MapPin className="h-4 w-4" />
