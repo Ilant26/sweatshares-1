@@ -60,6 +60,8 @@ import {
   EllipsisVertical,
   Trash2,
   Pencil,
+  User,
+  Building2,
 } from 'lucide-react';
 
 export default function MyInvoicesPage() {
@@ -91,37 +93,6 @@ export default function MyInvoicesPage() {
   });
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-
-  const invoiceTemplates = [
-    {
-      id: 't1',
-      icon: <FileText className="h-8 w-8 text-blue-500" />,
-      title: 'Standard Invoice',
-      description: 'Basic template for regular billing',
-      lastUsed: '2 days ago',
-    },
-    {
-      id: 't2',
-      icon: <Clock className="h-8 w-8 text-green-500" />,
-      title: 'Hourly Rate',
-      description: 'Template for time-based services',
-      lastUsed: '1 week ago',
-    },
-    {
-      id: 't3',
-      icon: <ReceiptText className="h-8 w-8 text-orange-500" />,
-      title: 'Project Milestone',
-      description: 'Template for project phases',
-      lastUsed: '2 weeks ago',
-    },
-    {
-      id: 't4',
-      icon: <TrendingUp className="h-8 w-8 text-purple-500" />,
-      title: 'Subscription',
-      description: 'Template for recurring billing',
-      lastUsed: '1 month ago',
-    },
-  ];
 
   const financialSummary = {
     totalSent: '15,800.00',
@@ -431,242 +402,280 @@ export default function MyInvoicesPage() {
                 <Plus className="mr-2 h-4 w-4" /> New Invoice
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+            <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>Create New Invoice</DialogTitle>
-                <DialogDescription>
-                  Fill in the details below to create a new invoice.
+                <DialogTitle className="text-2xl font-bold">Create New Invoice</DialogTitle>
+                <DialogDescription className="text-base">
+                  Fill in the details below to create a new invoice for your client.
                 </DialogDescription>
               </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid gap-2">
-                  <Label>Client Type</Label>
-                  <div className="flex gap-4">
-                    <Button
-                      type="button"
-                      variant={clientType === 'network' ? 'default' : 'outline'}
-                      onClick={() => setClientType('network')}
-                    >
-                      Network Contact
-                    </Button>
-                    <Button
-                      type="button"
-                      variant={clientType === 'external' ? 'default' : 'outline'}
-                      onClick={() => setClientType('external')}
-                    >
-                      External Client
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="grid gap-2">
-                  <Label htmlFor="client">Client</Label>
-                  {clientType === 'network' ? (
-                    <Select
-                      value={newInvoice.client}
-                      onValueChange={(value) => setNewInvoice(prev => ({ ...prev, client: value }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a client" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {networkContacts.map((contact) => (
-                          <SelectItem key={contact.id} value={contact.id}>
-                            {contact.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <div className="flex gap-2">
-                      <Select
-                        value={newInvoice.client}
-                        onValueChange={(value) => setNewInvoice(prev => ({ ...prev, client: value }))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a client" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {externalClients.map((client) => (
-                            <SelectItem key={client.id} value={client.id}>
-                              {client.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <ExternalClientDialog onClientAdded={handleClientAdded} />
-                    </div>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="invoiceNumber">Invoice Number</Label>
-                    <Input
-                      id="invoiceNumber"
-                      placeholder="e.g., INV-2025-001"
-                      value={newInvoice.invoiceNumber}
-                      onChange={(e) => setNewInvoice(prev => ({ ...prev, invoiceNumber: e.target.value }))}
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="issueDate">Issue Date</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant={"outline"}
-                          className={cn(
-                            "w-full justify-start text-left font-normal",
-                            !invoiceDate && "text-muted-foreground"
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {invoiceDate ? format(invoiceDate, "PPP") : <span>Pick a date</span>}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={invoiceDate}
-                          onSelect={setInvoiceDate}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="dueDate">Due Date</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant={"outline"}
-                          className={cn(
-                            "w-full justify-start text-left font-normal",
-                            !dueDate && "text-muted-foreground"
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {dueDate ? format(dueDate, "PPP") : <span>Pick a date</span>}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={dueDate}
-                          onSelect={setDueDate}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                </div>
-                  <div className="space-y-2">
-                  <Label htmlFor="description">Description</Label>
-                  <Textarea
-                    id="description"
-                    placeholder="Brief description of the invoice"
-                    value={newInvoice.description}
-                    onChange={(e) => setNewInvoice(prev => ({ ...prev, description: e.target.value }))}
-                  />
-                  </div>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="lineItems" className="text-base">Line Items</Label>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleAddLineItem}
-                      className="gap-2"
-                    >
-                      <Plus className="h-4 w-4" /> Add Item
-                    </Button>
-                  </div>
+              <div className="grid gap-6 py-4">
+                {/* Client Selection Section */}
+                <Card className="p-4">
                   <div className="space-y-4">
-                    {newInvoice.items.map((item, index) => (
-                      <Card key={index} className="p-4">
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div className="space-y-2">
-                            <Label htmlFor={`item-description-${index}`}>Description</Label>
-                            <Input
-                              id={`item-description-${index}`}
-                              placeholder="e.g., Web Development"
-                              value={item.description}
-                              onChange={(e) => handleLineItemChange(index, 'description', e.target.value)}
-                            />
-                  </div>
-                          <div className="space-y-2">
-                            <Label htmlFor={`item-quantity-${index}`}>Quantity</Label>
-                            <Input
-                              id={`item-quantity-${index}`}
-                              type="number"
-                              min="1"
-                              placeholder="1"
-                              value={item.quantity}
-                              onChange={(e) => handleLineItemChange(index, 'quantity', Number(e.target.value))}
-                            />
-                </div>
-                <div className="space-y-2">
-                            <Label htmlFor={`item-price-${index}`}>Unit Price (€)</Label>
-                            <Input
-                              id={`item-price-${index}`}
-                              type="number"
-                              min="0"
-                              step="0.01"
-                              placeholder="0.00"
-                              value={item.unitPrice}
-                              onChange={(e) => handleLineItemChange(index, 'unitPrice', Number(e.target.value))}
-                            />
-                </div>
-                <div className="space-y-2">
-                            <Label htmlFor={`item-total-${index}`}>Total (€)</Label>
-                            <Input
-                              id={`item-total-${index}`}
-                              type="number"
-                              value={item.amount}
-                              readOnly
-                              className="bg-muted"
-                            />
-                  </div>
-                        </div>
-                        {index > 0 && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="mt-2 text-red-500 hover:text-red-600 hover:bg-red-50"
-                            onClick={() => {
-                              const newItems = [...newInvoice.items];
-                              newItems.splice(index, 1);
-                              setNewInvoice(prev => ({ ...prev, items: newItems }));
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" /> Remove Item
-                          </Button>
-                        )}
-                      </Card>
-                    ))}
-                    {newInvoice.items.length === 0 && (
-                      <div className="text-center py-6 border-2 border-dashed rounded-lg">
-                        <FileQuestion className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                        <p className="text-sm text-muted-foreground">No line items added yet</p>
-                        <p className="text-xs text-muted-foreground mt-1">Click "Add Item" to start adding items to your invoice</p>
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-semibold">Client Information</h3>
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          variant={clientType === 'network' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setClientType('network')}
+                          className="flex items-center gap-2"
+                        >
+                          <User className="h-4 w-4" />
+                          Network Contact
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={clientType === 'external' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setClientType('external')}
+                          className="flex items-center gap-2"
+                        >
+                          <Building2 className="h-4 w-4" />
+                          External Client
+                        </Button>
                       </div>
-                    )}
+                    </div>
+                    <div className="grid gap-4">
+                      <div className="flex flex-col gap-2">
+                        <Label htmlFor="client" className="text-sm font-medium">Select Client</Label>
+                        {clientType === 'network' ? (
+                          <div className="w-full">
+                            <Select
+                              value={newInvoice.client}
+                              onValueChange={(value) => setNewInvoice(prev => ({ ...prev, client: value }))}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select a network contact" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {networkContacts.map((contact) => (
+                                  <SelectItem key={contact.id} value={contact.id}>
+                                    {contact.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        ) : (
+                          <div className="flex gap-2">
+                            <div className="flex-1">
+                              <Select
+                                value={newInvoice.client}
+                                onValueChange={(value) => setNewInvoice(prev => ({ ...prev, client: value }))}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select an external client" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {externalClients.map((client) => (
+                                    <SelectItem key={client.id} value={client.id}>
+                                      {client.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <ExternalClientDialog onClientAdded={handleClientAdded} />
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="notes">Notes</Label>
-                  <Textarea
-                    id="notes"
-                    placeholder="Any additional notes"
-                    value={newInvoice.notes}
-                    onChange={(e) => setNewInvoice(prev => ({ ...prev, notes: e.target.value }))}
-                  />
-                </div>
+                </Card>
+
+                {/* Invoice Details Section */}
+                <Card className="p-4">
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Invoice Details</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="invoiceNumber" className="text-sm font-medium">Invoice Number</Label>
+                        <Input
+                          id="invoiceNumber"
+                          placeholder="e.g., INV-2025-001"
+                          value={newInvoice.invoiceNumber}
+                          onChange={(e) => setNewInvoice(prev => ({ ...prev, invoiceNumber: e.target.value }))}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="description" className="text-sm font-medium">Description</Label>
+                        <Input
+                          id="description"
+                          placeholder="Brief description of the invoice"
+                          value={newInvoice.description}
+                          onChange={(e) => setNewInvoice(prev => ({ ...prev, description: e.target.value }))}
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="issueDate" className="text-sm font-medium">Issue Date</Label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant={"outline"}
+                              className={cn(
+                                "w-full justify-start text-left font-normal",
+                                !invoiceDate && "text-muted-foreground"
+                              )}
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {invoiceDate ? format(invoiceDate, "PPP") : <span>Pick a date</span>}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={invoiceDate}
+                              onSelect={setInvoiceDate}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="dueDate" className="text-sm font-medium">Due Date</Label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant={"outline"}
+                              className={cn(
+                                "w-full justify-start text-left font-normal",
+                                !dueDate && "text-muted-foreground"
+                              )}
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {dueDate ? format(dueDate, "PPP") : <span>Pick a date</span>}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={dueDate}
+                              onSelect={setDueDate}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+
+                {/* Line Items Section */}
+                <Card className="p-4">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-semibold">Line Items</h3>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleAddLineItem}
+                        className="gap-2"
+                      >
+                        <Plus className="h-4 w-4" /> Add Item
+                      </Button>
+                    </div>
+                    <div className="space-y-4">
+                      {newInvoice.items.map((item, index) => (
+                        <Card key={index} className="p-4 border-2">
+                          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div className="space-y-2">
+                              <Label htmlFor={`item-description-${index}`} className="text-sm font-medium">Description</Label>
+                              <Input
+                                id={`item-description-${index}`}
+                                placeholder="e.g., Web Development"
+                                value={item.description}
+                                onChange={(e) => handleLineItemChange(index, 'description', e.target.value)}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor={`item-quantity-${index}`} className="text-sm font-medium">Quantity</Label>
+                              <Input
+                                id={`item-quantity-${index}`}
+                                type="number"
+                                min="1"
+                                placeholder="1"
+                                value={item.quantity}
+                                onChange={(e) => handleLineItemChange(index, 'quantity', Number(e.target.value))}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor={`item-price-${index}`} className="text-sm font-medium">Unit Price (€)</Label>
+                              <Input
+                                id={`item-price-${index}`}
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                placeholder="0.00"
+                                value={item.unitPrice}
+                                onChange={(e) => handleLineItemChange(index, 'unitPrice', Number(e.target.value))}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor={`item-total-${index}`} className="text-sm font-medium">Total (€)</Label>
+                              <Input
+                                id={`item-total-${index}`}
+                                type="number"
+                                value={item.amount}
+                                readOnly
+                                className="bg-muted"
+                              />
+                            </div>
+                          </div>
+                          {index > 0 && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="mt-2 text-red-500 hover:text-red-600 hover:bg-red-50"
+                              onClick={() => {
+                                const newItems = [...newInvoice.items];
+                                newItems.splice(index, 1);
+                                setNewInvoice(prev => ({ ...prev, items: newItems }));
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" /> Remove Item
+                            </Button>
+                          )}
+                        </Card>
+                      ))}
+                      {newInvoice.items.length === 0 && (
+                        <div className="text-center py-8 border-2 border-dashed rounded-lg bg-muted/50">
+                          <FileQuestion className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+                          <p className="text-base text-muted-foreground font-medium">No line items added yet</p>
+                          <p className="text-sm text-muted-foreground mt-1">Click "Add Item" to start adding items to your invoice</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </Card>
+
+                {/* Notes Section */}
+                <Card className="p-4">
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Additional Notes</h3>
+                    <div className="space-y-2">
+                      <Label htmlFor="notes" className="text-sm font-medium">Notes</Label>
+                      <Textarea
+                        id="notes"
+                        placeholder="Add any additional notes or terms for this invoice"
+                        value={newInvoice.notes}
+                        onChange={(e) => setNewInvoice(prev => ({ ...prev, notes: e.target.value }))}
+                        className="min-h-[100px]"
+                      />
+                    </div>
+                  </div>
+                </Card>
               </div>
-              <DialogFooter>
-                <Button type="submit" onClick={handleCreateInvoice}>Save Invoice</Button>
+              <DialogFooter className="gap-2 sm:gap-0">
+                <Button variant="outline" onClick={() => setNewInvoiceDialogOpen(false)}>Cancel</Button>
+                <Button type="submit" onClick={handleCreateInvoice} className="gap-2">
+                  <FileText className="h-4 w-4" />
+                  Create Invoice
+                </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -677,7 +686,7 @@ export default function MyInvoicesPage() {
 
       <Tabs defaultValue="sent" onValueChange={setActiveTab} className="space-y-4">
         <TabsList className="grid w-fit grid-cols-2">
-          <TabsTrigger value="sent">Sent Invoices ({invoices.length})</TabsTrigger>
+          <TabsTrigger value="sent">My Invoices ({invoices.length})</TabsTrigger>
           <TabsTrigger value="received">Received Invoices ({invoices.length})</TabsTrigger>
         </TabsList>
         <TabsContent value="sent" className="space-y-4">
@@ -961,30 +970,6 @@ export default function MyInvoicesPage() {
           </div>
         </TabsContent>
       </Tabs>
-
-      <h3 className="text-xl font-semibold mb-4">Invoice Templates</h3>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {invoiceTemplates.map((template) => (
-          <Card key={template.id}>
-            <CardHeader className="flex-col items-start gap-2">
-              <div className="rounded-full bg-muted p-3">
-                {template.icon}
-              </div>
-              <CardTitle className="text-lg">{template.title}</CardTitle>
-              <CardDescription className="text-sm">{template.description}</CardDescription>
-            </CardHeader>
-            <CardContent className="flex items-center justify-between pt-2 text-sm text-muted-foreground">
-              <span>Last used: {template.lastUsed}</span>
-              <Button variant="ghost" size="icon"><Eye className="h-4 w-4" /></Button>
-            </CardContent>
-          </Card>
-        ))}
-        <Card className="flex items-center justify-center border-2 border-dashed h-full">
-          <Button variant="ghost" className="flex items-center gap-2">
-            <Plus className="h-4 w-4" /> Create Template
-          </Button>
-        </Card>
-      </div>
 
       <div className="grid gap-4 md:grid-cols-2">
         <div>
