@@ -1,3 +1,5 @@
+import { InvoiceItem } from './invoices';
+
 export type Json =
   | string
   | number
@@ -151,6 +153,97 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+      }
+      external_clients: {
+        Row: {
+          id: string;
+          user_id: string;
+          company_name: string | null;
+          contact_name: string;
+          email: string;
+          phone: string | null;
+          address: string | null;
+          tax_id: string | null;
+          notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          company_name?: string | null;
+          contact_name: string;
+          email: string;
+          phone?: string | null;
+          address?: string | null;
+          tax_id?: string | null;
+          notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          company_name?: string | null;
+          contact_name?: string;
+          email?: string;
+          phone?: string | null;
+          address?: string | null;
+          tax_id?: string | null;
+          notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      }
+      invoices: {
+        Row: {
+          id: string;
+          invoice_number: string;
+          sender_id: string;
+          receiver_id: string | null;
+          external_client_id: string | null;
+          issue_date: string;
+          due_date: string;
+          amount: number;
+          currency: string;
+          status: 'pending' | 'paid' | 'cancelled';
+          description: string | null;
+          items: InvoiceItem[];
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          invoice_number: string;
+          sender_id: string;
+          receiver_id?: string | null;
+          external_client_id?: string | null;
+          issue_date: string;
+          due_date: string;
+          amount: number;
+          currency: string;
+          status?: 'pending' | 'paid' | 'cancelled';
+          description?: string | null;
+          items: InvoiceItem[];
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          invoice_number?: string;
+          sender_id?: string;
+          receiver_id?: string | null;
+          external_client_id?: string | null;
+          issue_date?: string;
+          due_date?: string;
+          amount?: number;
+          currency?: string;
+          status?: 'pending' | 'paid' | 'cancelled';
+          description?: string | null;
+          items?: InvoiceItem[];
+          created_at?: string;
+          updated_at?: string;
+        };
       }
     }
     Views: {
