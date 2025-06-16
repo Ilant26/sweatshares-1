@@ -250,8 +250,8 @@ export default function MyInvoicesPage() {
       const invoiceData = {
         invoice_number: newInvoice.invoiceNumber,
         sender_id: user.id,
-        receiver_id: clientType === 'network' ? newInvoice.client : null,
-        external_client_id: clientType === 'external' ? newInvoice.client : null,
+        receiver_id: clientType === 'network' ? newInvoice.client : undefined,
+        external_client_id: clientType === 'external' ? newInvoice.client : undefined,
         issue_date: invoiceDate.toISOString(),
         due_date: dueDate.toISOString(),
         amount: newInvoice.amount,
