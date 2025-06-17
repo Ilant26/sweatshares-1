@@ -337,6 +337,53 @@ export function usePosts() {
     }
   }
 
+  const updatePost = async (postId: string, content: string) => {
+    if (!user) return null;
+
+    try {
+      const { data: post, error } = await supabase
+        .from('posts')
+        .update({ content })
+        .eq('id', postId)
+        .eq('user_id', user.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setPosts(prev =>
+        prev.map(p =>
+          p.id === postId
+            ? { ...p, content }
+            : p
+        )
+      );
+
+      return post;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  const deletePost = async (postId: string) => {
+    if (!user) return null;
+
+    try {
+      const { error } = await supabase
+        .from('posts')
+        .delete()
+        .eq('id', postId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      setPosts(prev => prev.filter(p => p.id !== postId));
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      throw error;
+    }
+  }
+
   useEffect(() => {
     fetchPosts()
   }, [fetchPosts])
@@ -349,6 +396,8 @@ export function usePosts() {
     unlikePost,
     savePost,
     unsavePost,
-    addComment
+    addComment,
+    updatePost,
+    deletePost
   }
 } 

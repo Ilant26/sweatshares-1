@@ -11,7 +11,12 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
 import { useRouter } from "next/navigation";
 import { motion, Variants } from "framer-motion";
-
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Share2,
   ThumbsUp,
@@ -26,10 +31,13 @@ import {
   FileIcon,
   X,
   Loader2,
+  MoreVertical,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import { useUser } from "@/hooks/use-user";
 import { usePosts } from "@/hooks/use-posts";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { AttachmentType } from "@/lib/database.types";
 import { supabase } from "@/lib/supabase";
 
@@ -60,14 +68,59 @@ const itemVariants: Variants = {
 
 export default function NewsFeedPage() {
   const { user } = useUser();
-  const { posts, loading, createPost, likePost, unlikePost, savePost, unsavePost, addComment } = usePosts();
+  const { posts, loading, createPost, likePost, unlikePost, savePost, unsavePost, addComment, updatePost, deletePost } = usePosts();
   const [newPostContent, setNewPostContent] = useState("");
   const [newComments, setNewComments] = useState<{ [key: string]: string }>({});
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isPosting, setIsPosting] = useState(false);
+  const [editingPost, setEditingPost] = useState<{ id: string; content: string } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [stats, setStats] = useState({
+    connections: 0,
+    posts: 0,
+    listings: 0
+  });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const router = useRouter();
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      if (!user) return;
+
+      try {
+        // Fetch connections count (only accepted connections)
+        const { count: connectionsCount } = await supabase
+          .from('connections')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'accepted')
+          .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`);
+
+        // Fetch posts count
+        const { count: postsCount } = await supabase
+          .from('posts')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id);
+
+        // Fetch listings count
+        const { count: listingsCount } = await supabase
+          .from('listings')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .eq('status', 'active');
+
+        setStats({
+          connections: connectionsCount || 0,
+          posts: postsCount || 0,
+          listings: listingsCount || 0
+        });
+      } catch (error) {
+        console.error('Error fetching stats:', error);
+      }
+    };
+
+    fetchStats();
+  }, [user]);
 
   const trendingTopics = [
     { name: "#ArtificialIntelligence", posts: "1,345 posts" },
@@ -197,6 +250,64 @@ export default function NewsFeedPage() {
     router.push(`/dashboard/profile/${userId}`);
   };
 
+  const isPostEditable = (createdAt: string) => {
+    const postDate = new Date(createdAt);
+    const now = new Date();
+    const diffInMinutes = (now.getTime() - postDate.getTime()) / (1000 * 60);
+    return diffInMinutes <= 15;
+  };
+
+  const handleEditPost = async (postId: string, newContent: string) => {
+    try {
+      if (!postId || !newContent) {
+        throw new Error('Missing required fields for post update');
+      }
+
+      if (!isPostEditable(posts.find(p => p.id === postId)?.created_at || '')) {
+        throw new Error('Post can only be edited within 15 minutes of creation');
+      }
+
+      await updatePost(postId, newContent);
+      setEditingPost(null);
+      
+      toast({
+        title: "Success",
+        description: "Post updated successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to update post",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeletePost = async (postId: string) => {
+    try {
+      setIsDeleting(true);
+      
+      if (!postId) {
+        throw new Error('Missing post ID for deletion');
+      }
+
+      await deletePost(postId);
+      
+      toast({
+        title: "Success",
+        description: "Post deleted successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to delete post",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <motion.div 
       className="flex min-h-screen w-full flex-col bg-background"
@@ -228,17 +339,17 @@ export default function NewsFeedPage() {
                 <CardContent className="grid gap-2">
                   <div className="flex justify-between text-sm">
                     <div>
-                      <span className="font-semibold">128</span> Connections
+                      <span className="font-semibold">{stats.connections}</span> Connections
                     </div>
                     <div>
-                      <span className="font-semibold">42</span> Views
+                      <span className="font-semibold">{stats.listings}</span> Listings
                     </div>
                     <div>
-                      <span className="font-semibold">8</span> Posts
+                      <span className="font-semibold">{stats.posts}</span> Posts
                     </div>
                   </div>
-                  <Button variant="outline" className="mt-2">
-                    My publications
+                  <Button variant="outline" className="mt-2" onClick={() => router.push(`/dashboard/profile/${user?.id}`)}>
+                    My Profile
                   </Button>
                 </CardContent>
               </Card>
@@ -376,11 +487,59 @@ export default function NewsFeedPage() {
                             <p className="text-xs text-muted-foreground">{formatDate(post.created_at)}</p>
                           </div>
                         </div>
-                        <div className="text-sm text-muted-foreground">...</div>
+                        {post.author.id === user?.id && (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              {isPostEditable(post.created_at) && (
+                                <DropdownMenuItem
+                                  onClick={() => setEditingPost({ id: post.id, content: post.content })}
+                                >
+                                  <Pencil className="h-4 w-4 mr-2" />
+                                  Edit
+                                </DropdownMenuItem>
+                              )}
+                              <DropdownMenuItem
+                                onClick={() => handleDeletePost(post.id)}
+                                className="text-red-600"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        )}
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <p className="mb-4">{post.content}</p>
+                      {editingPost?.id === post.id ? (
+                        <div className="space-y-4">
+                          <Textarea
+                            value={editingPost.content}
+                            onChange={(e) => setEditingPost({ ...editingPost, content: e.target.value })}
+                            className="min-h-[100px]"
+                          />
+                          <div className="flex justify-end space-x-2">
+                            <Button
+                              variant="outline"
+                              onClick={() => setEditingPost(null)}
+                            >
+                              Cancel
+                            </Button>
+                            <Button
+                              onClick={() => handleEditPost(post.id, editingPost.content)}
+                            >
+                              Save Changes
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="mb-4">{post.content}</p>
+                      )}
                       {post.attachments.length > 0 && (
                         <div className="grid gap-4 mb-4">
                           {post.attachments.map((attachment) => (
