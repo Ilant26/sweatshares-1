@@ -448,8 +448,8 @@ export function MobileMessages() {
         }
     };
 
-    // Add a component for file preview
-    const FilePreview = ({ attachment }: { attachment: MessageAttachment }) => {
+    // Update FilePreview to accept onAttachmentLoad and call it on image/video load
+    const FilePreview = ({ attachment, onAttachmentLoad }: { attachment: MessageAttachment, onAttachmentLoad?: () => void }) => {
         const [previewUrl, setPreviewUrl] = useState<string | null>(null);
         const isImage = attachment.type?.startsWith('image/');
         const isVideo = attachment.type?.startsWith('video/');
@@ -471,6 +471,7 @@ export function MobileMessages() {
                     alt={attachment.filename}
                     className="max-w-full rounded-md"
                     loading="lazy"
+                    onLoad={onAttachmentLoad}
                 />
             );
         }
@@ -481,6 +482,7 @@ export function MobileMessages() {
                     src={previewUrl}
                     controls
                     className="max-w-full rounded-md"
+                    onLoadedData={onAttachmentLoad}
                 />
             );
         }
@@ -697,7 +699,7 @@ export function MobileMessages() {
                                             <div className="mt-2 space-y-2">
                                                 {message.attachments.map((attachment) => (
                                                     <div key={attachment.id} className="relative">
-                                                        <FilePreview attachment={attachment} />
+                                                        <FilePreview attachment={attachment} onAttachmentLoad={scrollToBottom} />
                                                     </div>
                                                 ))}
                                             </div>

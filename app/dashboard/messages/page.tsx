@@ -464,89 +464,6 @@ export default function MessagesPage() {
         return data?.signedUrl;
     };
 
-    // Add a component for file preview
-    const FilePreview = ({ attachment }: { attachment: MessageAttachment }) => {
-        const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-        const isImage = attachment.type?.startsWith('image/');
-        const isVideo = attachment.type?.startsWith('video/');
-
-        useEffect(() => {
-            const loadPreviewUrl = async () => {
-                if (attachment.filepath) {
-                    const url = await getFilePreviewUrl(attachment.filepath);
-                    setPreviewUrl(url || null);
-                }
-            };
-            loadPreviewUrl();
-        }, [attachment.filepath]);
-
-        if (isImage && previewUrl) {
-            return (
-                <img
-                    src={previewUrl}
-                    alt={attachment.filename}
-                    className="max-w-full rounded-md"
-                    loading="lazy"
-                />
-            );
-        }
-
-        if (isVideo && previewUrl) {
-            return (
-                <video
-                    src={previewUrl}
-                    controls
-                    className="max-w-full rounded-md"
-                />
-            );
-        }
-
-        return (
-            <div className="flex items-center gap-2 bg-background/50 p-2 rounded-md">
-                <FileText className="h-4 w-4" />
-                <span className="text-sm truncate">{attachment.filename}</span>
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => attachment.filepath && handleFileDownload(attachment.filepath, attachment.filename)}
-                >
-                    Download
-                </Button>
-            </div>
-        );
-    };
-
-    // Add a function to handle file download
-    const handleFileDownload = async (filepath: string, filename: string) => {
-        try {
-            const { data, error } = await supabase.storage
-                .from('message-attachments')
-                .download(filepath);
-            
-            if (error) throw error;
-            
-            const url = window.URL.createObjectURL(data);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-        } catch (error) {
-            console.error('Error downloading file:', error);
-            toast.error('Failed to download file');
-        }
-    };
-
-    const handleSelectUser = (userId: string) => {
-        setSelectedConversation(userId);
-        setNewMessageDialogOpen(false);
-    };
-
-    // Modify the loading state to consider both allMessages and the selected conversation
-    const isLoadingConversations = isLoading || allMessages.length === 0;
-
     // Add scroll to bottom function
     const scrollToBottom = React.useCallback(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -632,6 +549,88 @@ export default function MessagesPage() {
             default:
                 return <FileText className="h-4 w-4 text-gray-500" />;
         }
+    };
+
+    // Add a function to handle file download
+    const handleFileDownload = async (filepath: string, filename: string) => {
+        try {
+            const { data, error } = await supabase.storage
+                .from('message-attachments')
+                .download(filepath);
+            
+            if (error) throw error;
+            
+            const url = window.URL.createObjectURL(data);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        } catch (error) {
+            console.error('Error downloading file:', error);
+            toast.error('Failed to download file');
+        }
+    };
+
+    const handleSelectUser = (userId: string) => {
+        setSelectedConversation(userId);
+        setNewMessageDialogOpen(false);
+    };
+
+    // Update FilePreview to accept onAttachmentLoad and call it on image/video load
+    const FilePreview = ({ attachment, onAttachmentLoad }: { attachment: MessageAttachment, onAttachmentLoad?: () => void }) => {
+        const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+        const isImage = attachment.type?.startsWith('image/');
+        const isVideo = attachment.type?.startsWith('video/');
+
+        useEffect(() => {
+            const loadPreviewUrl = async () => {
+                if (attachment.filepath) {
+                    const url = await getFilePreviewUrl(attachment.filepath);
+                    setPreviewUrl(url || null);
+                }
+            };
+            loadPreviewUrl();
+        }, [attachment.filepath]);
+
+        if (isImage && previewUrl) {
+            return (
+                <img
+                    src={previewUrl}
+                    alt={attachment.filename}
+                    className="max-w-full rounded-md"
+                    loading="lazy"
+                    onLoad={onAttachmentLoad}
+                />
+            );
+        }
+
+        if (isVideo && previewUrl) {
+            return (
+                <video
+                    src={previewUrl}
+                    controls
+                    className="max-w-full rounded-md"
+                    onLoadedData={onAttachmentLoad}
+                />
+            );
+        }
+
+        return (
+            <div className="flex items-center gap-2 bg-background/50 p-2 rounded-md">
+                <FileText className="h-4 w-4" />
+                <span className="text-sm truncate">{attachment.filename}</span>
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => attachment.filepath && handleFileDownload(attachment.filepath, attachment.filename)}
+                >
+                    Download
+                </Button>
+            </div>
+        );
     };
 
     if (isMobile) {
@@ -815,7 +814,7 @@ export default function MessagesPage() {
                                                             <div className="mt-2 space-y-2">
                                                                 {message.attachments.map((attachment) => (
                                                                     <div key={attachment.id} className="relative">
-                                                                        <FilePreview attachment={attachment} />
+                                                                        <FilePreview attachment={attachment} onAttachmentLoad={scrollToBottom} />
                                                                     </div>
                                                                 ))}
                                                             </div>
