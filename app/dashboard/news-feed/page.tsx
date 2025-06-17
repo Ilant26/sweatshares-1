@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/components/ui/use-toast";
 
 import {
   Share2,
@@ -20,16 +21,25 @@ import {
   ImageIcon,
   Filter,
   ArrowRight,
+  FileIcon,
+  X,
+  Loader2,
 } from "lucide-react";
 import { useUser } from "@/hooks/use-user";
 import { usePosts } from "@/hooks/use-posts";
-import { useState } from "react";
+import { useState, useRef } from "react";
+import { AttachmentType } from "@/lib/database.types";
+import { supabase } from "@/lib/supabase";
 
 export default function NewsFeedPage() {
   const { user } = useUser();
   const { posts, loading, createPost, likePost, unlikePost, savePost, unsavePost, addComment } = usePosts();
   const [newPostContent, setNewPostContent] = useState("");
   const [newComments, setNewComments] = useState<{ [key: string]: string }>({});
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [isPosting, setIsPosting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
   const trendingTopics = [
     { name: "#ArtificialIntelligence", posts: "1,345 posts" },
@@ -39,10 +49,80 @@ export default function NewsFeedPage() {
     { name: "#TechForGood", posts: "542 posts" },
   ];
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    setSelectedFiles(prev => [...prev, ...files]);
+  };
+
+  const removeFile = (index: number) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleCreatePost = async () => {
-    if (!newPostContent.trim()) return;
-    await createPost(newPostContent);
-    setNewPostContent("");
+    if (!newPostContent.trim() && selectedFiles.length === 0) return;
+    
+    try {
+      setIsPosting(true);
+      await createPost(newPostContent, selectedFiles);
+      setNewPostContent("");
+      setSelectedFiles([]);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to create post. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsPosting(false);
+    }
+  };
+
+  const getFileIcon = (file: File) => {
+    if (file.type.startsWith('image/')) return <ImageIcon className="h-4 w-4" />;
+    if (file.type.startsWith('video/')) return <FileIcon className="h-4 w-4" />;
+    return <FileIcon className="h-4 w-4" />;
+  };
+
+  const getFilePreview = (attachment: any) => {
+    const { data: { publicUrl } } = supabase.storage
+      .from('post-attachments')
+      .getPublicUrl(attachment.file_path)
+    
+    switch (attachment.type) {
+      case 'image':
+        return (
+          <img 
+            src={publicUrl} 
+            alt={attachment.file_name}
+            className="w-full rounded-md object-cover max-h-96"
+          />
+        );
+      case 'video':
+        return (
+          <video 
+            src={publicUrl}
+            controls
+            className="w-full rounded-md max-h-96"
+          />
+        );
+      case 'document':
+        return (
+          <a 
+            href={publicUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center space-x-2 p-4 border rounded-md hover:bg-gray-50"
+          >
+            <FileIcon className="h-6 w-6" />
+            <span>{attachment.file_name}</span>
+          </a>
+        );
+      default:
+        return null;
+    }
   };
 
   const handleAddComment = async (postId: string) => {
@@ -161,11 +241,42 @@ export default function NewsFeedPage() {
                     onChange={(e) => setNewPostContent(e.target.value)}
                   />
                 </div>
+                {selectedFiles.length > 0 && (
+                  <div className="mt-4 space-y-2">
+                    {selectedFiles.map((file, index) => (
+                      <div key={index} className="flex items-center justify-between p-2 border rounded-md">
+                        <div className="flex items-center space-x-2">
+                          {getFileIcon(file)}
+                          <span className="text-sm truncate">{file.name}</span>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeFile(index)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </CardHeader>
               <CardContent>
                 <div className="flex justify-between items-center text-muted-foreground text-sm">
                   <div className="flex items-center space-x-4">
-                    <Button variant="ghost" className="text-blue-500 hover:text-blue-600">
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      className="hidden"
+                      multiple
+                      onChange={handleFileSelect}
+                      accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
+                    />
+                    <Button
+                      variant="ghost"
+                      className="text-blue-500 hover:text-blue-600"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
                       <ImageIcon className="mr-2 h-4 w-4" /> Media
                     </Button>
                     <Button variant="ghost" className="text-green-500 hover:text-green-600">
@@ -175,7 +286,21 @@ export default function NewsFeedPage() {
                       <Tag className="mr-2 h-4 w-4" /> Tags
                     </Button>
                   </div>
-                  <Button onClick={handleCreatePost}>Share <Share2 className="ml-2 h-4 w-4" /></Button>
+                  <Button
+                    onClick={handleCreatePost}
+                    disabled={isPosting || (!newPostContent.trim() && selectedFiles.length === 0)}
+                  >
+                    {isPosting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Posting...
+                      </>
+                    ) : (
+                      <>
+                        Share <Share2 className="ml-2 h-4 w-4" />
+                      </>
+                    )}
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -202,10 +327,12 @@ export default function NewsFeedPage() {
                   </CardHeader>
                   <CardContent>
                     <p className="mb-4">{post.content}</p>
-                    {post.media_urls.length > 0 && (
-                      <div className="grid gap-2 mb-4">
-                        {post.media_urls.map((src, idx) => (
-                          <img key={idx} src={src} alt={`Post media ${idx + 1}`} className="w-full rounded-md object-cover" />
+                    {post.attachments.length > 0 && (
+                      <div className="grid gap-4 mb-4">
+                        {post.attachments.map((attachment) => (
+                          <div key={attachment.id}>
+                            {getFilePreview(attachment)}
+                          </div>
                         ))}
                       </div>
                     )}

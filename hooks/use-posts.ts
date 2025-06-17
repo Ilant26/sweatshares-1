@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useUser } from './use-user'
-import { Database } from '@/lib/database.types'
+import { Database, AttachmentType } from '@/lib/database.types'
+import { uploadFile } from '@/lib/upload'
+
+type PostAttachment = Database['public']['Tables']['post_attachments']['Row']
 
 type PostComment = {
   id: string
@@ -26,6 +29,7 @@ type Post = Database['public']['Tables']['posts']['Row'] & {
   has_liked: boolean
   has_saved: boolean
   comments: PostComment[]
+  attachments: PostAttachment[]
 }
 
 export function usePosts() {
@@ -56,7 +60,8 @@ export function usePosts() {
               full_name,
               avatar_url
             )
-          )
+          ),
+          attachments:post_attachments(*)
         `)
         .order('created_at', { ascending: false })
 
@@ -83,7 +88,8 @@ export function usePosts() {
           comments_count: post.comments?.length || 0,
           has_liked: likedPostIds.has(post.id),
           has_saved: savedPostIds.has(post.id),
-          comments: post.comments || []
+          comments: post.comments || [],
+          attachments: post.attachments || []
         }))
 
         setPosts(postsWithMetadata || [])
@@ -94,7 +100,8 @@ export function usePosts() {
           comments_count: post.comments?.length || 0,
           has_liked: false,
           has_saved: false,
-          comments: post.comments || []
+          comments: post.comments || [],
+          attachments: post.attachments || []
         }))
 
         setPosts(postsWithMetadata || [])
@@ -106,25 +113,60 @@ export function usePosts() {
     }
   }, [user])
 
-  const createPost = async (content: string, media_urls: string[] = [], tags: string[] = []) => {
+  const createPost = async (
+    content: string,
+    files?: File[],
+    tags: string[] = []
+  ) => {
     if (!user) return null
 
     try {
-      const { data, error } = await supabase
+      // First create the post
+      const { data: post, error: postError } = await supabase
         .from('posts')
         .insert({
           user_id: user.id,
           content,
-          media_urls,
           tags
         })
         .select()
         .single()
 
-      if (error) throw error
+      if (postError) throw postError
+
+      // Then upload files and create attachments if any
+      if (files && files.length > 0) {
+        const attachmentPromises = files.map(async (file) => {
+          // Determine file type
+          let type: AttachmentType
+          if (file.type.startsWith('image/')) type = 'image'
+          else if (file.type.startsWith('video/')) type = 'video'
+          else type = 'document'
+
+          // Upload file
+          const { data: uploadData, error: uploadError } = await uploadFile(file, type)
+          if (uploadError) throw uploadError
+
+          // Create attachment record
+          const { error: attachmentError } = await supabase
+            .from('post_attachments')
+            .insert({
+              post_id: post.id,
+              file_path: uploadData!.path,
+              file_name: file.name,
+              file_size: file.size,
+              content_type: file.type,
+              type
+            })
+
+          if (attachmentError) throw attachmentError
+        })
+
+        await Promise.all(attachmentPromises)
+      }
 
       await fetchPosts()
-      return data
+      return post
     } catch (error) {
       console.error('Error creating post:', error)
       return null
