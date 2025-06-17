@@ -233,6 +233,10 @@ export default function ListingsPage() {
     fetchListings();
   }, [listingType]);
 
+  const handleProfileClick = (userId: string) => {
+    router.push(`/dashboard/profile/${userId}`);
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-zinc-50 dark:bg-background">
       <Menu />
@@ -358,7 +362,12 @@ export default function ListingsPage() {
                             <AvatarFallback>{listing.profiles?.full_name?.charAt(0) || 'U'}</AvatarFallback>
                           </Avatar>
                           <div className="flex-1 min-w-0">
-                            <div className="font-semibold text-base truncate">{listing.profiles?.full_name || 'Unknown'}</div>
+                            <div 
+                              className="font-semibold text-base truncate cursor-pointer hover:text-primary transition-colors"
+                              onClick={() => handleProfileClick(listing.profiles?.id)}
+                            >
+                              {listing.profiles?.full_name || 'Unknown'}
+                            </div>
                             <div className="text-xs text-muted-foreground truncate">{listing.profiles?.professional_role}</div>
                           </div>
                           <Badge variant="secondary" className="text-xs px-2 py-1 whitespace-nowrap">{listing.listing_type}</Badge>

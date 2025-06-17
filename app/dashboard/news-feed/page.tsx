@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
+import { useRouter } from "next/navigation";
 
 import {
   Share2,
@@ -40,6 +41,7 @@ export default function NewsFeedPage() {
   const [isPosting, setIsPosting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const router = useRouter();
 
   const trendingTopics = [
     { name: "#ArtificialIntelligence", posts: "1,345 posts" },
@@ -163,6 +165,10 @@ export default function NewsFeedPage() {
     if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
     if (minutes > 0) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
     return 'Just now';
+  };
+
+  const handleProfileClick = (userId: string) => {
+    router.push(`/dashboard/profile/${userId}`);
   };
 
   return (
@@ -317,7 +323,12 @@ export default function NewsFeedPage() {
                           <AvatarFallback>{post.author.full_name?.charAt(0) || 'U'}</AvatarFallback>
                         </Avatar>
                         <div>
-                          <h4 className="font-semibold">{post.author.full_name}</h4>
+                          <h4 
+                            className="font-semibold cursor-pointer hover:text-primary transition-colors"
+                            onClick={() => handleProfileClick(post.author.id)}
+                          >
+                            {post.author.full_name}
+                          </h4>
                           <p className="text-sm text-muted-foreground">{post.author.professional_role}</p>
                           <p className="text-xs text-muted-foreground">{formatDate(post.created_at)}</p>
                         </div>
@@ -368,7 +379,7 @@ export default function NewsFeedPage() {
                           Save
                         </Button>
                         <Button variant="ghost" size="sm">
-                          <Share2 className="h-4 w-4" /> Share
+                        <Share2 className="h-4 w-4" /> Share
                         </Button>
                       </div>
                     </div>
