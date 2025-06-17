@@ -39,6 +39,31 @@ const cardVariants: Variants = {
   }
 };
 
+const pageVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      duration: 0.5,
+      when: "beforeChildren",
+      staggerChildren: 0.1
+    }
+  }
+};
+
+const itemVariants: Variants = {
+  hidden: { y: 20, opacity: 0 },
+  visible: {
+    y: 0,
+    opacity: 1,
+    transition: {
+      type: "spring",
+      bounce: 0.2,
+      duration: 0.8
+    }
+  }
+};
+
 export default function ProfilePage() {
   const { id } = useParams();
   const router = useRouter();
@@ -97,6 +122,12 @@ export default function ProfilePage() {
     if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
     if (minutes > 0) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
     return 'Just now';
+  };
+
+  const stripHtml = (html: string) => {
+    const tmp = document.createElement('DIV');
+    tmp.innerHTML = html;
+    return tmp.textContent || tmp.innerText || '';
   };
 
   if (loading) {
@@ -193,10 +224,19 @@ export default function ProfilePage() {
     router.push(`/dashboard/profile/${userId}`);
   };
 
+  const handleListingClick = (listingId: string) => {
+    router.push(`/listing/${listingId}`);
+  };
+
   return (
-    <div className="min-h-screen bg-background">
+    <motion.div 
+      className="min-h-screen bg-background"
+      initial="hidden"
+      animate="visible"
+      variants={pageVariants}
+    >
       {/* Profile Header */}
-      <div className="relative">
+      <motion.div className="relative" variants={itemVariants}>
         {/* Cover Image */}
         <div className="h-48 bg-gradient-to-r from-blue-500 to-purple-500" />
         
@@ -238,10 +278,10 @@ export default function ProfilePage() {
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Tabs */}
-      <div className="max-w-4xl mx-auto px-4 mt-8">
+      <motion.div className="max-w-4xl mx-auto px-4 mt-8" variants={itemVariants}>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="w-full justify-start">
             <TabsTrigger value="posts">Posts</TabsTrigger>
@@ -250,129 +290,130 @@ export default function ProfilePage() {
           </TabsList>
 
           <TabsContent value="posts" className="mt-6">
-            <div className="space-y-4">
+            <motion.div className="space-y-4" variants={itemVariants}>
               {userPosts.map((post) => (
-                <Card key={post.id}>
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4">
-                        <Avatar>
-                          <AvatarImage src={post.author.avatar_url || undefined} alt={post.author.full_name || undefined} />
-                          <AvatarFallback>{post.author.full_name?.charAt(0) || 'U'}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <h4 className="font-semibold">{post.author.full_name}</h4>
-                          <p className="text-sm text-muted-foreground">{post.author.professional_role}</p>
-                          <p className="text-xs text-muted-foreground">{formatDate(post.created_at)}</p>
+                <motion.div key={post.id} variants={itemVariants}>
+                  <Card>
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-4">
+                          <Avatar>
+                            <AvatarImage src={post.author.avatar_url || undefined} alt={post.author.full_name || undefined} />
+                            <AvatarFallback>{post.author.full_name?.charAt(0) || 'U'}</AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <h4 className="font-semibold">{post.author.full_name}</h4>
+                            <p className="text-sm text-muted-foreground">{post.author.professional_role}</p>
+                            <p className="text-xs text-muted-foreground">{formatDate(post.created_at)}</p>
+                          </div>
+                        </div>
+                        <div className="text-sm text-muted-foreground">...</div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="mb-4">{post.content}</p>
+                      {post.attachments.length > 0 && (
+                        <div className="grid gap-4 mb-4">
+                          {post.attachments.map((attachment) => (
+                            <div key={attachment.id}>
+                              {getFilePreview(attachment)}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {post.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mb-4">
+                          {post.tags.map((tag, idx) => (
+                            <Badge key={idx} variant="secondary">{tag}</Badge>
+                          ))}
+                        </div>
+                      )}
+                      <div className="flex justify-between text-muted-foreground text-sm">
+                        <div className="flex items-center space-x-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handlePostAction(post.id, post.has_liked ? 'unlike' : 'like')}
+                          >
+                            <Heart className={`h-4 w-4 ${post.has_liked ? 'text-blue-500' : ''}`} />
+                            <span className="ml-1">{post.likes_count}</span>
+                          </Button>
+                          <Button variant="ghost" size="sm">
+                            <MessageCircle className="h-4 w-4" />
+                            <span className="ml-1">{post.comments_count}</span>
+                          </Button>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handlePostAction(post.id, post.has_saved ? 'unsave' : 'save')}
+                          >
+                            <Bookmark className={`h-4 w-4 ${post.has_saved ? 'text-yellow-500' : ''}`} />
+                            Save
+                          </Button>
+                          <Button variant="ghost" size="sm">
+                            <Share2 className="h-4 w-4" /> Share
+                          </Button>
                         </div>
                       </div>
-                      <div className="text-sm text-muted-foreground">...</div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="mb-4">{post.content}</p>
-                    {post.attachments.length > 0 && (
-                      <div className="grid gap-4 mb-4">
-                        {post.attachments.map((attachment) => (
-                          <div key={attachment.id}>
-                            {getFilePreview(attachment)}
+                      <Separator className="my-4" />
+                      {post.comments.map((comment) => (
+                        <div key={comment.id} className="flex items-start space-x-2 mb-2">
+                          <Avatar className="h-7 w-7">
+                            <AvatarImage src={comment.author.avatar_url || undefined} alt={comment.author.full_name || undefined} />
+                            <AvatarFallback>{comment.author.full_name?.charAt(0) || 'U'}</AvatarFallback>
+                          </Avatar>
+                          <div className="flex flex-col">
+                            <div className="flex items-baseline space-x-1">
+                              <span 
+                                className="text-sm font-semibold cursor-pointer hover:text-primary transition-colors"
+                                onClick={() => handleProfileClick(comment.author.id)}
+                              >
+                                {comment.author.full_name}
+                              </span>
+                              <span className="text-xs text-muted-foreground">{formatDate(comment.created_at)}</span>
+                            </div>
+                            <p className="text-sm">{comment.content}</p>
                           </div>
-                        ))}
-                      </div>
-                    )}
-                    {post.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mb-4">
-                        {post.tags.map((tag, idx) => (
-                          <Badge key={idx} variant="secondary">{tag}</Badge>
-                        ))}
-                      </div>
-                    )}
-                    <div className="flex justify-between text-muted-foreground text-sm">
-                      <div className="flex items-center space-x-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handlePostAction(post.id, post.has_liked ? 'unlike' : 'like')}
-                        >
-                          <Heart className={`h-4 w-4 ${post.has_liked ? 'text-blue-500' : ''}`} />
-                          <span className="ml-1">{post.likes_count}</span>
-                        </Button>
-                        <Button variant="ghost" size="sm">
-                          <MessageCircle className="h-4 w-4" />
-                          <span className="ml-1">{post.comments_count}</span>
-                        </Button>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handlePostAction(post.id, post.has_saved ? 'unsave' : 'save')}
-                        >
-                          <Bookmark className={`h-4 w-4 ${post.has_saved ? 'text-yellow-500' : ''}`} />
-                          Save
-                        </Button>
-                        <Button variant="ghost" size="sm">
-                          <Share2 className="h-4 w-4" /> Share
-                        </Button>
-                      </div>
-                    </div>
-                    <Separator className="my-4" />
-                    {post.comments.map((comment) => (
-                      <div key={comment.id} className="flex items-start space-x-2 mb-2">
-                        <Avatar className="h-7 w-7">
-                          <AvatarImage src={comment.author.avatar_url || undefined} alt={comment.author.full_name || undefined} />
-                          <AvatarFallback>{comment.author.full_name?.charAt(0) || 'U'}</AvatarFallback>
-                        </Avatar>
-                        <div className="flex flex-col">
-                          <div className="flex items-baseline space-x-1">
-                            <span 
-                              className="text-sm font-semibold cursor-pointer hover:text-primary transition-colors"
-                              onClick={() => handleProfileClick(comment.author.id)}
-                            >
-                              {comment.author.full_name}
-                            </span>
-                            <span className="text-xs text-muted-foreground">{formatDate(comment.created_at)}</span>
-                          </div>
-                          <p className="text-sm">{comment.content}</p>
                         </div>
+                      ))}
+                      <div className="flex items-center space-x-2 mt-4">
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={user?.user_metadata?.avatar_url} alt={user?.user_metadata?.full_name} />
+                          <AvatarFallback>{user?.user_metadata?.full_name?.charAt(0) || 'U'}</AvatarFallback>
+                        </Avatar>
+                        <Input
+                          placeholder="Add a comment..."
+                          className="flex-grow"
+                          value={newComments[post.id] || ''}
+                          onChange={(e) => setNewComments(prev => ({ ...prev, [post.id]: e.target.value }))}
+                          onKeyPress={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault();
+                              handleAddComment(post.id);
+                            }
+                          }}
+                        />
+                        <Button size="icon" variant="ghost" onClick={() => handleAddComment(post.id)}>
+                          <Send className="h-4 w-4" />
+                        </Button>
                       </div>
-                    ))}
-                    <div className="flex items-center space-x-2 mt-4">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={user?.user_metadata?.avatar_url} alt={user?.user_metadata?.full_name} />
-                        <AvatarFallback>{user?.user_metadata?.full_name?.charAt(0) || 'U'}</AvatarFallback>
-                      </Avatar>
-                      <Input
-                        placeholder="Add a comment..."
-                        className="flex-grow"
-                        value={newComments[post.id] || ''}
-                        onChange={(e) => setNewComments(prev => ({ ...prev, [post.id]: e.target.value }))}
-                        onKeyPress={(e) => {
-                          if (e.key === 'Enter' && !e.shiftKey) {
-                            e.preventDefault();
-                            handleAddComment(post.id);
-                          }
-                        }}
-                      />
-                      <Button size="icon" variant="ghost" onClick={() => handleAddComment(post.id)}>
-                        <Send className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
+                </motion.div>
               ))}
-            </div>
+            </motion.div>
           </TabsContent>
 
           <TabsContent value="listings" className="mt-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <motion.div className="grid grid-cols-1 md:grid-cols-2 gap-6" variants={itemVariants}>
               {listings.map((listing) => (
                 <motion.div
                   key={listing.id}
-                  variants={cardVariants}
-                  initial="hidden"
-                  animate="visible"
-                  whileHover="hover"
+                  variants={itemVariants}
+                  whileHover={{ y: -5 }}
+                  transition={{ type: "spring", bounce: 0.2, duration: 0.3 }}
                 >
                   <Card className="group flex flex-col justify-between h-full bg-white dark:bg-zinc-900/60 border border-primary/10 shadow-lg hover:shadow-xl transition-all duration-200 hover:border-primary/40 rounded-2xl overflow-hidden">
                     <CardContent className="p-0 flex flex-col h-full">
@@ -398,7 +439,7 @@ export default function ProfilePage() {
 
                         {/* Description Preview */}
                         <div className="px-4 text-sm text-muted-foreground line-clamp-3 mb-2">
-                          {listing.description}
+                          {stripHtml(listing.description)}
                         </div>
 
                         {/* Funding Stage and Compensation */}
@@ -429,7 +470,11 @@ export default function ProfilePage() {
                         {/* Action Buttons */}
                         <div className="mt-auto border-t border-border/30">
                           <div className="p-4 flex items-center gap-2">
-                            <Button variant="default" className="flex-1 font-semibold">
+                            <Button 
+                              variant="default" 
+                              className="flex-1 font-semibold"
+                              onClick={() => handleListingClick(listing.id)}
+                            >
                               View Details
                             </Button>
                             <div className="flex gap-1">
@@ -450,53 +495,55 @@ export default function ProfilePage() {
                   </Card>
                 </motion.div>
               ))}
-            </div>
+            </motion.div>
           </TabsContent>
 
           <TabsContent value="about" className="mt-6">
-            <Card>
-              <CardHeader>
-                <h3 className="text-lg font-semibold">About</h3>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="font-medium mb-2">Bio</h4>
-                    <p className="text-muted-foreground">{profile.bio || 'No bio available'}</p>
-                  </div>
-                  <Separator />
-                  <div>
-                    <h4 className="font-medium mb-2">Skills</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {profile.skills?.map((skill: string, index: number) => (
-                        <Badge key={index} variant="secondary">{skill}</Badge>
-                      ))}
+            <motion.div variants={itemVariants}>
+              <Card>
+                <CardHeader>
+                  <h3 className="text-lg font-semibold">About</h3>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="font-medium mb-2">Bio</h4>
+                      <p className="text-muted-foreground">{profile.bio || 'No bio available'}</p>
+                    </div>
+                    <Separator />
+                    <div>
+                      <h4 className="font-medium mb-2">Skills</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {profile.skills?.map((skill: string, index: number) => (
+                          <Badge key={index} variant="secondary">{skill}</Badge>
+                        ))}
+                      </div>
+                    </div>
+                    <Separator />
+                    <div>
+                      <h4 className="font-medium mb-2">Experience</h4>
+                      <div className="space-y-4">
+                        {profile.experience?.map((exp: any, index: number) => (
+                          <div key={index} className="flex gap-4">
+                            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                              <Briefcase className="h-6 w-6 text-primary" />
+                            </div>
+                            <div>
+                              <h5 className="font-medium">{exp.title}</h5>
+                              <p className="text-sm text-muted-foreground">{exp.company}</p>
+                              <p className="text-xs text-muted-foreground">{exp.duration}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
-                  <Separator />
-                  <div>
-                    <h4 className="font-medium mb-2">Experience</h4>
-                    <div className="space-y-4">
-                      {profile.experience?.map((exp: any, index: number) => (
-                        <div key={index} className="flex gap-4">
-                          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                            <Briefcase className="h-6 w-6 text-primary" />
-                          </div>
-                          <div>
-                            <h5 className="font-medium">{exp.title}</h5>
-                            <p className="text-sm text-muted-foreground">{exp.company}</p>
-                            <p className="text-xs text-muted-foreground">{exp.duration}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </motion.div>
           </TabsContent>
         </Tabs>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 } 

@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useMessages } from '@/hooks/use-messages';
 import { MobileMessages } from './mobile-messages';
@@ -9,15 +9,20 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { MessageCircle, Send, Paperclip, Search, Plus, User, FileText, CreditCard, Users } from 'lucide-react';
+import { MessageCircle, Send, Paperclip, Search, Plus, User, FileText, CreditCard, Users, Lock, X } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { formatDistanceToNow } from 'date-fns';
 import { NewMessageDialog } from '@/components/new-message-dialog'
 import { supabase } from '@/lib/supabase';
-import { Message, subscribeToMessages, getProfileById, markMessageAsRead } from '@/lib/messages';
+import { Message, subscribeToMessages, getProfileById, markMessageAsRead, MessageAttachment } from '@/lib/messages';
 import { useUser } from '@/hooks/use-user';
 import { useUnreadMessages } from '@/components/providers/session-provider';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { toast } from 'sonner';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
 
 interface Conversation {
     id: string;
@@ -28,6 +33,16 @@ interface Conversation {
     unread: number;
     online: boolean;
     isPlaceholder?: boolean;
+}
+
+interface VaultDocument {
+    id: string;
+    filename: string;
+    filepath: string;
+    type?: string;
+    size?: number;
+    owner_id: string;
+    created_at: string;
 }
 
 // Utility to deduplicate messages by id
@@ -57,6 +72,12 @@ export default function MessagesPage() {
     const [newMessageDialogOpen, setNewMessageDialogOpen] = useState(false);
     const [selectedUserProfile, setSelectedUserProfile] = useState<any>(null);
     const { refreshUnread } = useUnreadMessages();
+    const router = useRouter();
+    const [vaultDocuments, setVaultDocuments] = useState<VaultDocument[]>([]);
+    const [showVaultDialog, setShowVaultDialog] = useState(false);
+    const supabase = createClientComponentClient();
+    const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const {
         messages,
@@ -85,13 +106,13 @@ export default function MessagesPage() {
                         const senderProfile = await getProfileById(newMessage.sender_id);
                         newMessage.sender = senderProfile;
                     } catch (err) {
-                        console.error('Failed to fetch sender profile:', err);
+                        // Error handling without console.error
                     }
                 }
                 setAllMessages(prev => dedupeMessages([...prev, newMessage]));
             });
         } catch (err) {
-            console.error('Error setting up all messages subscription:', err);
+            // Error handling without console.error
         }
 
         return () => {
@@ -100,7 +121,7 @@ export default function MessagesPage() {
                     subscriptionRef.current.unsubscribe();
                     subscriptionRef.current = null;
                 } catch (err) {
-                    console.error('Error unsubscribing from all messages:', err);
+                    // Error handling without console.error
                 }
             }
         };
@@ -120,13 +141,13 @@ export default function MessagesPage() {
                             username,
                             full_name,
                             avatar_url
-                        )
+                        ),
+                        attachments:message_attachments(*)
                     `)
                     .or(`sender_id.eq.${currentUserId},receiver_id.eq.${currentUserId}`)
                     .order('created_at', { ascending: true });
                 
                 if (error) {
-                    console.error('Error fetching messages:', error);
                     return;
                 }
                 
@@ -134,7 +155,7 @@ export default function MessagesPage() {
                     setAllMessages(prev => dedupeMessages([...prev, ...messages]));
                 }
             } catch (error) {
-                console.error('Error fetching messages:', error);
+                // Error handling without console.error
             } finally {
                 setIsLoadingAllMessages(false);
             }
@@ -164,6 +185,22 @@ export default function MessagesPage() {
         };
         fetchConnections();
     }, [currentUserId]);
+
+    // Fetch vault documents
+    useEffect(() => {
+        if (!user) return;
+        const fetchVaultDocs = async () => {
+            const { data, error } = await supabase
+                .from('vault_documents')
+                .select('*')
+                .eq('owner_id', user.id)
+                .order('created_at', { ascending: false });
+            if (!error) {
+                setVaultDocuments(data || []);
+            }
+        };
+        fetchVaultDocs();
+    }, [user]);
 
     // Modify conversations to use allMessages instead of messages
     const conversations = React.useMemo(() => {
@@ -305,10 +342,22 @@ export default function MessagesPage() {
         }
     });
 
+    const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+        console.log('File select triggered');
+        const files = Array.from(event.target.files || []);
+        console.log('Selected files:', files);
+        setSelectedFiles(prev => [...prev, ...files]);
+    };
+
+    const handleRemoveFile = (index: number) => {
+        setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+    };
+
     const handleSendMessage = async () => {
-        if (!messageInput.trim() || !selectedConversation || !currentUserId) return;
+        if ((!messageInput.trim() && selectedFiles.length === 0) || !selectedConversation || !currentUserId) return;
         
         try {
+            console.log('Sending message with files:', selectedFiles);
             const { data: newMessage, error } = await supabase
                 .from('messages')
                 .insert({
@@ -327,14 +376,166 @@ export default function MessagesPage() {
                 `)
                 .single();
 
-            if (error) throw error;
+            if (error) {
+                console.error('Error creating message:', error);
+                throw error;
+            }
             
             if (newMessage) {
-                setAllMessages(prev => dedupeMessages([...prev, newMessage]));
+                console.log('Message created:', newMessage);
+                // Upload attachments if any
+                if (selectedFiles.length > 0) {
+                    console.log('Uploading attachments...');
+                    const attachmentPromises = selectedFiles.map(async (file) => {
+                        const fileExt = file.name.split('.').pop();
+                        const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
+                        const filePath = `message-attachments/${newMessage.id}/${fileName}`;
+
+                        console.log('Uploading file:', { fileName, filePath, type: file.type });
+
+                        const { error: uploadError } = await supabase.storage
+                            .from('message-attachments')
+                            .upload(filePath, file);
+
+                        if (uploadError) {
+                            console.error('Error uploading file:', uploadError);
+                            throw uploadError;
+                        }
+
+                        console.log('File uploaded successfully, creating attachment record');
+
+                        const { error: attachmentError } = await supabase
+                            .from('message_attachments')
+                            .insert({
+                                message_id: newMessage.id,
+                                filename: file.name,
+                                filepath: filePath,
+                                type: file.type,
+                                size: file.size
+                            });
+
+                        if (attachmentError) {
+                            console.error('Error creating attachment record:', attachmentError);
+                            throw attachmentError;
+                        }
+                    });
+
+                    await Promise.all(attachmentPromises);
+                    console.log('All attachments uploaded successfully');
+                }
+
+                // Fetch complete message with attachments
+                console.log('Fetching complete message with attachments');
+                const { data: completeMessage, error: fetchError } = await supabase
+                    .from('messages')
+                    .select(`
+                        *,
+                        sender:profiles!sender_id (
+                            username,
+                            full_name,
+                            avatar_url
+                        ),
+                        attachments:message_attachments(*)
+                    `)
+                    .eq('id', newMessage.id)
+                    .single();
+
+                if (fetchError) {
+                    console.error('Error fetching complete message:', fetchError);
+                    throw fetchError;
+                }
+
+                console.log('Complete message with attachments:', completeMessage);
+                setAllMessages(prev => dedupeMessages([...prev, completeMessage]));
                 setMessageInput('');
+                setSelectedFiles([]);
             }
         } catch (error) {
-            console.error('Error sending message:', error);
+            console.error('Error in handleSendMessage:', error);
+            toast.error('Failed to send message');
+        }
+    };
+
+    // Add a function to get file preview URL
+    const getFilePreviewUrl = async (filepath: string) => {
+        const { data } = await supabase.storage
+            .from('message-attachments')
+            .createSignedUrl(filepath, 3600); // URL valid for 1 hour
+        return data?.signedUrl;
+    };
+
+    // Add a component for file preview
+    const FilePreview = ({ attachment }: { attachment: MessageAttachment }) => {
+        const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+        const isImage = attachment.type?.startsWith('image/');
+        const isVideo = attachment.type?.startsWith('video/');
+
+        useEffect(() => {
+            const loadPreviewUrl = async () => {
+                if (attachment.filepath) {
+                    const url = await getFilePreviewUrl(attachment.filepath);
+                    setPreviewUrl(url || null);
+                }
+            };
+            loadPreviewUrl();
+        }, [attachment.filepath]);
+
+        if (isImage && previewUrl) {
+            return (
+                <img
+                    src={previewUrl}
+                    alt={attachment.filename}
+                    className="max-w-full rounded-md"
+                    loading="lazy"
+                />
+            );
+        }
+
+        if (isVideo && previewUrl) {
+            return (
+                <video
+                    src={previewUrl}
+                    controls
+                    className="max-w-full rounded-md"
+                />
+            );
+        }
+
+        return (
+            <div className="flex items-center gap-2 bg-background/50 p-2 rounded-md">
+                <FileText className="h-4 w-4" />
+                <span className="text-sm truncate">{attachment.filename}</span>
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => attachment.filepath && handleFileDownload(attachment.filepath, attachment.filename)}
+                >
+                    Download
+                </Button>
+            </div>
+        );
+    };
+
+    // Add a function to handle file download
+    const handleFileDownload = async (filepath: string, filename: string) => {
+        try {
+            const { data, error } = await supabase.storage
+                .from('message-attachments')
+                .download(filepath);
+            
+            if (error) throw error;
+            
+            const url = window.URL.createObjectURL(data);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        } catch (error) {
+            console.error('Error downloading file:', error);
+            toast.error('Failed to download file');
         }
     };
 
@@ -387,6 +588,51 @@ export default function MessagesPage() {
 
         markMessagesAsRead();
     }, [selectedConversation, currentUserId, allMessages]);
+
+    const handleViewProfile = (userId: string) => {
+        router.push(`/dashboard/profile/${userId}`);
+    };
+
+    const handleVaultDocumentSelect = async (doc: VaultDocument) => {
+        try {
+            const { data, error } = await supabase.storage
+                .from('vault')
+                .download(doc.filepath);
+            
+            if (error) throw error;
+            
+            // Create a File object from the downloaded data
+            const file = new File([data], doc.filename, { type: data.type });
+            
+            // Here you would typically handle the file attachment
+            // For now, we'll just show a success message
+            toast.success(`Selected ${doc.filename} from vault`);
+            setShowVaultDialog(false);
+        } catch (error) {
+            console.error('Error selecting vault document:', error);
+            toast.error('Failed to select document from vault');
+        }
+    };
+
+    const getFileIcon = (filename: string) => {
+        const extension = filename.split('.').pop()?.toLowerCase();
+        switch (extension) {
+            case 'pdf':
+                return <FileText className="h-4 w-4 text-red-500" />;
+            case 'doc':
+            case 'docx':
+                return <FileText className="h-4 w-4 text-blue-500" />;
+            case 'xls':
+            case 'xlsx':
+                return <FileText className="h-4 w-4 text-green-500" />;
+            case 'jpg':
+            case 'jpeg':
+            case 'png':
+                return <FileText className="h-4 w-4 text-yellow-500" />;
+            default:
+                return <FileText className="h-4 w-4 text-gray-500" />;
+        }
+    };
 
     if (isMobile) {
         return <MobileMessages />;
@@ -508,7 +754,12 @@ export default function MessagesPage() {
                                             <AvatarFallback>{(activeConversation.name || '?')[0]}</AvatarFallback>
                                         </Avatar>
                                         <div>
-                                            <CardTitle>{activeConversation.name}</CardTitle>
+                                            <CardTitle 
+                                                className="cursor-pointer hover:text-primary transition-colors"
+                                                onClick={() => handleViewProfile(selectedConversation)}
+                                            >
+                                                {activeConversation.name}
+                                            </CardTitle>
                                             <p className="text-sm text-muted-foreground">
                                                 {userStatus?.is_online ? 'Online' : userStatus?.last_seen ? 
                                                     `Last seen ${formatDistanceToNow(new Date(userStatus.last_seen), { addSuffix: true })}` : 
@@ -520,7 +771,12 @@ export default function MessagesPage() {
                                         <Button variant="ghost" size="icon" title="Create group conversation">
                                             <Users className="h-4 w-4" />
                                         </Button>
-                                        <Button variant="ghost" size="icon" title="View profile">
+                                        <Button 
+                                            variant="ghost" 
+                                            size="icon" 
+                                            title="View profile"
+                                            onClick={() => handleViewProfile(selectedConversation)}
+                                        >
                                             <User className="h-4 w-4" />
                                         </Button>
                                     </div>
@@ -555,6 +811,15 @@ export default function MessagesPage() {
                                                         }`}
                                                     >
                                                         <p className="text-sm">{message.content}</p>
+                                                        {message.attachments && message.attachments.length > 0 && (
+                                                            <div className="mt-2 space-y-2">
+                                                                {message.attachments.map((attachment) => (
+                                                                    <div key={attachment.id} className="relative">
+                                                                        <FilePreview attachment={attachment} />
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        )}
                                                         <p className="text-xs text-muted-foreground text-right mt-1">
                                                             {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
                                                         </p>
@@ -573,6 +838,24 @@ export default function MessagesPage() {
                                 </ScrollArea>
                             </CardContent>
                             <div className="p-4 border-t flex-none">
+                                {selectedFiles.length > 0 && (
+                                    <div className="flex flex-wrap gap-2 mb-2">
+                                        {selectedFiles.map((file, index) => (
+                                            <div key={index} className="flex items-center gap-2 bg-muted p-2 rounded-md">
+                                                <FileText className="h-4 w-4" />
+                                                <span className="text-sm truncate max-w-[200px]">{file.name}</span>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-4 w-4"
+                                                    onClick={() => handleRemoveFile(index)}
+                                                >
+                                                    <X className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                                 <div className="flex items-center gap-2">
                                     <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
@@ -583,13 +866,29 @@ export default function MessagesPage() {
                                         <DropdownMenuContent side="top" align="start">
                                             <DropdownMenuLabel>Attachment Options</DropdownMenuLabel>
                                             <DropdownMenuSeparator />
-                                            <DropdownMenuItem>
-                                                <input id="file-input" type="file" className="hidden" multiple />
-                                                <label htmlFor="file-input" className="flex items-center cursor-pointer w-full">
+                                            <DropdownMenuItem onSelect={(e) => {
+                                                e.preventDefault();
+                                                console.log('File upload menu item clicked');
+                                                fileInputRef.current?.click();
+                                            }}>
+                                                <input
+                                                    ref={fileInputRef}
+                                                    type="file"
+                                                    className="hidden"
+                                                    multiple
+                                                    onChange={handleFileSelect}
+                                                    onClick={(e) => {
+                                                        // Reset the value so the same file can be selected again
+                                                        e.currentTarget.value = '';
+                                                    }}
+                                                />
+                                                <div className="flex items-center cursor-pointer w-full">
                                                     <FileText className="mr-2 h-4 w-4" /> Upload from device
-                                                </label>
+                                                </div>
                                             </DropdownMenuItem>
-                                            <DropdownMenuItem>Select from My Vault</DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => setShowVaultDialog(true)}>
+                                                <Lock className="mr-2 h-4 w-4" /> Select from My Vault
+                                            </DropdownMenuItem>
                                             <DropdownMenuSeparator />
                                             <DropdownMenuItem>
                                                 <CreditCard className="mr-2 h-4 w-4" /> Generate payment link
@@ -612,7 +911,7 @@ export default function MessagesPage() {
                                         size="icon" 
                                         className="bg-blue-500 hover:bg-blue-600"
                                         onClick={handleSendMessage}
-                                        disabled={!messageInput.trim() || !selectedConversation}
+                                        disabled={(!messageInput.trim() && selectedFiles.length === 0) || !selectedConversation}
                                     >
                                         <Send className="h-5 w-5" />
                                     </Button>
@@ -631,6 +930,50 @@ export default function MessagesPage() {
                     />
                 </Card>
             </div>
+
+            {/* Vault Document Selection Dialog */}
+            <Dialog open={showVaultDialog} onOpenChange={setShowVaultDialog}>
+                <DialogContent className="sm:max-w-[600px]">
+                    <DialogHeader>
+                        <DialogTitle>Select from My Vault</DialogTitle>
+                        <DialogDescription>
+                            Choose a document from your secure vault to attach
+                        </DialogDescription>
+                    </DialogHeader>
+                    <ScrollArea className="h-[400px] pr-4">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>NAME</TableHead>
+                                    <TableHead>TYPE</TableHead>
+                                    <TableHead>ADDED</TableHead>
+                                    <TableHead className="text-right">ACTIONS</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {vaultDocuments.map((doc) => (
+                                    <TableRow key={doc.id}>
+                                        <TableCell className="font-medium flex items-center gap-2">
+                                            {getFileIcon(doc.filename)} {doc.filename}
+                                        </TableCell>
+                                        <TableCell><Badge variant="outline">{doc.type || 'N/A'}</Badge></TableCell>
+                                        <TableCell>{new Date(doc.created_at).toLocaleString()}</TableCell>
+                                        <TableCell className="text-right">
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => handleVaultDocumentSelect(doc)}
+                                            >
+                                                Select
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </ScrollArea>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 } 

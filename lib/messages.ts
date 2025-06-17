@@ -1,6 +1,16 @@
 import { supabase } from './supabase'
 import { RealtimeChannel } from '@supabase/supabase-js'
 
+export interface MessageAttachment {
+  id: string;
+  message_id: string;
+  filename: string;
+  filepath: string;
+  type: string;
+  size: number;
+  created_at: string;
+}
+
 export interface Message {
   id: string
   created_at: string
@@ -8,6 +18,7 @@ export interface Message {
   receiver_id: string
   content: string
   read: boolean
+  attachments?: MessageAttachment[]
   sender: {
     username: string
     full_name: string | null
@@ -23,11 +34,12 @@ export interface UserStatus {
   is_online: boolean
 }
 
-export async function sendMessage(receiverId: string, content: string) {
+export async function sendMessage(receiverId: string, content: string, attachments?: File[]) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Not authenticated')
 
-  const { data, error } = await supabase
+  // Start a transaction
+  const { data: message, error: messageError } = await supabase
     .from('messages')
     .insert({
       sender_id: user.id,
@@ -45,8 +57,56 @@ export async function sendMessage(receiverId: string, content: string) {
     `)
     .single()
 
-  if (error) throw error
-  return data as Message
+  if (messageError) throw messageError
+
+  // If there are attachments, upload them
+  if (attachments && attachments.length > 0) {
+    const attachmentPromises = attachments.map(async (file) => {
+      // Upload file to storage
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`
+      const filePath = `message-attachments/${message.id}/${fileName}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('message-attachments')
+        .upload(filePath, file)
+
+      if (uploadError) throw uploadError
+
+      // Create attachment record
+      const { error: attachmentError } = await supabase
+        .from('message_attachments')
+        .insert({
+          message_id: message.id,
+          filename: file.name,
+          filepath: filePath,
+          type: file.type,
+          size: file.size
+        })
+
+      if (attachmentError) throw attachmentError
+    })
+
+    await Promise.all(attachmentPromises)
+  }
+
+  // Fetch the complete message with attachments
+  const { data: completeMessage, error: fetchError } = await supabase
+    .from('messages')
+    .select(`
+      *,
+      sender:profiles!sender_id (
+        username,
+        full_name,
+        avatar_url
+      ),
+      attachments:message_attachments(*)
+    `)
+    .eq('id', message.id)
+    .single()
+
+  if (fetchError) throw fetchError
+  return completeMessage as Message
 }
 
 export async function getMessages(userId: string) {
@@ -61,7 +121,8 @@ export async function getMessages(userId: string) {
         username,
         full_name,
         avatar_url
-      )
+      ),
+      attachments:message_attachments(*)
     `)
     .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
     .order('created_at', { ascending: true })
