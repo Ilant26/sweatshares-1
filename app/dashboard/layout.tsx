@@ -1,6 +1,6 @@
 "use client"
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { AppSidebar } from "@/components/app-sidebar"
 import {
   Breadcrumb,
@@ -21,6 +21,8 @@ import { usePathname } from 'next/navigation';
 import { ProtectedRoute } from '@/components/protected-route'
 import { useSession, UnreadMessagesProvider, UnreadInvitationsProvider } from '@/components/providers/session-provider'
 import { Toaster } from "@/components/ui/toaster"
+import Link from "next/link"
+import { supabase } from "@/lib/supabase"
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state";
 
@@ -28,21 +30,45 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname();
   const { user } = useSession();
   
-  const pathSegments = pathname.split('/').filter(segment => segment !== '' && segment !== 'dashboard');
+  const segments = pathname.split('/').filter(Boolean);
+  const [profileName, setProfileName] = useState<string>("");
+  const isProfilePage = segments.includes("profile");
 
-  const formatBreadcrumbSegment = (segment: string) => {
-    const mappedName: { [key: string]: string } = {
-      'messages': 'Messages',
-      'my-listings': 'My Listings',
-      'my-network': 'My Network',
-      'invite-contacts': 'Invite Contacts',
-      'profile-settings': 'Profile Settings',
-      'my-alerts': 'My Alerts',
-      'my-favorites': 'My Favorites',
-      'my-vault': 'My Vault',
-      'news-feed': 'News Feed',
+  useEffect(() => {
+    const fetchProfileName = async () => {
+      if (isProfilePage && segments.length > 2) {
+        const userId = segments[segments.length - 1];
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("full_name")
+          .eq("id", userId)
+          .single();
+
+        if (!error && data) {
+          setProfileName(data.full_name);
+        }
+      }
     };
-    return mappedName[segment] || segment.replace(/-/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+
+    fetchProfileName();
+  }, [segments, isProfilePage]);
+
+  const getBreadcrumbItems = () => {
+    if (isProfilePage) {
+      return [
+        { label: "Dashboard", href: "/dashboard" },
+        { label: "Feed", href: "/dashboard/news-feed" },
+        { label: profileName || "User Profile", href: pathname }
+      ];
+    }
+
+    return segments.map((segment, index) => {
+      const href = `/${segments.slice(0, index + 1).join("/")}`;
+      const label = segment === "dashboard" ? "Dashboard" :
+                   segment === "news-feed" ? "Feed" :
+                   segment.charAt(0).toUpperCase() + segment.slice(1);
+      return { label, href };
+    });
   };
 
   return (
@@ -61,26 +87,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   />
                   <Breadcrumb>
                     <BreadcrumbList>
-                      <BreadcrumbItem className="hidden md:block">
-                        <BreadcrumbLink href="/dashboard">
-                          Dashboard
-                        </BreadcrumbLink>
-                      </BreadcrumbItem>
-                      {pathSegments.map((segment, index) => {
-                        const href = '/dashboard/' + pathSegments.slice(0, index + 1).join('/');
-                        const isLast = index === pathSegments.length - 1;
-                        const formattedSegment = formatBreadcrumbSegment(segment);
-
+                      {getBreadcrumbItems().map((item, index) => {
+                        const isLast = index === getBreadcrumbItems().length - 1;
                         return (
-                          <React.Fragment key={href}>
-                            <BreadcrumbSeparator className="hidden md:block" />
+                          <React.Fragment key={item.href}>
                             <BreadcrumbItem>
                               {isLast ? (
-                                <BreadcrumbPage>{formattedSegment}</BreadcrumbPage>
+                                <BreadcrumbPage>{item.label}</BreadcrumbPage>
                               ) : (
-                                <BreadcrumbLink href={href}>{formattedSegment}</BreadcrumbLink>
+                                <BreadcrumbLink asChild>
+                                  <Link href={item.href}>{item.label}</Link>
+                                </BreadcrumbLink>
                               )}
                             </BreadcrumbItem>
+                            {!isLast && <BreadcrumbSeparator />}
                           </React.Fragment>
                         );
                       })}

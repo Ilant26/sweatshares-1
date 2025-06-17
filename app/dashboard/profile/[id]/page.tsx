@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -41,6 +41,7 @@ const cardVariants: Variants = {
 
 export default function ProfilePage() {
   const { id } = useParams();
+  const router = useRouter();
   const { user } = useUser();
   const { posts, createPost, likePost, unlikePost, savePost, unsavePost, addComment } = usePosts();
   const [profile, setProfile] = useState<any>(null);
@@ -188,6 +189,10 @@ export default function ProfilePage() {
     }
   };
 
+  const handleProfileClick = (userId: string) => {
+    router.push(`/dashboard/profile/${userId}`);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Profile Header */}
@@ -320,7 +325,12 @@ export default function ProfilePage() {
                         </Avatar>
                         <div className="flex flex-col">
                           <div className="flex items-baseline space-x-1">
-                            <span className="text-sm font-semibold">{comment.author.full_name}</span>
+                            <span 
+                              className="text-sm font-semibold cursor-pointer hover:text-primary transition-colors"
+                              onClick={() => handleProfileClick(comment.author.id)}
+                            >
+                              {comment.author.full_name}
+                            </span>
                             <span className="text-xs text-muted-foreground">{formatDate(comment.created_at)}</span>
                           </div>
                           <p className="text-sm">{comment.content}</p>

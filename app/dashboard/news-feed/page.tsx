@@ -392,7 +392,12 @@ export default function NewsFeedPage() {
                         </Avatar>
                         <div className="flex flex-col">
                           <div className="flex items-baseline space-x-1">
-                            <span className="text-sm font-semibold">{comment.author.full_name}</span>
+                            <span 
+                              className="text-sm font-semibold cursor-pointer hover:text-primary transition-colors"
+                              onClick={() => handleProfileClick(comment.author.id)}
+                            >
+                              {comment.author.full_name}
+                            </span>
                             <span className="text-xs text-muted-foreground">{formatDate(comment.created_at)}</span>
                           </div>
                           <p className="text-sm">{comment.content}</p>
