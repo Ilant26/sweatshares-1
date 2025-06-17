@@ -245,6 +245,104 @@ export interface Database {
           updated_at?: string;
         };
       }
+      posts: {
+        Row: {
+          id: string
+          user_id: string
+          content: string
+          media_urls: string[]
+          created_at: string
+          updated_at: string
+          tags: string[]
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          content: string
+          media_urls?: string[]
+          created_at?: string
+          updated_at?: string
+          tags?: string[]
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          content?: string
+          media_urls?: string[]
+          created_at?: string
+          updated_at?: string
+          tags?: string[]
+        }
+      }
+      comments: {
+        Row: {
+          id: string
+          post_id: string
+          user_id: string
+          content: string
+          parent_id: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          post_id: string
+          user_id: string
+          content: string
+          parent_id?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          post_id?: string
+          user_id?: string
+          content?: string
+          parent_id?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      post_likes: {
+        Row: {
+          id: string
+          post_id: string
+          user_id: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          post_id: string
+          user_id: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          post_id?: string
+          user_id?: string
+          created_at?: string
+        }
+      }
+      saved_posts: {
+        Row: {
+          id: string
+          post_id: string
+          user_id: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          post_id: string
+          user_id: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          post_id?: string
+          user_id?: string
+          created_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never

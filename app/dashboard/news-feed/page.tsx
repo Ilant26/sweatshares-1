@@ -21,127 +21,15 @@ import {
   Filter,
   ArrowRight,
 } from "lucide-react";
+import { useUser } from "@/hooks/use-user";
+import { usePosts } from "@/hooks/use-posts";
 import { useState } from "react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { format } from "date-fns";
-import { cn } from "@/lib/utils";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function NewsFeedPage() {
-  const posts = [
-    {
-      id: "1",
-      author: {
-        name: "Camille Durand",
-        title: "Co-founder, Technovate",
-        avatar: "https://randomuser.me/api/portraits/women/1.jpg",
-      },
-      time: "2 hours ago",
-      content:
-        "Share your thoughts, ideas, or opportunities with your network...",
-      media: [],
-      comments: [
-        { id: "c1", author: { name: "Sophia Dubois", avatar: "https://randomuser.me/api/portraits/women/2.jpg" }, time: "9 hours ago", text: "I like this!" },
-      ],
-      likes: 128,
-      views: 42,
-      tags: ["#Innovation", "#Tech"],
-    },
-    {
-      id: "2",
-      author: {
-        name: "Thomas Moreau",
-        title: "Co-founder of Nextech Solutions",
-        avatar: "https://randomuser.me/api/portraits/men/1.jpg",
-      },
-      time: "2 hours ago",
-      content:
-        "We are thrilled to announce that Nextech Solutions has raised €2M to accelerate the development of our conversational AI platform for the healthcare sector! A huge thank you to our investors @PhilippeLaurent and @CaveFontaine for their trust. #HealthTech #AI #Funding",
-      media: ["/images/post-image-1.jpg"],
-      comments: [
-        { id: "c2", author: { name: "Philippe Laurent", avatar: "https://randomuser.me/api/portraits/men/2.jpg" }, time: "30 minutes ago", text: "I'm interested in the adventure!" },
-      ],
-      likes: 50,
-      views: 15,
-      tags: ["#Hiring", "#React", "#NodeJS"],
-      offerDetails: true,
-    },
-    {
-      id: "3",
-      author: {
-        name: "Sophie Dubois",
-        title: "Marketing Manager, Innovate Corp",
-        avatar: "https://randomuser.me/api/portraits/women/3.jpg",
-      },
-      time: "1 day ago",
-      content:
-        "Congratulations on this fundraising! Your solution meets a real need in the health sector.",
-      media: [],
-      comments: [
-        { id: "c3", author: { name: "Amira Benali", avatar: "https://randomuser.me/api/portraits/women/4.jpg" }, time: "8 hours ago", text: "Well done!" },
-      ],
-      likes: 30,
-      views: 10,
-      tags: ["#Success", "#Teamwork"],
-    },
-    {
-      id: "4",
-      author: {
-        name: "Philippe Laurent",
-        title: "CEO, InvestTech Group",
-        avatar: "https://randomuser.me/api/portraits/men/3.jpg",
-      },
-      time: "30 minutes ago",
-      content:
-        "Offer: Full-Stack Developer (React / Node.js) We are looking for a passionate full-stack developer in education to join our team. Possibility of cash + equity remuneration. Mission: Make education accessible to all through technology. #Recruitment #EdTech #Developer",
-      media: ["/images/post-image-2.jpg"],
-      comments: [
-        { id: "c4", author: { name: "Julien Mercier", avatar: "https://randomuser.me/api/portraits/men/4.jpg" }, time: "2 hours ago", text: "Great news!" },
-      ],
-      likes: 75,
-      views: 20,
-      tags: ["#Funding", "#Startups"],
-      offerDetails: true,
-    },
-    {
-      id: "5",
-      author: {
-        name: "Julien Mercier",
-        title: "Product Manager, DataSolutions",
-        avatar: "https://randomuser.me/api/portraits/men/5.jpg",
-      },
-      time: "2 hours ago",
-      content:
-        "Very happy to participate in this adventure! The team is exceptional and the product has already proven its worth with early clients.",
-      media: [],
-      comments: [
-        { id: "c5", author: { name: "Claire Fontaine", avatar: "https://randomuser.me/api/portraits/women/5.jpg" }, time: "1 hour ago", text: "Indeed!" },
-      ],
-      likes: 45,
-      views: 18,
-      tags: ["#AI", "#Technology"],
-    },
-    {
-      id: "6",
-      author: {
-        name: "Claire Fontaine",
-        title: "CTO, SecureNet Systems",
-        avatar: "https://randomuser.me/api/portraits/women/6.jpg",
-      },
-      time: "4 hours ago",
-      content:
-        "I am delighted to announce our new event \"B2B Startup Funding - 2023 Trends\" which will take place on June 15 in Paris. A unique opportunity to meet investors and exchange best practices for fundraising in 2023. Limited spots! #Funding #VentureCapital #Startup",
-      media: ["/images/post-image-3.jpg"],
-      comments: [
-        { id: "c6", author: { name: "Camille Durand", avatar: "https://randomuser.me/api/portraits/women/1.jpg" }, time: "1 hour ago", text: "Impressive work!" },
-      ],
-      likes: 90,
-      views: 25,
-      tags: ["#Cloud", "#Security"],
-      offerDetails: true,
-    },
-  ];
+  const { user } = useUser();
+  const { posts, loading, createPost, likePost, unlikePost, savePost, unsavePost, addComment } = usePosts();
+  const [newPostContent, setNewPostContent] = useState("");
+  const [newComments, setNewComments] = useState<{ [key: string]: string }>({});
 
   const trendingTopics = [
     { name: "#ArtificialIntelligence", posts: "1,345 posts" },
@@ -151,11 +39,51 @@ export default function NewsFeedPage() {
     { name: "#TechForGood", posts: "542 posts" },
   ];
 
-  const savedPosts = [
-    { title: "UI/UX Trends for French Applications in 2025", saved: "2 days ago" },
-    { title: "Nextech Solutions Releases CRM for Conversation AI", saved: "1 week ago" },
-    { title: "Event: B2B Startup Funding", saved: "2 weeks ago" },
-  ];
+  const handleCreatePost = async () => {
+    if (!newPostContent.trim()) return;
+    await createPost(newPostContent);
+    setNewPostContent("");
+  };
+
+  const handleAddComment = async (postId: string) => {
+    const content = newComments[postId];
+    if (!content?.trim()) return;
+
+    await addComment(postId, content);
+    setNewComments(prev => ({ ...prev, [postId]: "" }));
+  };
+
+  const handlePostAction = async (postId: string, action: "like" | "unlike" | "save" | "unsave") => {
+    switch (action) {
+      case "like":
+        await likePost(postId);
+        break;
+      case "unlike":
+        await unlikePost(postId);
+        break;
+      case "save":
+        await savePost(postId);
+        break;
+      case "unsave":
+        await unsavePost(postId);
+        break;
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    const seconds = Math.floor(diff / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+
+    if (days > 0) return `${days} day${days > 1 ? 's' : ''} ago`;
+    if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+    if (minutes > 0) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+    return 'Just now';
+  };
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-background">
@@ -164,17 +92,17 @@ export default function NewsFeedPage() {
           {/* Left Sidebar */}
           <div className="grid auto-rows-max items-start gap-4 md:gap-8">
             {/* Profile Card */}
-            <Card x-chunk="dashboard-05-chunk-0">
+            <Card>
               <CardHeader className="pb-3">
                 <div className="flex items-center space-x-4">
                   <Avatar className="h-20 w-20">
-                    <AvatarImage src="https://randomuser.me/api/portraits/women/1.jpg" alt="Camille Durand" />
-                    <AvatarFallback>CD</AvatarFallback>
+                    <AvatarImage src={user?.user_metadata?.avatar_url} alt={user?.user_metadata?.full_name} />
+                    <AvatarFallback>{user?.user_metadata?.full_name?.charAt(0) || 'U'}</AvatarFallback>
                   </Avatar>
                   <div>
-                    <h3 className="text-lg font-semibold">Camille Durand</h3>
+                    <h3 className="text-lg font-semibold">{user?.user_metadata?.full_name}</h3>
                     <p className="text-sm text-muted-foreground">
-                      Co-founder, Technovate
+                      {user?.user_metadata?.professional_role}
                     </p>
                   </div>
                 </div>
@@ -198,15 +126,15 @@ export default function NewsFeedPage() {
             </Card>
 
             {/* My Saved Posts Card */}
-            <Card x-chunk="dashboard-05-chunk-4">
+            <Card>
               <CardHeader className="pb-3">
                 <h3 className="text-lg font-semibold">My Saved Posts</h3>
               </CardHeader>
               <CardContent className="grid gap-2">
-                {savedPosts.map((post, index) => (
-                  <div key={index} className="pb-2 mb-2 border-b">
-                    <h4 className="font-medium">{post.title}</h4>
-                    <p className="text-xs text-muted-foreground">{post.saved}</p>
+                {posts.filter(post => post.has_saved).slice(0, 3).map((post, index) => (
+                  <div key={post.id} className="pb-2 mb-2 border-b">
+                    <h4 className="font-medium">{post.content.slice(0, 50)}...</h4>
+                    <p className="text-xs text-muted-foreground">Saved {formatDate(post.created_at)}</p>
                   </div>
                 ))}
                 <Button variant="link" className="px-0 pt-2 justify-start">
@@ -219,16 +147,18 @@ export default function NewsFeedPage() {
           {/* Middle Column (Main Feed) */}
           <div className="grid auto-rows-max items-start gap-4 md:gap-8">
             {/* Create Post Card */}
-            <Card x-chunk="dashboard-05-chunk-1">
+            <Card>
               <CardHeader className="pb-3">
                 <div className="flex items-center space-x-4">
                   <Avatar>
-                    <AvatarImage src="/avatars/01.png" alt="Camille Durand" />
-                    <AvatarFallback>CD</AvatarFallback>
+                    <AvatarImage src={user?.user_metadata?.avatar_url} alt={user?.user_metadata?.full_name} />
+                    <AvatarFallback>{user?.user_metadata?.full_name?.charAt(0) || 'U'}</AvatarFallback>
                   </Avatar>
                   <Textarea
                     placeholder="Share your thoughts, ideas, or opportunities with your network..."
                     className="flex-grow min-h-[60px]"
+                    value={newPostContent}
+                    onChange={(e) => setNewPostContent(e.target.value)}
                   />
                 </div>
               </CardHeader>
@@ -245,7 +175,7 @@ export default function NewsFeedPage() {
                       <Tag className="mr-2 h-4 w-4" /> Tags
                     </Button>
                   </div>
-                  <Button>Share <Share2 className="ml-2 h-4 w-4" /></Button>
+                  <Button onClick={handleCreatePost}>Share <Share2 className="ml-2 h-4 w-4" /></Button>
                 </div>
               </CardContent>
             </Card>
@@ -258,13 +188,13 @@ export default function NewsFeedPage() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-4">
                         <Avatar>
-                          <AvatarImage src={post.author.avatar} alt={post.author.name} />
-                          <AvatarFallback>{post.author.name.charAt(0)}</AvatarFallback>
+                          <AvatarImage src={post.author.avatar_url || undefined} alt={post.author.full_name || undefined} />
+                          <AvatarFallback>{post.author.full_name?.charAt(0) || 'U'}</AvatarFallback>
                         </Avatar>
                         <div>
-                          <h4 className="font-semibold">{post.author.name}</h4>
-                          <p className="text-sm text-muted-foreground">{post.author.title}</p>
-                          <p className="text-xs text-muted-foreground">{post.time}</p>
+                          <h4 className="font-semibold">{post.author.full_name}</h4>
+                          <p className="text-sm text-muted-foreground">{post.author.professional_role}</p>
+                          <p className="text-xs text-muted-foreground">{formatDate(post.created_at)}</p>
                         </div>
                       </div>
                       <div className="text-sm text-muted-foreground">...</div>
@@ -272,51 +202,83 @@ export default function NewsFeedPage() {
                   </CardHeader>
                   <CardContent>
                     <p className="mb-4">{post.content}</p>
-                    {post.media.length > 0 && (
+                    {post.media_urls.length > 0 && (
                       <div className="grid gap-2 mb-4">
-                        {post.media.map((src, idx) => (
+                        {post.media_urls.map((src, idx) => (
                           <img key={idx} src={src} alt={`Post media ${idx + 1}`} className="w-full rounded-md object-cover" />
                         ))}
                       </div>
                     )}
-                    {post.offerDetails && (
-                      <Button variant="link" className="px-0 pt-2 justify-start">
-                        Full offer details <ArrowRight className="ml-2 h-4 w-4" />
-                      </Button>
+                    {post.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        {post.tags.map((tag, idx) => (
+                          <Badge key={idx} variant="secondary">{tag}</Badge>
+                        ))}
+                      </div>
                     )}
                     <div className="flex justify-between text-muted-foreground text-sm">
                       <div className="flex items-center space-x-2">
-                        <ThumbsUp className="h-4 w-4" /> {post.likes}
-                        <MessageCircle className="h-4 w-4" /> {post.comments.length}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handlePostAction(post.id, post.has_liked ? 'unlike' : 'like')}
+                        >
+                          <ThumbsUp className={`h-4 w-4 ${post.has_liked ? 'text-blue-500' : ''}`} />
+                          <span className="ml-1">{post.likes_count}</span>
+                        </Button>
+                        <Button variant="ghost" size="sm">
+                          <MessageCircle className="h-4 w-4" />
+                          <span className="ml-1">{post.comments_count}</span>
+                        </Button>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <Bookmark className="h-4 w-4" /> Save
-                        <Share2 className="h-4 w-4" /> Share
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handlePostAction(post.id, post.has_saved ? 'unsave' : 'save')}
+                        >
+                          <Bookmark className={`h-4 w-4 ${post.has_saved ? 'text-yellow-500' : ''}`} />
+                          Save
+                        </Button>
+                        <Button variant="ghost" size="sm">
+                          <Share2 className="h-4 w-4" /> Share
+                        </Button>
                       </div>
                     </div>
                     <Separator className="my-4" />
                     {post.comments.map((comment) => (
                       <div key={comment.id} className="flex items-start space-x-2 mb-2">
                         <Avatar className="h-7 w-7">
-                          <AvatarImage src={comment.author.avatar} alt={comment.author.name} />
-                          <AvatarFallback>{comment.author.name.charAt(0)}</AvatarFallback>
+                          <AvatarImage src={comment.author.avatar_url || undefined} alt={comment.author.full_name || undefined} />
+                          <AvatarFallback>{comment.author.full_name?.charAt(0) || 'U'}</AvatarFallback>
                         </Avatar>
                         <div className="flex flex-col">
                           <div className="flex items-baseline space-x-1">
-                            <span className="text-sm font-semibold">{comment.author.name}</span>
-                            <span className="text-xs text-muted-foreground">{comment.time}</span>
+                            <span className="text-sm font-semibold">{comment.author.full_name}</span>
+                            <span className="text-xs text-muted-foreground">{formatDate(comment.created_at)}</span>
                           </div>
-                          <p className="text-sm">{comment.text}</p>
+                          <p className="text-sm">{comment.content}</p>
                         </div>
                       </div>
                     ))}
                     <div className="flex items-center space-x-2 mt-4">
                       <Avatar className="h-8 w-8">
-                        <AvatarImage src="/avatars/01.png" alt="User" />
-                        <AvatarFallback>U</AvatarFallback>
+                        <AvatarImage src={user?.user_metadata?.avatar_url} alt={user?.user_metadata?.full_name} />
+                        <AvatarFallback>{user?.user_metadata?.full_name?.charAt(0) || 'U'}</AvatarFallback>
                       </Avatar>
-                      <Input placeholder="Add a comment..." className="flex-grow" />
-                      <Button size="icon" variant="ghost">
+                      <Input
+                        placeholder="Add a comment..."
+                        className="flex-grow"
+                        value={newComments[post.id] || ''}
+                        onChange={(e) => setNewComments(prev => ({ ...prev, [post.id]: e.target.value }))}
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            handleAddComment(post.id);
+                          }
+                        }}
+                      />
+                      <Button size="icon" variant="ghost" onClick={() => handleAddComment(post.id)}>
                         <Send className="h-4 w-4" />
                       </Button>
                     </div>
@@ -329,7 +291,7 @@ export default function NewsFeedPage() {
           {/* Right Sidebar */}
           <div className="grid auto-rows-max items-start gap-4 md:gap-8">
             {/* Filter Card */}
-            <Card x-chunk="dashboard-05-chunk-2">
+            <Card>
               <CardHeader className="pb-3">
                 <h3 className="text-lg font-semibold">Filter by</h3>
               </CardHeader>
@@ -348,7 +310,7 @@ export default function NewsFeedPage() {
             </Card>
 
             {/* Trending Topics Card */}
-            <Card x-chunk="dashboard-05-chunk-3">
+            <Card>
               <CardHeader className="pb-3">
                 <h3 className="text-lg font-semibold">Trending Topics</h3>
               </CardHeader>
