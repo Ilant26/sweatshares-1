@@ -325,6 +325,26 @@ export interface Database {
           created_at?: string
         }
       }
+      comment_likes: {
+        Row: {
+          id: string
+          comment_id: string
+          user_id: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          comment_id: string
+          user_id: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          comment_id?: string
+          user_id?: string
+          created_at?: string
+        }
+      }
       saved_posts: {
         Row: {
           id: string

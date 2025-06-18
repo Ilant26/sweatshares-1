@@ -10,11 +10,15 @@ type PostComment = {
   id: string
   content: string
   created_at: string
+  parent_id: string | null
   author: {
     id: string
     full_name: string | null
     avatar_url: string | null
   }
+  likes_count: number
+  has_liked: boolean
+  replies: PostComment[]
 }
 
 type Post = Database['public']['Tables']['posts']['Row'] & {
@@ -55,11 +59,13 @@ export function usePosts() {
             id,
             content,
             created_at,
+            parent_id,
             author:profiles!comments_user_id_fkey (
               id,
               full_name,
               avatar_url
-            )
+            ),
+            likes_count:comment_likes(count)
           ),
           attachments:post_attachments(*)
         `)
@@ -79,30 +85,72 @@ export function usePosts() {
           .select('post_id')
           .eq('user_id', user.id)
 
+        const { data: commentLikesData } = await supabase
+          .from('comment_likes')
+          .select('comment_id')
+          .eq('user_id', user.id)
+
         const likedPostIds = new Set(likesData?.map(like => like.post_id))
         const savedPostIds = new Set(savesData?.map(save => save.post_id))
+        const likedCommentIds = new Set(commentLikesData?.map(like => like.comment_id))
 
-        const postsWithMetadata = postsData?.map(post => ({
-          ...post,
-          likes_count: post.likes_count?.[0]?.count || 0,
-          comments_count: post.comments?.length || 0,
-          has_liked: likedPostIds.has(post.id),
-          has_saved: savedPostIds.has(post.id),
-          comments: post.comments || [],
-          attachments: post.attachments || []
-        }))
+        const postsWithMetadata = postsData?.map(post => {
+          // Organize comments into parent comments and replies
+          const parentComments = (post.comments as any[])?.filter((comment: any) => !comment.parent_id) || []
+          const replies = (post.comments as any[])?.filter((comment: any) => comment.parent_id) || []
+          
+          const commentsWithReplies = parentComments.map((comment: any) => ({
+            ...comment,
+            likes_count: comment.likes_count?.[0]?.count || 0,
+            has_liked: likedCommentIds.has(comment.id),
+            replies: replies.filter((reply: any) => reply.parent_id === comment.id).map((reply: any) => ({
+              ...reply,
+              likes_count: reply.likes_count?.[0]?.count || 0,
+              has_liked: likedCommentIds.has(reply.id),
+              replies: []
+            }))
+          }))
+
+          return {
+            ...post,
+            likes_count: post.likes_count?.[0]?.count || 0,
+            comments_count: post.comments?.length || 0,
+            has_liked: likedPostIds.has(post.id),
+            has_saved: savedPostIds.has(post.id),
+            comments: commentsWithReplies,
+            attachments: post.attachments || []
+          }
+        })
 
         setPosts(postsWithMetadata || [])
       } else {
-        const postsWithMetadata = postsData?.map(post => ({
-          ...post,
-          likes_count: post.likes_count?.[0]?.count || 0,
-          comments_count: post.comments?.length || 0,
-          has_liked: false,
-          has_saved: false,
-          comments: post.comments || [],
-          attachments: post.attachments || []
-        }))
+        const postsWithMetadata = postsData?.map(post => {
+          // Organize comments into parent comments and replies
+          const parentComments = (post.comments as any[])?.filter((comment: any) => !comment.parent_id) || []
+          const replies = (post.comments as any[])?.filter((comment: any) => comment.parent_id) || []
+          
+          const commentsWithReplies = parentComments.map((comment: any) => ({
+            ...comment,
+            likes_count: comment.likes_count?.[0]?.count || 0,
+            has_liked: false,
+            replies: replies.filter((reply: any) => reply.parent_id === comment.id).map((reply: any) => ({
+              ...reply,
+              likes_count: reply.likes_count?.[0]?.count || 0,
+              has_liked: false,
+              replies: []
+            }))
+          }))
+
+          return {
+            ...post,
+            likes_count: post.likes_count?.[0]?.count || 0,
+            comments_count: post.comments?.length || 0,
+            has_liked: false,
+            has_saved: false,
+            comments: commentsWithReplies,
+            attachments: post.attachments || []
+          }
+        })
 
         setPosts(postsWithMetadata || [])
       }
@@ -279,6 +327,7 @@ export function usePosts() {
         id: string
         content: string
         created_at: string
+        parent_id: string | null
         author: {
           id: string
           full_name: string | null
@@ -297,6 +346,7 @@ export function usePosts() {
           id,
           content,
           created_at,
+          parent_id,
           author:profiles!comments_user_id_fkey (
             id,
             full_name,
@@ -311,11 +361,15 @@ export function usePosts() {
         id: commentData.id,
         content: commentData.content,
         created_at: commentData.created_at,
+        parent_id: commentData.parent_id,
         author: {
           id: commentData.author.id,
           full_name: commentData.author.full_name,
           avatar_url: commentData.author.avatar_url
-        }
+        },
+        likes_count: 0,
+        has_liked: false,
+        replies: []
       }
 
       setPosts(prev =>
@@ -334,6 +388,154 @@ export function usePosts() {
     } catch (error) {
       console.error('Error adding comment:', error)
       return null
+    }
+  }
+
+  const addReply = async (postId: string, parentCommentId: string, content: string) => {
+    if (!user) return null
+
+    try {
+      type CommentResponse = {
+        id: string
+        content: string
+        created_at: string
+        parent_id: string | null
+        author: {
+          id: string
+          full_name: string | null
+          avatar_url: string | null
+        }
+      }
+
+      const { data: commentData, error } = await supabase
+        .from('comments')
+        .insert({
+          post_id: postId,
+          user_id: user.id,
+          content,
+          parent_id: parentCommentId
+        })
+        .select(`
+          id,
+          content,
+          created_at,
+          parent_id,
+          author:profiles!comments_user_id_fkey (
+            id,
+            full_name,
+            avatar_url
+          )
+        `)
+        .single<CommentResponse>()
+
+      if (error) throw error
+
+      const newReply: PostComment = {
+        id: commentData.id,
+        content: commentData.content,
+        created_at: commentData.created_at,
+        parent_id: commentData.parent_id,
+        author: {
+          id: commentData.author.id,
+          full_name: commentData.author.full_name,
+          avatar_url: commentData.author.avatar_url
+        },
+        likes_count: 0,
+        has_liked: false,
+        replies: []
+      }
+
+      setPosts(prev =>
+        prev.map(post =>
+          post.id === postId
+            ? {
+                ...post,
+                comments: post.comments.map(comment =>
+                  comment.id === parentCommentId
+                    ? { ...comment, replies: [...comment.replies, newReply] }
+                    : comment
+                ),
+                comments_count: post.comments_count + 1
+              }
+            : post
+        )
+      )
+
+      return newReply
+    } catch (error) {
+      console.error('Error adding reply:', error)
+      return null
+    }
+  }
+
+  const likeComment = async (commentId: string) => {
+    if (!user) return
+
+    try {
+      const { error } = await supabase
+        .from('comment_likes')
+        .insert({
+          comment_id: commentId,
+          user_id: user.id
+        })
+
+      if (error) throw error
+
+      setPosts(prev =>
+        prev.map(post => ({
+          ...post,
+          comments: post.comments.map(comment => {
+            if (comment.id === commentId) {
+              return { ...comment, likes_count: comment.likes_count + 1, has_liked: true }
+            }
+            return {
+              ...comment,
+              replies: comment.replies.map(reply =>
+                reply.id === commentId
+                  ? { ...reply, likes_count: reply.likes_count + 1, has_liked: true }
+                  : reply
+              )
+            }
+          })
+        }))
+      )
+    } catch (error) {
+      console.error('Error liking comment:', error)
+    }
+  }
+
+  const unlikeComment = async (commentId: string) => {
+    if (!user) return
+
+    try {
+      const { error } = await supabase
+        .from('comment_likes')
+        .delete()
+        .eq('comment_id', commentId)
+        .eq('user_id', user.id)
+
+      if (error) throw error
+
+      setPosts(prev =>
+        prev.map(post => ({
+          ...post,
+          comments: post.comments.map(comment => {
+            if (comment.id === commentId) {
+              return { ...comment, likes_count: comment.likes_count - 1, has_liked: false }
+            }
+            return {
+              ...comment,
+              replies: comment.replies.map(reply =>
+                reply.id === commentId
+                  ? { ...reply, likes_count: reply.likes_count - 1, has_liked: false }
+                  : reply
+              )
+            }
+          })
+        }))
+      )
+    } catch (error) {
+      console.error('Error unliking comment:', error)
     }
   }
 
@@ -397,6 +599,9 @@ export function usePosts() {
     savePost,
     unsavePost,
     addComment,
+    addReply,
+    likeComment,
+    unlikeComment,
     updatePost,
     deletePost
   }

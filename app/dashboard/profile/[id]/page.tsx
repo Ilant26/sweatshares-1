@@ -12,7 +12,7 @@ import { usePosts } from "@/hooks/use-posts";
 import { useFavorites } from "@/hooks/use-favorites";
 import { supabase } from "@/lib/supabase";
 import { useUser } from "@/hooks/use-user";
-import { MapPin, Briefcase, DollarSign, Heart, Share2, Mail, MessageCircle, Bookmark, FileIcon, ImageIcon, Loader2, Send, UserPlus, MoreHorizontal, Edit, Plus, Globe } from "lucide-react";
+import { MapPin, Briefcase, DollarSign, Heart, Share2, Mail, MessageCircle, Bookmark, FileIcon, ImageIcon, Loader2, Send, UserPlus, MoreHorizontal, Edit, Plus, Globe, ThumbsUp } from "lucide-react";
 import { motion, Variants } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -70,7 +70,7 @@ export default function ProfilePage() {
   const { id } = useParams();
   const router = useRouter();
   const { user } = useUser();
-  const { posts, createPost, likePost, unlikePost, savePost, unsavePost, addComment } = usePosts();
+  const { posts, createPost, likePost, unlikePost, savePost, unsavePost, addComment, addReply, likeComment, unlikeComment } = usePosts();
   const { 
     saveProfile, 
     unsaveProfile, 
@@ -84,6 +84,8 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("posts");
   const [newComments, setNewComments] = useState<{ [key: string]: string }>({});
+  const [newReplies, setNewReplies] = useState<{ [key: string]: string }>({});
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const { toast } = useToast();
 
@@ -162,6 +164,42 @@ export default function ProfilePage() {
       toast({
         title: "Error",
         description: "Failed to add comment. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleAddReply = async (postId: string, parentCommentId: string) => {
+    const content = newReplies[parentCommentId];
+    if (!content?.trim()) return;
+
+    try {
+      await addReply(postId, parentCommentId, content);
+      setNewReplies(prev => ({ ...prev, [parentCommentId]: "" }));
+      setReplyingTo(null);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to add reply. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCommentAction = async (commentId: string, action: "like" | "unlike") => {
+    try {
+      switch (action) {
+        case "like":
+          await likeComment(commentId);
+          break;
+        case "unlike":
+          await unlikeComment(commentId);
+          break;
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to perform action. Please try again.",
         variant: "destructive",
       });
     }
@@ -258,7 +296,7 @@ export default function ProfilePage() {
 
   const handleMessage = () => {
     // Navigate to messages or open message dialog
-    router.push(`/dashboard/messages?user=${id}`);
+    router.push(`/dashboard/messages?userId=${id}`);
   };
 
   const handleSaveProfile = async () => {
@@ -487,25 +525,121 @@ export default function ProfilePage() {
                       </div>
                       <Separator className="my-4" />
                       {post.comments.map((comment) => (
-                        <div key={comment.id} className="flex items-start space-x-2 mb-2">
-                          <Avatar className="h-7 w-7">
-                            <AvatarImage src={comment.author.avatar_url || undefined} alt={comment.author.full_name || undefined} />
-                            <AvatarFallback>{comment.author.full_name?.charAt(0) || 'U'}</AvatarFallback>
-                          </Avatar>
-                          <div className="flex flex-col">
-                            <div className="flex items-baseline space-x-1">
-                              <span 
-                                className="text-sm font-semibold cursor-pointer hover:text-primary transition-colors"
-                                onClick={() => handleProfileClick(comment.author.id)}
-                              >
-                                {comment.author.full_name}
-                              </span>
-                              <span className="text-xs text-muted-foreground">{formatDate(comment.created_at)}</span>
+                        <div key={comment.id} className="space-y-3">
+                          {/* Main Comment */}
+                          <div className="flex items-start space-x-2">
+                            <Avatar className="h-7 w-7">
+                              <AvatarImage src={comment.author.avatar_url || undefined} alt={comment.author.full_name || undefined} />
+                              <AvatarFallback>{comment.author.full_name?.charAt(0) || 'U'}</AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1">
+                              <div className="flex items-baseline space-x-1">
+                                <span 
+                                  className="text-sm font-semibold cursor-pointer hover:text-primary transition-colors"
+                                  onClick={() => handleProfileClick(comment.author.id)}
+                                >
+                                  {comment.author.full_name}
+                                </span>
+                                <span className="text-xs text-muted-foreground">{formatDate(comment.created_at)}</span>
+                              </div>
+                              <p className="text-sm">{comment.content}</p>
+                              
+                              {/* Comment Actions */}
+                              <div className="flex items-center space-x-4 mt-2 text-xs text-muted-foreground">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 px-2 text-xs"
+                                  onClick={() => handleCommentAction(comment.id, comment.has_liked ? 'unlike' : 'like')}
+                                >
+                                  <ThumbsUp className={`h-3 w-3 mr-1 ${comment.has_liked ? 'text-blue-500' : ''}`} />
+                                  {comment.likes_count}
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 px-2 text-xs"
+                                  onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
+                                >
+                                  <MessageCircle className="h-3 w-3 mr-1" />
+                                  Reply
+                                </Button>
+                              </div>
+
+                              {/* Reply Input */}
+                              {replyingTo === comment.id && (
+                                <div className="flex items-center space-x-2 mt-3">
+                                  <Avatar className="h-6 w-6">
+                                    <AvatarImage src={user?.user_metadata?.avatar_url} alt={user?.user_metadata?.full_name} />
+                                    <AvatarFallback>{user?.user_metadata?.full_name?.charAt(0) || 'U'}</AvatarFallback>
+                                  </Avatar>
+                                  <Input
+                                    placeholder="Write a reply..."
+                                    className="flex-grow text-xs"
+                                    value={newReplies[comment.id] || ''}
+                                    onChange={(e) => setNewReplies(prev => ({ ...prev, [comment.id]: e.target.value }))}
+                                    onKeyPress={(e) => {
+                                      if (e.key === 'Enter' && !e.shiftKey) {
+                                        e.preventDefault();
+                                        handleAddReply(post.id, comment.id);
+                                      }
+                                    }}
+                                  />
+                                  <Button 
+                                    size="sm" 
+                                    variant="ghost" 
+                                    onClick={() => handleAddReply(post.id, comment.id)}
+                                    className="h-6 px-2"
+                                  >
+                                    <Send className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              )}
                             </div>
-                            <p className="text-sm">{comment.content}</p>
                           </div>
+
+                          {/* Replies */}
+                          {comment.replies.length > 0 && (
+                            <div className="ml-9 space-y-2">
+                              {comment.replies.map((reply) => (
+                                <div key={reply.id} className="flex items-start space-x-2">
+                                  <Avatar className="h-6 w-6">
+                                    <AvatarImage src={reply.author.avatar_url || undefined} alt={reply.author.full_name || undefined} />
+                                    <AvatarFallback>{reply.author.full_name?.charAt(0) || 'U'}</AvatarFallback>
+                                  </Avatar>
+                                  <div className="flex-1">
+                                    <div className="flex items-baseline space-x-1">
+                                      <span 
+                                        className="text-sm font-semibold cursor-pointer hover:text-primary transition-colors"
+                                        onClick={() => handleProfileClick(reply.author.id)}
+                                      >
+                                        {reply.author.full_name}
+                                      </span>
+                                      <span className="text-xs text-muted-foreground">{formatDate(reply.created_at)}</span>
+                                    </div>
+                                    <p className="text-sm">{reply.content}</p>
+                                    
+                                    {/* Reply Actions */}
+                                    <div className="flex items-center space-x-4 mt-1 text-xs text-muted-foreground">
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-5 px-2 text-xs"
+                                        onClick={() => handleCommentAction(reply.id, reply.has_liked ? 'unlike' : 'like')}
+                                      >
+                                        <ThumbsUp className={`h-3 w-3 mr-1 ${reply.has_liked ? 'text-blue-500' : ''}`} />
+                                        {reply.likes_count}
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       ))}
+                      
+                      {/* Main Comment Input */}
                       <div className="flex items-center space-x-2 mt-4">
                         <Avatar className="h-8 w-8">
                           <AvatarImage src={user?.user_metadata?.avatar_url} alt={user?.user_metadata?.full_name} />

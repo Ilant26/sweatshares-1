@@ -274,6 +274,20 @@ export default function ListingsPage() {
     }
   };
 
+  const handleMessage = (userId: string) => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please log in to send messages.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Navigate to messages page with the specific user
+    router.push(`/dashboard/messages?userId=${userId}`);
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-zinc-50 dark:bg-background">
       <Menu />
@@ -491,7 +505,13 @@ export default function ListingsPage() {
                                 </Button>
                               </motion.div>
                               <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
-                                <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Contact">
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-8 w-8" 
+                                  aria-label="Contact"
+                                  onClick={() => handleMessage(listing.user_id)}
+                                >
                                   <Mail className="h-4 w-4" />
                                 </Button>
                               </motion.div>
