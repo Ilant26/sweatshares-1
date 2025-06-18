@@ -9,13 +9,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { usePosts } from "@/hooks/use-posts";
+import { useFavorites } from "@/hooks/use-favorites";
 import { supabase } from "@/lib/supabase";
 import { useUser } from "@/hooks/use-user";
-import { MapPin, Briefcase, DollarSign, Heart, Share2, Mail, MessageCircle, Bookmark, FileIcon, ImageIcon, Loader2, Send } from "lucide-react";
+import { MapPin, Briefcase, DollarSign, Heart, Share2, Mail, MessageCircle, Bookmark, FileIcon, ImageIcon, Loader2, Send, UserPlus, MoreHorizontal, Edit, Plus, Globe } from "lucide-react";
 import { motion, Variants } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 const cardVariants: Variants = {
   hidden: { opacity: 0, y: 20 },
@@ -69,11 +71,20 @@ export default function ProfilePage() {
   const router = useRouter();
   const { user } = useUser();
   const { posts, createPost, likePost, unlikePost, savePost, unsavePost, addComment } = usePosts();
+  const { 
+    saveProfile, 
+    unsaveProfile, 
+    isProfileSaved, 
+    likeListing, 
+    unlikeListing, 
+    isListingLiked 
+  } = useFavorites();
   const [profile, setProfile] = useState<any>(null);
   const [listings, setListings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("posts");
   const [newComments, setNewComments] = useState<{ [key: string]: string }>({});
+  const [isConnected, setIsConnected] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -228,6 +239,87 @@ export default function ProfilePage() {
     router.push(`/listing/${listingId}`);
   };
 
+  const handleConnect = async () => {
+    try {
+      // Add connection logic here
+      setIsConnected(!isConnected);
+      toast({
+        title: isConnected ? "Connection Removed" : "Connection Request Sent",
+        description: isConnected ? "You've removed this connection." : "Your connection request has been sent.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to send connection request. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleMessage = () => {
+    // Navigate to messages or open message dialog
+    router.push(`/dashboard/messages?user=${id}`);
+  };
+
+  const handleSaveProfile = async () => {
+    if (!user || !profile) return;
+    
+    try {
+      if (isProfileSaved(profile.id)) {
+        await unsaveProfile(profile.id);
+        toast({
+          title: "Profile removed from favorites",
+          description: "The profile has been removed from your favorites.",
+        });
+      } else {
+        await saveProfile(profile.id);
+        toast({
+          title: "Profile saved to favorites",
+          description: "The profile has been added to your favorites.",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to save profile. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleLikeListing = async (listingId: string) => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please log in to like listings.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      if (isListingLiked(listingId)) {
+        await unlikeListing(listingId);
+        toast({
+          title: "Listing removed from favorites",
+          description: "The listing has been removed from your favorites.",
+        });
+      } else {
+        await likeListing(listingId);
+        toast({
+          title: "Listing added to favorites",
+          description: "The listing has been added to your favorites.",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update favorites. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <motion.div 
       className="min-h-screen bg-background"
@@ -265,15 +357,51 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-4 mt-4">
-                <Button variant="outline" size="sm">
+              {/* LinkedIn-style action buttons */}
+              <div className="flex items-center gap-3 mt-6">
+                <Button 
+                  variant={isConnected ? "outline" : "default"} 
+                  size="sm"
+                  onClick={handleConnect}
+                  className="flex items-center gap-2"
+                >
+                  <UserPlus className="h-4 w-4" />
+                  {isConnected ? "Connected" : "Connect"}
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleMessage}>
                   <Mail className="h-4 w-4 mr-2" />
                   Message
                 </Button>
-                <Button variant="outline" size="sm">
-                  <Share2 className="h-4 w-4 mr-2" />
-                  Share Profile
-                </Button>
+                {user?.id !== id && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleSaveProfile}
+                    className="flex items-center gap-2"
+                  >
+                    <Bookmark className={`h-4 w-4 ${isProfileSaved(id as string) ? 'fill-yellow-500 text-yellow-500' : ''}`} />
+                    {isProfileSaved(id as string) ? 'Saved' : 'Save Profile'}
+                  </Button>
+                )}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem>
+                      <Share2 className="h-4 w-4 mr-2" />
+                      Share Profile
+                    </DropdownMenuItem>
+                    {user?.id !== id && (
+                      <DropdownMenuItem onClick={handleSaveProfile}>
+                        <Bookmark className="h-4 w-4 mr-2" />
+                        {isProfileSaved(id as string) ? 'Remove from Favorites' : 'Add to Favorites'}
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
           </div>
@@ -478,8 +606,13 @@ export default function ProfilePage() {
                               View Details
                             </Button>
                             <div className="flex gap-1">
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <Heart className="h-4 w-4" />
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8"
+                                onClick={() => handleLikeListing(listing.id)}
+                              >
+                                <Heart className={`h-4 w-4 ${isListingLiked(listing.id) ? 'fill-red-500 text-red-500' : ''}`} />
                               </Button>
                               <Button variant="ghost" size="icon" className="h-8 w-8">
                                 <Share2 className="h-4 w-4" />
@@ -499,42 +632,163 @@ export default function ProfilePage() {
           </TabsContent>
 
           <TabsContent value="about" className="mt-6">
-            <motion.div variants={itemVariants}>
+            <motion.div className="space-y-6" variants={itemVariants}>
+              {/* Enhanced About Section */}
               <Card>
                 <CardHeader>
-                  <h3 className="text-lg font-semibold">About</h3>
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold">About</h3>
+                    {user?.id === id && (
+                      <Button variant="ghost" size="sm">
+                        <Edit className="h-4 w-4 mr-2" />
+                        Edit
+                      </Button>
+                    )}
+                  </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
+                  <div className="space-y-6">
+                    {/* Enhanced Bio Section */}
                     <div>
-                      <h4 className="font-medium mb-2">Bio</h4>
-                      <p className="text-muted-foreground">{profile.bio || 'No bio available'}</p>
-                    </div>
-                    <Separator />
-                    <div>
-                      <h4 className="font-medium mb-2">Skills</h4>
-                      <div className="flex flex-wrap gap-2">
-                        {profile.skills?.map((skill: string, index: number) => (
-                          <Badge key={index} variant="secondary">{skill}</Badge>
-                        ))}
+                      <h4 className="font-medium mb-3 text-base">Bio</h4>
+                      <div className="bg-muted/30 rounded-lg p-4">
+                        <p className="text-muted-foreground leading-relaxed">
+                          {profile.bio || 'No bio available. This person hasn\'t added a bio yet.'}
+                        </p>
                       </div>
                     </div>
+                    
+                    <Separator />
+                    
+                    {/* Enhanced Skills Section */}
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-medium text-base">Skills</h4>
+                        {user?.id === id && (
+                          <Button variant="ghost" size="sm">
+                            <Plus className="h-4 w-4 mr-2" />
+                            Add Skill
+                          </Button>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {profile.skills && profile.skills.length > 0 ? (
+                          profile.skills.map((skill: string, index: number) => (
+                            <Badge 
+                              key={index} 
+                              variant="secondary"
+                              className="px-3 py-1 text-sm font-medium bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 transition-colors"
+                            >
+                              {skill}
+                            </Badge>
+                          ))
+                        ) : (
+                          <div className="text-muted-foreground text-sm italic">
+                            No skills listed yet.
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <Separator />
+                    
+                    {/* Enhanced Experience Section */}
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-medium text-base">Experience</h4>
+                        {user?.id === id && (
+                          <Button variant="ghost" size="sm">
+                            <Plus className="h-4 w-4 mr-2" />
+                            Add Experience
+                          </Button>
+                        )}
+                      </div>
+                      <div className="space-y-4">
+                        {profile.experience && profile.experience.length > 0 ? (
+                          profile.experience.map((exp: any, index: number) => (
+                            <div key={index} className="flex gap-4 p-4 bg-muted/30 rounded-lg">
+                              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                <Briefcase className="h-6 w-6 text-primary" />
+                              </div>
+                              <div className="flex-1">
+                                <h5 className="font-medium text-base">{exp.title}</h5>
+                                <p className="text-sm text-muted-foreground">{exp.company}</p>
+                                <p className="text-xs text-muted-foreground">{exp.duration}</p>
+                                {exp.description && (
+                                  <p className="text-sm text-muted-foreground mt-2">{exp.description}</p>
+                                )}
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="text-muted-foreground text-sm italic p-4 bg-muted/30 rounded-lg">
+                            No experience listed yet.
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Additional Sections */}
+                    <Separator />
+                    
+                    {/* Education Section */}
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-medium text-base">Education</h4>
+                        {user?.id === id && (
+                          <Button variant="ghost" size="sm">
+                            <Plus className="h-4 w-4 mr-2" />
+                            Add Education
+                          </Button>
+                        )}
+                      </div>
+                      <div className="space-y-4">
+                        {profile.education && profile.education.length > 0 ? (
+                          profile.education.map((edu: any, index: number) => (
+                            <div key={index} className="flex gap-4 p-4 bg-muted/30 rounded-lg">
+                              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                <Bookmark className="h-6 w-6 text-primary" />
+                              </div>
+                              <div className="flex-1">
+                                <h5 className="font-medium text-base">{edu.degree}</h5>
+                                <p className="text-sm text-muted-foreground">{edu.school}</p>
+                                <p className="text-xs text-muted-foreground">{edu.year}</p>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="text-muted-foreground text-sm italic p-4 bg-muted/30 rounded-lg">
+                            No education listed yet.
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Contact Information */}
                     <Separator />
                     <div>
-                      <h4 className="font-medium mb-2">Experience</h4>
-                      <div className="space-y-4">
-                        {profile.experience?.map((exp: any, index: number) => (
-                          <div key={index} className="flex gap-4">
-                            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                              <Briefcase className="h-6 w-6 text-primary" />
-                            </div>
-                            <div>
-                              <h5 className="font-medium">{exp.title}</h5>
-                              <p className="text-sm text-muted-foreground">{exp.company}</p>
-                              <p className="text-xs text-muted-foreground">{exp.duration}</p>
-                            </div>
+                      <h4 className="font-medium text-base mb-3">Contact Information</h4>
+                      <div className="space-y-2 text-sm">
+                        {profile.email && (
+                          <div className="flex items-center gap-2">
+                            <Mail className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-muted-foreground">{profile.email}</span>
                           </div>
-                        ))}
+                        )}
+                        {profile.phone && (
+                          <div className="flex items-center gap-2">
+                            <MessageCircle className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-muted-foreground">{profile.phone}</span>
+                          </div>
+                        )}
+                        {profile.website && (
+                          <div className="flex items-center gap-2">
+                            <Globe className="h-4 w-4 text-muted-foreground" />
+                            <a href={profile.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                              {profile.website}
+                            </a>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>

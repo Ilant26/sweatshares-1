@@ -17,6 +17,8 @@ import { toast } from 'sonner';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { X, Plus } from 'lucide-react';
 
 // Define the UserProfile interface based on your database schema
 interface UserProfile {
@@ -35,7 +37,55 @@ interface UserProfile {
     onboarding_completed: boolean;
     email: string;
     profile_type: string | null;
+    skills: string[];
+    company: string | null;
 }
+
+// Comprehensive skills list organized by categories
+const SKILLS_CATEGORIES = {
+    "Programming Languages": [
+        "JavaScript", "TypeScript", "Python", "Java", "C++", "C#", "Go", "Rust", "PHP", "Ruby", "Swift", "Kotlin", "Scala", "R", "MATLAB", "Dart", "Elixir", "Clojure", "Haskell", "Perl"
+    ],
+    "Frontend Development": [
+        "React", "Vue.js", "Angular", "Svelte", "Next.js", "Nuxt.js", "HTML5", "CSS3", "Sass", "Less", "Tailwind CSS", "Bootstrap", "Material-UI", "Ant Design", "Webpack", "Vite", "Babel", "Redux", "Zustand", "GraphQL"
+    ],
+    "Backend Development": [
+        "Node.js", "Express.js", "Django", "Flask", "Spring Boot", "ASP.NET", "Laravel", "FastAPI", "Gin", "Echo", "Rails", "Phoenix", "Koa", "Hapi", "Strapi", "NestJS", "AdonisJS", "Meteor", "Sails.js"
+    ],
+    "Database & Storage": [
+        "PostgreSQL", "MySQL", "MongoDB", "Redis", "SQLite", "Oracle", "SQL Server", "Cassandra", "DynamoDB", "Firebase", "Supabase", "Elasticsearch", "InfluxDB", "Neo4j", "ArangoDB", "CouchDB", "RethinkDB"
+    ],
+    "DevOps & Cloud": [
+        "Docker", "Kubernetes", "AWS", "Azure", "Google Cloud", "Heroku", "DigitalOcean", "Vercel", "Netlify", "Terraform", "Ansible", "Jenkins", "GitLab CI", "GitHub Actions", "CircleCI", "Travis CI", "Prometheus", "Grafana", "ELK Stack"
+    ],
+    "Mobile Development": [
+        "React Native", "Flutter", "Ionic", "Xamarin", "Native iOS", "Native Android", "Cordova", "PhoneGap", "Expo", "Kotlin Multiplatform", "SwiftUI", "Jetpack Compose"
+    ],
+    "Data Science & AI": [
+        "Machine Learning", "Deep Learning", "TensorFlow", "PyTorch", "Scikit-learn", "Pandas", "NumPy", "Matplotlib", "Seaborn", "Jupyter", "Apache Spark", "Hadoop", "Data Analysis", "Statistical Modeling", "Natural Language Processing", "Computer Vision", "Reinforcement Learning", "Neural Networks", "Big Data", "Data Visualization"
+    ],
+    "Design & UX": [
+        "UI/UX Design", "Figma", "Sketch", "Adobe XD", "InVision", "Framer", "Adobe Photoshop", "Adobe Illustrator", "Adobe InDesign", "Prototyping", "Wireframing", "User Research", "Usability Testing", "Design Systems", "Brand Identity", "Visual Design", "Interaction Design", "Information Architecture", "Accessibility Design"
+    ],
+    "Business & Management": [
+        "Product Management", "Project Management", "Agile", "Scrum", "Kanban", "Lean", "Six Sigma", "Business Strategy", "Market Research", "Competitive Analysis", "Business Development", "Sales", "Marketing", "Customer Success", "Operations Management", "Financial Modeling", "Budgeting", "Risk Management", "Change Management", "Leadership"
+    ],
+    "Marketing & Growth": [
+        "Digital Marketing", "SEO", "SEM", "Social Media Marketing", "Content Marketing", "Email Marketing", "Influencer Marketing", "Affiliate Marketing", "Growth Hacking", "Conversion Optimization", "Analytics", "Google Analytics", "Facebook Ads", "Google Ads", "Marketing Automation", "Brand Management", "Public Relations", "Event Marketing", "Video Marketing"
+    ],
+    "Finance & Investment": [
+        "Financial Analysis", "Venture Capital", "Angel Investing", "Private Equity", "Investment Banking", "Financial Modeling", "Due Diligence", "Portfolio Management", "Risk Assessment", "Mergers & Acquisitions", "IPO", "Fundraising", "Pitch Decks", "Valuation", "Accounting", "Tax Planning", "Compliance", "Regulatory Affairs"
+    ],
+    "Industry Expertise": [
+        "SaaS", "Fintech", "Healthtech", "Edtech", "E-commerce", "Marketplace", "B2B", "B2C", "Enterprise Software", "Consumer Apps", "Gaming", "Media & Entertainment", "Real Estate", "Transportation", "Logistics", "Manufacturing", "Retail", "Food & Beverage", "Fashion", "Sports", "Travel", "Energy", "Sustainability", "Blockchain", "Cryptocurrency", "NFTs", "Web3", "DeFi", "IoT", "Robotics", "Space Technology", "Biotechnology", "Pharmaceuticals", "Clean Energy", "Cybersecurity", "Data Privacy", "Compliance"
+    ],
+    "Soft Skills": [
+        "Leadership", "Communication", "Team Building", "Problem Solving", "Critical Thinking", "Creativity", "Adaptability", "Time Management", "Negotiation", "Conflict Resolution", "Mentoring", "Coaching", "Public Speaking", "Presentation Skills", "Strategic Thinking", "Decision Making", "Innovation", "Collaboration", "Networking", "Cultural Intelligence"
+    ],
+    "Tools & Platforms": [
+        "Git", "GitHub", "GitLab", "Bitbucket", "Slack", "Discord", "Microsoft Teams", "Zoom", "Notion", "Airtable", "Trello", "Asana", "Monday.com", "Jira", "Confluence", "Miro", "Loom", "Canva", "Zapier", "Make", "HubSpot", "Salesforce", "Stripe", "PayPal", "Shopify", "WooCommerce", "WordPress", "Webflow", "Squarespace", "Wix"
+    ]
+};
 
 export default function ProfileSettingsPage() {
     const { user, loading: sessionLoading } = useSession();
@@ -50,12 +100,39 @@ export default function ProfileSettingsPage() {
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [hasChanges, setHasChanges] = useState(false);
+    const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
+    const [skillsSearchTerm, setSkillsSearchTerm] = useState('');
+    const [isSkillsDropdownOpen, setIsSkillsDropdownOpen] = useState(false);
 
     useEffect(() => {
         if (!sessionLoading && user) {
             fetchUserProfile();
         }
     }, [user, sessionLoading]);
+
+    useEffect(() => {
+        if (userProfile?.skills) {
+            setSelectedSkills(userProfile.skills);
+        }
+    }, [userProfile?.skills]);
+
+    // Handle clicking outside skills dropdown
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            const target = event.target as Element;
+            if (!target.closest('.skills-dropdown')) {
+                setIsSkillsDropdownOpen(false);
+            }
+        };
+
+        if (isSkillsDropdownOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [isSkillsDropdownOpen]);
 
     const fetchUserProfile = async () => {
         setIsLoading(true);
@@ -77,7 +154,9 @@ export default function ProfileSettingsPage() {
                     email_notifications,
                     two_factor_enabled,
                     onboarding_completed,
-                    profile_type
+                    profile_type,
+                    skills,
+                    company
                 `)
                 .eq('id', user?.id)
                 .single();
@@ -100,6 +179,8 @@ export default function ProfileSettingsPage() {
                 onboarding_completed: profile?.onboarding_completed || false,
                 email: user?.email || '',
                 profile_type: profile?.profile_type || null,
+                skills: profile?.skills || [],
+                company: profile?.company || null,
             };
 
             setUserProfile(newProfile);
@@ -192,6 +273,8 @@ export default function ProfileSettingsPage() {
                         two_factor_enabled: userProfile.two_factor_enabled,
                         onboarding_completed: userProfile.onboarding_completed,
                         profile_type: userProfile.profile_type,
+                        skills: userProfile.skills,
+                        company: userProfile.company,
                     },
                     { onConflict: 'id' }
                 );
@@ -225,6 +308,34 @@ export default function ProfileSettingsPage() {
     const handleSwitchChange = (field: keyof UserProfile) => (checked: boolean) => {
         setUserProfile(prev => prev ? { ...prev, [field]: checked } : null);
         setHasChanges(true);
+    };
+
+    const handleSkillToggle = (skill: string) => {
+        setSelectedSkills(prev => {
+            const newSkills = prev.includes(skill) 
+                ? prev.filter(s => s !== skill)
+                : [...prev, skill];
+            setUserProfile(prevProfile => prevProfile ? { ...prevProfile, skills: newSkills } : null);
+            setHasChanges(true);
+            return newSkills;
+        });
+    };
+
+    const handleSkillRemove = (skillToRemove: string) => {
+        setSelectedSkills(prev => {
+            const newSkills = prev.filter(skill => skill !== skillToRemove);
+            setUserProfile(prevProfile => prevProfile ? { ...prevProfile, skills: newSkills } : null);
+            setHasChanges(true);
+            return newSkills;
+        });
+    };
+
+    const getFilteredSkills = () => {
+        const allSkills = Object.values(SKILLS_CATEGORIES).flat();
+        if (!skillsSearchTerm) return allSkills;
+        return allSkills.filter(skill => 
+            skill.toLowerCase().includes(skillsSearchTerm.toLowerCase())
+        );
     };
 
     if (sessionLoading || isLoading || !userProfile) {
@@ -303,12 +414,137 @@ export default function ProfileSettingsPage() {
 
                         <div className="grid gap-2">
                             <Label htmlFor="professional_role">Professional Role</Label>
-                            <Input
-                                id="professional_role"
+                            <Select
                                 value={userProfile.professional_role || ''}
+                                onValueChange={handleSelectChange('professional_role')}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select your professional role (e.g., Software Engineer, Founder)" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Founder">Founder</SelectItem>
+                                    <SelectItem value="Startup Owner">Startup Owner</SelectItem>
+                                    <SelectItem value="CEO">CEO</SelectItem>
+                                    <SelectItem value="CTO">CTO</SelectItem>
+                                    <SelectItem value="COO">COO</SelectItem>
+                                    <SelectItem value="CFO">CFO</SelectItem>
+                                    <SelectItem value="Product Manager">Product Manager</SelectItem>
+                                    <SelectItem value="Software Engineer">Software Engineer</SelectItem>
+                                    <SelectItem value="Frontend Developer">Frontend Developer</SelectItem>
+                                    <SelectItem value="Backend Developer">Backend Developer</SelectItem>
+                                    <SelectItem value="Full Stack Developer">Full Stack Developer</SelectItem>
+                                    <SelectItem value="DevOps Engineer">DevOps Engineer</SelectItem>
+                                    <SelectItem value="Data Scientist">Data Scientist</SelectItem>
+                                    <SelectItem value="UI/UX Designer">UI/UX Designer</SelectItem>
+                                    <SelectItem value="Graphic Designer">Graphic Designer</SelectItem>
+                                    <SelectItem value="Marketing Manager">Marketing Manager</SelectItem>
+                                    <SelectItem value="Sales Manager">Sales Manager</SelectItem>
+                                    <SelectItem value="Business Development">Business Development</SelectItem>
+                                    <SelectItem value="Investor">Investor</SelectItem>
+                                    <SelectItem value="Angel Investor">Angel Investor</SelectItem>
+                                    <SelectItem value="Venture Capitalist">Venture Capitalist</SelectItem>
+                                    <SelectItem value="Freelancer">Freelancer</SelectItem>
+                                    <SelectItem value="Consultant">Consultant</SelectItem>
+                                    <SelectItem value="Expert">Expert</SelectItem>
+                                    <SelectItem value="Advisor">Advisor</SelectItem>
+                                    <SelectItem value="Mentor">Mentor</SelectItem>
+                                    <SelectItem value="Coach">Coach</SelectItem>
+                                    <SelectItem value="Other">Other</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="grid gap-2">
+                            <Label htmlFor="company">Company</Label>
+                            <Input
+                                id="company"
+                                value={userProfile.company || ''}
                                 onChange={handleInputChange}
-                                placeholder="e.g., Software Engineer, Product Manager"
+                                placeholder="Enter your company or organization name"
                             />
+                        </div>
+
+                        <div className="grid gap-2">
+                            <Label>Skills</Label>
+                            <div className="space-y-3">
+                                {/* Selected Skills Display */}
+                                {selectedSkills.length > 0 && (
+                                    <div className="flex flex-wrap gap-2">
+                                        {selectedSkills.map((skill) => (
+                                            <Badge
+                                                key={skill}
+                                                variant="secondary"
+                                                className="flex items-center gap-1 px-3 py-1"
+                                            >
+                                                {skill}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleSkillRemove(skill)}
+                                                    className="ml-1 hover:text-destructive transition-colors"
+                                                >
+                                                    <X className="h-3 w-3" />
+                                                </button>
+                                            </Badge>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {/* Skills Selection */}
+                                <div className="relative skills-dropdown">
+                                    <div className="flex items-center gap-2">
+                                        <Input
+                                            placeholder="Search and select skills..."
+                                            value={skillsSearchTerm}
+                                            onChange={(e) => setSkillsSearchTerm(e.target.value)}
+                                            onFocus={() => setIsSkillsDropdownOpen(true)}
+                                            className="flex-1"
+                                        />
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => setIsSkillsDropdownOpen(!isSkillsDropdownOpen)}
+                                        >
+                                            <Plus className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+
+                                    {/* Skills Dropdown */}
+                                    {isSkillsDropdownOpen && (
+                                        <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-background border border-border rounded-md shadow-lg max-h-96 overflow-y-auto">
+                                            <div className="p-2">
+                                                {Object.entries(SKILLS_CATEGORIES).map(([category, skills]) => (
+                                                    <div key={category} className="mb-4">
+                                                        <h4 className="font-medium text-sm text-muted-foreground mb-2 px-2">
+                                                            {category}
+                                                        </h4>
+                                                        <div className="grid grid-cols-2 gap-1">
+                                                            {skills
+                                                                .filter(skill => 
+                                                                    skill.toLowerCase().includes(skillsSearchTerm.toLowerCase())
+                                                                )
+                                                                .map((skill) => (
+                                                                    <button
+                                                                        key={skill}
+                                                                        type="button"
+                                                                        onClick={() => handleSkillToggle(skill)}
+                                                                        className={`text-left px-2 py-1 rounded text-sm transition-colors ${
+                                                                            selectedSkills.includes(skill)
+                                                                                ? 'bg-primary text-primary-foreground'
+                                                                                : 'hover:bg-muted'
+                                                                        }`}
+                                                                    >
+                                                                        {skill}
+                                                                    </button>
+                                                                ))}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
                         </div>
 
                         <div className="grid gap-2">

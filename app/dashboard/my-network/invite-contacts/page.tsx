@@ -127,6 +127,10 @@ export default function InviteContactsPage() {
         router.push(`/dashboard/messages?userId=${userId}`);
     };
 
+    const handleProfileClick = (userId: string) => {
+        router.push(`/dashboard/profile/${userId}`);
+    };
+
     const getConnectionButton = (user: User) => {
         const status = connectionStatus[user.id] || 'none';
 
@@ -193,7 +197,12 @@ export default function InviteContactsPage() {
                                     <AvatarFallback>{user.username.charAt(0)}</AvatarFallback>
                                 </Avatar>
                                 <div>
-                                    <CardTitle className="text-lg">{user.full_name || user.username}</CardTitle>
+                                    <CardTitle 
+                                        className="text-lg cursor-pointer hover:text-primary transition-colors"
+                                        onClick={() => handleProfileClick(user.id)}
+                                    >
+                                        {user.full_name || user.username}
+                                    </CardTitle>
                                     <CardDescription>@{user.username}</CardDescription>
                                 </div>
                             </CardHeader>

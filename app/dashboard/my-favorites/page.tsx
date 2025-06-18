@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -8,8 +9,9 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-
-import { Search, SlidersHorizontal, Eye, Heart, Share2, Mail, Briefcase, MapPin, Building2 } from 'lucide-react';
+import { useFavorites } from '@/hooks/use-favorites';
+import { useToast } from '@/components/ui/use-toast';
+import { Search, SlidersHorizontal, Eye, Heart, Share2, Mail, Briefcase, MapPin, Building2, Loader2 } from 'lucide-react';
 
 interface Profile {
   id: string;
@@ -40,131 +42,140 @@ type FavoriteItem = Profile | Listing;
 export default function MyFavoritesPage() {
   const [activeTab, setActiveTab] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const router = useRouter();
+  const { toast } = useToast();
+  const { 
+    savedProfiles, 
+    likedListings, 
+    loading, 
+    unsaveProfile, 
+    unlikeListing 
+  } = useFavorites();
 
-  const profiles: Profile[] = [
-    {
-      id: 'p1',
-      type: 'profile',
-      addedDate: 'May 15, 2025',
-      image: 'https://randomuser.me/api/portraits/women/1.jpg',
-      name: 'Sophie Dubois',
-      title: 'Expert Digital Marketing',
-      description: 'Specialist in digital marketing strategies with over 15 years of experience. Expertise in customer acquisition, loyalty, and analysis of ROI.',
-      skills: [
-        { label: 'Marketing', color: 'bg-blue-100 text-blue-800' },
-        { label: 'Consulting', color: 'bg-purple-100 text-purple-800' },
-      ],
-      location: 'Paris, France',
-    },
-    {
-      id: 'p2',
-      type: 'profile',
-      addedDate: 'May 18, 2025',
-      image: 'https://randomuser.me/api/portraits/men/2.jpg',
-      name: 'Philippe Laurent',
-      title: 'Investor, Business Angel',
-      description: 'Experienced investor with a diversified portfolio in tech and fintech sectors. Supported more than 20 startups in their...',
-      skills: [
-        { label: 'Investment', color: 'bg-green-100 text-green-800' },
-        { label: 'Fintech', color: 'bg-yellow-100 text-yellow-800' },
-      ],
-      location: 'Lyon, France',
-    },
-    {
-      id: 'p3',
-      type: 'profile',
-      addedDate: 'May 8, 2025',
-      image: 'https://randomuser.me/api/portraits/women/3.jpg',
-      name: 'Amina Benali',
-      title: 'Founder, EduTech+',
-      description: 'Passionate entrepreneur in education and technology. Founded EduTech+, a platform for innovative learning that has already won over...',
-      skills: [
-        { label: 'EdTech', color: 'bg-red-100 text-red-800' },
-        { label: 'Startup', color: 'bg-orange-100 text-orange-800' },
-      ],
-      location: 'Toulouse, France',
-    },
-    {
-      id: 'p4',
-      type: 'profile',
-      addedDate: 'May 5, 2025',
-      image: 'https://randomuser.me/api/portraits/men/4.jpg',
-      name: 'Julien Mercier',
-      title: 'Full-stack Developer',
-      description: 'Full-stack developer with 8 years of experience in web and mobile application development. Specialist in React, Node.js and architecture...',
-      skills: [
-        { label: 'Development', color: 'bg-indigo-100 text-indigo-800' },
-        { label: 'React', color: 'bg-teal-100 text-teal-800' },
-      ],
-      location: 'Nantes, France',
-    },
-    {
-      id: 'p5',
-      type: 'profile',
-      addedDate: 'May 22, 2025',
-      image: 'https://randomuser.me/api/portraits/women/5.jpg',
-      name: 'Clara Dubois',
-      title: 'Product Manager',
-      description: 'Experienced Product Manager with a focus on SaaS solutions and agile methodologies.',
-      skills: [
-        { label: 'Product Management', color: 'bg-blue-100 text-blue-800' },
-        { label: 'SaaS', color: 'bg-purple-100 text-purple-800' },
-      ],
-      location: 'Bordeaux, France',
-    },
-    {
-      id: 'p6',
-      type: 'profile',
-      addedDate: 'May 28, 2025',
-      image: 'https://randomuser.me/api/portraits/men/6.jpg',
-      name: 'Paul Lefebvre',
-      title: 'Cybersecurity Expert',
-      description: 'Cybersecurity consultant specialized in network security and data protection.',
-      skills: [
-        { label: 'Cybersecurity', color: 'bg-green-100 text-green-800' },
-        { label: 'Network Security', color: 'bg-yellow-100 text-yellow-800' },
-      ],
-      location: 'Marseille, France',
-    },
-  ];
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    
+    if (days === 0) return 'Today';
+    if (days === 1) return 'Yesterday';
+    if (days < 7) return `${days} days ago`;
+    if (days < 30) return `${Math.floor(days / 7)} weeks ago`;
+    if (days < 365) return `${Math.floor(days / 30)} months ago`;
+    return `${Math.floor(days / 365)} years ago`;
+  };
 
-  const listings: Listing[] = [
-    {
-      id: 'l1',
-      type: 'listing',
-      addedDate: 'May 20, 2025',
-      icon: <Briefcase className="h-8 w-8 text-muted-foreground" />,
-      title: 'Senior React.js Developer',
-      company: 'TechVision',
-      location: 'Paris',
-      description: 'We are looking for an experienced React.js developer to join our product team. You will work on innovative projects in a dynamic and stimulating environment.',
-      postedAgo: '5 days ago',
-    },
-    {
-      id: 'l2',
-      type: 'listing',
-      addedDate: 'May 12, 2025',
-      icon: <Building2 className="h-8 w-8 text-muted-foreground" />,
-      title: 'Senior Data Scientist',
-      company: 'FinanceAI',
-      location: 'Paris',
-      description: 'We are seeking an experienced Data Scientist to join our team to develop and implement artificial intelligence solutions...',
-      postedAgo: '5 days ago',
-    },
-  ];
+  const stripHtml = (html: string) => {
+    if (!html) return '';
+    const tmp = document.createElement('DIV');
+    tmp.innerHTML = html;
+    return tmp.textContent || tmp.innerText || '';
+  };
+
+  const getSkillColor = (skill: string) => {
+    const colors = [
+      'bg-blue-100 text-blue-800',
+      'bg-purple-100 text-purple-800',
+      'bg-green-100 text-green-800',
+      'bg-yellow-100 text-yellow-800',
+      'bg-red-100 text-red-800',
+      'bg-orange-100 text-orange-800',
+      'bg-indigo-100 text-indigo-800',
+      'bg-teal-100 text-teal-800',
+    ];
+    const index = skill.length % colors.length;
+    return colors[index];
+  };
+
+  // Transform saved profiles data
+  const profiles: Profile[] = savedProfiles.map(saved => ({
+    id: saved.profile.id,
+    type: 'profile' as const,
+    addedDate: formatDate(saved.created_at),
+    image: saved.profile.avatar_url || '',
+    name: saved.profile.full_name || 'Unknown',
+    title: saved.profile.professional_role || 'No title',
+    description: saved.profile.bio || 'No description available.',
+    skills: (saved.profile.skills || []).map(skill => ({
+      label: skill,
+      color: getSkillColor(skill)
+    })),
+    location: saved.profile.country || 'Unknown location',
+  }));
+
+  // Transform liked listings data
+  const listings: Listing[] = likedListings.map(liked => ({
+    id: liked.listing.id,
+    type: 'listing' as const,
+    addedDate: formatDate(liked.created_at),
+    icon: <Briefcase className="h-8 w-8 text-muted-foreground" />,
+    title: liked.listing.title,
+    company: liked.listing_profile?.full_name || 'Unknown',
+    location: `${liked.listing.location_city ? `${liked.listing.location_city}, ` : ''}${liked.listing.location_country}`,
+    description: stripHtml(liked.listing.description),
+    postedAgo: formatDate(liked.listing.created_at),
+  }));
 
   const filteredContent: FavoriteItem[] = [
     ...profiles.filter(profile => {
-      const matchesSearch = searchTerm === '' || profile.name.toLowerCase().includes(searchTerm.toLowerCase()) || profile.description.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSearch = searchTerm === '' || 
+        profile.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        profile.description.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesTab = activeTab === 'all' || activeTab === 'profiles';
       return matchesSearch && matchesTab;
     }),
     ...listings.filter(listing => {
-      const matchesSearch = searchTerm === '' || listing.title.toLowerCase().includes(searchTerm.toLowerCase()) || listing.description.toLowerCase().includes(searchTerm.toLowerCase()) || listing.company.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSearch = searchTerm === '' || 
+        listing.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        listing.description.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        listing.company.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesTab = activeTab === 'all' || activeTab === 'listings';
       return matchesSearch && matchesTab;
     }),
   ];
+
+  const handleRemoveFavorite = async (item: FavoriteItem) => {
+    try {
+      if (item.type === 'profile') {
+        await unsaveProfile(item.id);
+        toast({
+          title: "Profile removed from favorites",
+          description: "The profile has been removed from your favorites.",
+        });
+      } else {
+        await unlikeListing(item.id);
+        toast({
+          title: "Listing removed from favorites",
+          description: "The listing has been removed from your favorites.",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to remove from favorites. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleViewItem = (item: FavoriteItem) => {
+    if (item.type === 'profile') {
+      router.push(`/dashboard/profile/${item.id}`);
+    } else {
+      router.push(`/listing/${item.id}`);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
@@ -257,11 +268,22 @@ export default function MyFavoritesPage() {
                 )}
               </CardContent>
               <CardFooter className="mt-auto flex justify-between pt-4">
-                <Button variant="outline" size="sm">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => handleViewItem(item)}
+                >
                   {item.type === 'profile' ? 'View Profile' : 'View Listing'}
                 </Button>
                 <div className="flex items-center gap-2">
-                  <Button variant="ghost" size="icon"><Heart className="h-4 w-4 fill-red-500 text-red-500" /></Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    onClick={() => handleRemoveFavorite(item)}
+                    className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                  >
+                    <Heart className="h-4 w-4 fill-red-500 text-red-500" />
+                  </Button>
                   <Button variant="ghost" size="icon"><Share2 className="h-4 w-4" /></Button>
                   <Button variant="ghost" size="icon"><Mail className="h-4 w-4" /></Button>
                 </div>

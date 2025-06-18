@@ -179,6 +179,10 @@ export default function MyNetworkPage() {
         router.push(`/dashboard/messages?userId=${userId}`);
     };
 
+    const handleProfileClick = (userId: string) => {
+        router.push(`/dashboard/profile/${userId}`);
+    };
+
     const getOtherUser = (connection: Connection) => {
         if (!currentUser) return null;
         return connection.sender_id === currentUser ? connection.receiver : connection.sender;
@@ -198,7 +202,12 @@ export default function MyNetworkPage() {
                                 <AvatarFallback>{otherUser.full_name?.charAt(0) || otherUser.username.charAt(0)}</AvatarFallback>
                             </Avatar>
                             <div>
-                                <CardTitle className="text-lg">{otherUser.full_name || otherUser.username}</CardTitle>
+                                <CardTitle 
+                                    className="text-lg cursor-pointer hover:text-primary transition-colors"
+                                    onClick={() => handleProfileClick(otherUser.id)}
+                                >
+                                    {otherUser.full_name || otherUser.username}
+                                </CardTitle>
                                 <CardDescription>{otherUser.professional_role || 'No role specified'}</CardDescription>
                             </div>
                         </CardHeader>
@@ -233,7 +242,12 @@ export default function MyNetworkPage() {
                                 <AvatarFallback>{user.full_name?.charAt(0) || user.username.charAt(0)}</AvatarFallback>
                             </Avatar>
                             <div>
-                                <CardTitle className="text-lg">{user.full_name || user.username}</CardTitle>
+                                <CardTitle 
+                                    className="text-lg cursor-pointer hover:text-primary transition-colors"
+                                    onClick={() => handleProfileClick(user.id)}
+                                >
+                                    {user.full_name || user.username}
+                                </CardTitle>
                                 <CardDescription>{user.professional_role || 'No role specified'}</CardDescription>
                             </div>
                         </CardHeader>

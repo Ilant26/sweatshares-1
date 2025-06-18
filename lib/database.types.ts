@@ -345,6 +345,105 @@ export interface Database {
           created_at?: string
         }
       }
+      saved_profiles: {
+        Row: {
+          id: string
+          user_id: string
+          profile_id: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          profile_id: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          profile_id?: string
+          created_at?: string
+        }
+      }
+      liked_listings: {
+        Row: {
+          id: string
+          user_id: string
+          listing_id: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          listing_id: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          listing_id?: string
+          created_at?: string
+        }
+      }
+      listings: {
+        Row: {
+          id: string
+          user_id: string | null
+          profile_type: string | null
+          listing_type: string | null
+          funding_stage: string | null
+          skills: string | null
+          location_country: string | null
+          location_city: string | null
+          compensation_type: string | null
+          compensation_value: any
+          amount: string | null
+          sector: string | null
+          end_date: string | null
+          title: string | null
+          description: string | null
+          created_at: string
+          status: string
+        }
+        Insert: {
+          id?: string
+          user_id?: string | null
+          profile_type?: string | null
+          listing_type?: string | null
+          funding_stage?: string | null
+          skills?: string | null
+          location_country?: string | null
+          location_city?: string | null
+          compensation_type?: string | null
+          compensation_value?: any
+          amount?: string | null
+          sector?: string | null
+          end_date?: string | null
+          title?: string | null
+          description?: string | null
+          created_at?: string
+          status?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string | null
+          profile_type?: string | null
+          listing_type?: string | null
+          funding_stage?: string | null
+          skills?: string | null
+          location_country?: string | null
+          location_city?: string | null
+          compensation_type?: string | null
+          compensation_value?: any
+          amount?: string | null
+          sector?: string | null
+          end_date?: string | null
+          title?: string | null
+          description?: string | null
+          created_at?: string
+          status?: string
+        }
+      }
       post_attachments: {
         Row: {
           id: string

@@ -19,6 +19,8 @@ import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import ContentSection from "@/components/content-listing-bottom";
 import { useSession } from '@/components/providers/session-provider';
+import { useFavorites } from '@/hooks/use-favorites';
+import { useToast } from '@/components/ui/use-toast';
 
 const transitionVariants = {
     item: {
@@ -210,6 +212,8 @@ export default function ListingsPage() {
   const router = useRouter();
   const [listingType, setListingType] = useState<ListingType | "">("");
   const { user } = useSession();
+  const { likeListing, unlikeListing, isListingLiked } = useFavorites();
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchListings = async () => {
@@ -235,6 +239,39 @@ export default function ListingsPage() {
 
   const handleProfileClick = (userId: string) => {
     router.push(`/dashboard/profile/${userId}`);
+  };
+
+  const handleLikeListing = async (listingId: string) => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please log in to like listings.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      if (isListingLiked(listingId)) {
+        await unlikeListing(listingId);
+        toast({
+          title: "Listing removed from favorites",
+          description: "The listing has been removed from your favorites.",
+        });
+      } else {
+        await likeListing(listingId);
+        toast({
+          title: "Listing added to favorites",
+          description: "The listing has been added to your favorites.",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update favorites. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -438,8 +475,14 @@ export default function ListingsPage() {
                             </Button>
                             <div className="flex gap-1">
                               <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
-                                <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Favorite">
-                                  <Heart className="h-4 w-4" />
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-8 w-8" 
+                                  aria-label="Favorite"
+                                  onClick={() => handleLikeListing(listing.id)}
+                                >
+                                  <Heart className={`h-4 w-4 ${isListingLiked(listing.id) ? 'fill-red-500 text-red-500' : ''}`} />
                                 </Button>
                               </motion.div>
                               <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
