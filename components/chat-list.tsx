@@ -128,16 +128,16 @@ export function ChatList({ onStartChat, onStateChange, isOpen: controlledIsOpen 
   if (!isOpen) {
     return (
       <div
-        className="flex items-center gap-2 bg-background border rounded-t-lg p-3 cursor-pointer shadow-lg hover:bg-accent/50 transition-all duration-300 w-[120px]"
+        className="flex items-center gap-2 bg-background border rounded-t-lg p-2 cursor-pointer shadow-lg hover:bg-accent/50 transition-all duration-300 w-[120px] h-[40px]"
         onClick={handleToggle}
       >
         <div className="relative">
-          <MessageCircle className="h-5 w-5" />
+          <MessageCircle className="h-4 w-4" />
           {recentChats.some(chat => chat.isOnline) && (
-            <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-green-500 ring-2 ring-background" />
+            <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-green-500 ring-2 ring-background" />
           )}
         </div>
-        <span className="font-medium">Chat</span>
+        <span className="font-medium text-sm">Chat</span>
       </div>
     )
   }

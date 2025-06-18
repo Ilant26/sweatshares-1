@@ -38,8 +38,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   // Check if we're on either the dashboard home or feed page
   const showSelector = pathname === '/dashboard' || pathname === '/dashboard/news-feed';
 
+  // Store last visited section in localStorage
+  useEffect(() => {
+    if (showSelector) {
+      localStorage.setItem('lastVisitedSection', currentSection);
+    }
+  }, [currentSection, showSelector]);
+
   const handleGoBack = () => {
-    router.back();
+    const lastVisitedSection = localStorage.getItem('lastVisitedSection') || 'dashboard';
+    if (lastVisitedSection === 'feed') {
+      router.push('/dashboard/news-feed');
+    } else {
+      router.push('/dashboard');
+    }
   };
 
   useEffect(() => {

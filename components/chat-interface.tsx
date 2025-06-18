@@ -144,14 +144,14 @@ export function ChatWindow({ userId, onClose, isMinimized, onMinimize }: ChatWin
 
   // Shared header component to maintain consistency
   const ChatHeader = ({ isMinimized }: { isMinimized: boolean }) => (
-    <div className="flex items-center justify-between p-3">
+    <div className={cn("flex items-center justify-between", isMinimized ? "p-2" : "p-3")}>
       <div className="flex items-center gap-2">
-        <Avatar className="h-8 w-8">
+        <Avatar className={cn(isMinimized ? "h-6 w-6" : "h-8 w-8")}>
           <AvatarImage src={userStatus?.avatar_url || undefined} />
-          <AvatarFallback>{userStatus?.username?.[0]?.toUpperCase()}</AvatarFallback>
+          <AvatarFallback className={cn(isMinimized ? "text-xs" : "text-sm")}>{userStatus?.username?.[0]?.toUpperCase()}</AvatarFallback>
         </Avatar>
         <div>
-          <div className="font-medium">{userStatus?.username}</div>
+          <div className={cn("font-medium", isMinimized ? "text-sm" : "text-base")}>{userStatus?.username}</div>
           {!isMinimized && (
             <div className="text-xs text-muted-foreground">
               {userStatus?.is_online ? "Active now" : userStatus?.last_seen ? 
@@ -167,19 +167,19 @@ export function ChatWindow({ userId, onClose, isMinimized, onMinimize }: ChatWin
             <MoreHorizontal className="h-4 w-4" />
           </Button>
         )}
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onMinimize}>
-          {isMinimized ? <Maximize2 className="h-4 w-4" /> : <Minimize2 className="h-4 w-4" />}
+        <Button variant="ghost" size="icon" className={cn(isMinimized ? "h-6 w-6" : "h-8 w-8")} onClick={onMinimize}>
+          {isMinimized ? <Maximize2 className="h-3 w-3" /> : <Minimize2 className="h-4 w-4" />}
         </Button>
         <Button 
           variant="ghost" 
           size="icon" 
-          className="h-8 w-8" 
+          className={cn(isMinimized ? "h-6 w-6" : "h-8 w-8")} 
           onClick={(e) => {
             e.stopPropagation()
             onClose()
           }}
         >
-          <X className="h-4 w-4" />
+          <X className={cn(isMinimized ? "h-3 w-3" : "h-4 w-4")} />
         </Button>
       </div>
     </div>
@@ -188,10 +188,36 @@ export function ChatWindow({ userId, onClose, isMinimized, onMinimize }: ChatWin
   if (isMinimized) {
     return (
       <div 
-        className="bg-background border rounded-t-lg w-[320px] cursor-pointer shadow-lg hover:bg-accent/50 transition-all duration-300"
+        className="bg-background border rounded-t-lg w-[320px] h-[40px] cursor-pointer shadow-lg hover:bg-accent/50 transition-all duration-300"
         onClick={onMinimize}
       >
-        <ChatHeader isMinimized={true} />
+        <div className="flex items-center justify-between p-2 h-full">
+          <div className="flex items-center gap-2">
+            <Avatar className="h-6 w-6">
+              <AvatarImage src={userStatus?.avatar_url || undefined} />
+              <AvatarFallback className="text-xs">{userStatus?.username?.[0]?.toUpperCase()}</AvatarFallback>
+            </Avatar>
+            <div>
+              <div className="font-medium text-sm">{userStatus?.username}</div>
+            </div>
+          </div>
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onMinimize}>
+              <Maximize2 className="h-3 w-3" />
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-6 w-6" 
+              onClick={(e) => {
+                e.stopPropagation()
+                onClose()
+              }}
+            >
+              <X className="h-3 w-3" />
+            </Button>
+          </div>
+        </div>
       </div>
     )
   }
@@ -291,6 +317,7 @@ export function ChatInterface() {
   // Constants for layout calculations
   const chatListWidth = 330 // Full width of chat list
   const chatListCollapsedWidth = 120 // Width when collapsed
+  const chatListCollapsedHeight = 40 // Height when collapsed
   const rightPadding = 16 // Right padding from viewport edge
 
   return (
@@ -313,7 +340,7 @@ export function ChatInterface() {
             key={userId}
             className={cn(
               "transition-all duration-300 ease-in-out",
-              minimizedChats.includes(userId) ? "h-[48px]" : "h-[450px]"
+              minimizedChats.includes(userId) ? `h-[${chatListCollapsedHeight}px]` : "h-[450px]"
             )}
             style={{
               zIndex: activeChats.length - index,
