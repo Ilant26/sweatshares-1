@@ -18,6 +18,7 @@ import { supabase } from "@/lib/supabase"
 import { cn } from "@/lib/utils"
 import { ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { NotificationsDropdown } from "@/components/notifications-dropdown"
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state";
 
@@ -116,9 +117,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   </div>
                 )}
                 <div className={cn(
-                  "pr-4",
+                  "pr-4 flex items-center gap-2",
                   showSelector ? "ml-auto" : "flex-1 flex justify-end"
                 )}>
+                  <NotificationsDropdown />
                   <ThemeSwitcher />
                 </div>
               </header>
