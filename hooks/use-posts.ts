@@ -539,6 +539,49 @@ export function usePosts() {
     }
   }
 
+  const deleteComment = async (commentId: string) => {
+    if (!user) return
+
+    try {
+      const { error } = await supabase
+        .from('comments')
+        .delete()
+        .eq('id', commentId)
+        .eq('user_id', user.id)
+
+      if (error) throw error
+
+      setPosts(prev =>
+        prev.map(post => {
+          // Check if the comment is a main comment or a reply
+          const isMainComment = post.comments.some(comment => comment.id === commentId)
+          
+          if (isMainComment) {
+            // Delete main comment
+            return {
+              ...post,
+              comments: post.comments.filter(comment => comment.id !== commentId),
+              comments_count: post.comments_count - 1
+            }
+          } else {
+            // Delete reply - find and remove from replies array
+            return {
+              ...post,
+              comments: post.comments.map(comment => ({
+                ...comment,
+                replies: comment.replies.filter(reply => reply.id !== commentId)
+              })),
+              comments_count: post.comments_count - 1
+            }
+          }
+        })
+      )
+    } catch (error) {
+      console.error('Error deleting comment:', error)
+      throw error
+    }
+  }
+
   const updatePost = async (postId: string, content: string) => {
     if (!user) return null;
 
@@ -602,6 +645,7 @@ export function usePosts() {
     addReply,
     likeComment,
     unlikeComment,
+    deleteComment,
     updatePost,
     deletePost
   }

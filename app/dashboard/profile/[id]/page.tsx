@@ -12,12 +12,23 @@ import { usePosts } from "@/hooks/use-posts";
 import { useFavorites } from "@/hooks/use-favorites";
 import { supabase } from "@/lib/supabase";
 import { useUser } from "@/hooks/use-user";
-import { MapPin, Briefcase, DollarSign, Heart, Share2, Mail, MessageCircle, Bookmark, FileIcon, ImageIcon, Loader2, Send, UserPlus, MoreHorizontal, Edit, Plus, Globe, ThumbsUp } from "lucide-react";
+import { MapPin, Briefcase, DollarSign, Heart, Share2, Mail, MessageCircle, Bookmark, FileIcon, ImageIcon, Loader2, Send, UserPlus, MoreHorizontal, Edit, Plus, Globe, ThumbsUp, Trash2 } from "lucide-react";
 import { motion, Variants } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 
 const cardVariants: Variants = {
   hidden: { opacity: 0, y: 20 },
@@ -70,7 +81,7 @@ export default function ProfilePage() {
   const { id } = useParams();
   const router = useRouter();
   const { user } = useUser();
-  const { posts, createPost, likePost, unlikePost, savePost, unsavePost, addComment, addReply, likeComment, unlikeComment } = usePosts();
+  const { posts, createPost, likePost, unlikePost, savePost, unsavePost, addComment, addReply, likeComment, unlikeComment, deleteComment } = usePosts();
   const { 
     saveProfile, 
     unsaveProfile, 
@@ -358,6 +369,22 @@ export default function ProfilePage() {
     }
   };
 
+  const handleDeleteComment = async (commentId: string) => {
+    try {
+      await deleteComment(commentId);
+      toast({
+        title: "Comment deleted",
+        description: "Your comment has been deleted successfully.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete comment. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <motion.div 
       className="min-h-screen bg-background"
@@ -434,9 +461,9 @@ export default function ProfilePage() {
                     </DropdownMenuItem>
                     {user?.id !== id && (
                       <DropdownMenuItem onClick={handleSaveProfile}>
-                        <Bookmark className="h-4 w-4 mr-2" />
+                      <Bookmark className="h-4 w-4 mr-2" />
                         {isProfileSaved(id as string) ? 'Remove from Favorites' : 'Add to Favorites'}
-                      </DropdownMenuItem>
+                    </DropdownMenuItem>
                     )}
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -528,21 +555,21 @@ export default function ProfilePage() {
                         <div key={comment.id} className="space-y-3">
                           {/* Main Comment */}
                           <div className="flex items-start space-x-2">
-                            <Avatar className="h-7 w-7">
-                              <AvatarImage src={comment.author.avatar_url || undefined} alt={comment.author.full_name || undefined} />
-                              <AvatarFallback>{comment.author.full_name?.charAt(0) || 'U'}</AvatarFallback>
-                            </Avatar>
+                          <Avatar className="h-7 w-7">
+                            <AvatarImage src={comment.author.avatar_url || undefined} alt={comment.author.full_name || undefined} />
+                            <AvatarFallback>{comment.author.full_name?.charAt(0) || 'U'}</AvatarFallback>
+                          </Avatar>
                             <div className="flex-1">
-                              <div className="flex items-baseline space-x-1">
-                                <span 
-                                  className="text-sm font-semibold cursor-pointer hover:text-primary transition-colors"
-                                  onClick={() => handleProfileClick(comment.author.id)}
-                                >
-                                  {comment.author.full_name}
-                                </span>
-                                <span className="text-xs text-muted-foreground">{formatDate(comment.created_at)}</span>
-                              </div>
-                              <p className="text-sm">{comment.content}</p>
+                            <div className="flex items-baseline space-x-1">
+                              <span 
+                                className="text-sm font-semibold cursor-pointer hover:text-primary transition-colors"
+                                onClick={() => handleProfileClick(comment.author.id)}
+                              >
+                                {comment.author.full_name}
+                              </span>
+                              <span className="text-xs text-muted-foreground">{formatDate(comment.created_at)}</span>
+                            </div>
+                            <p className="text-sm">{comment.content}</p>
                               
                               {/* Comment Actions */}
                               <div className="flex items-center space-x-4 mt-2 text-xs text-muted-foreground">
@@ -564,6 +591,37 @@ export default function ProfilePage() {
                                   <MessageCircle className="h-3 w-3 mr-1" />
                                   Reply
                                 </Button>
+                                {comment.author.id === user?.id && (
+                                  <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-6 px-2 text-xs text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"
+                                      >
+                                        <Trash2 className="h-3 w-3 mr-1" />
+                                        Delete
+                                      </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>Delete Comment</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                          Are you sure you want to delete this comment? This action cannot be undone.
+                                        </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction
+                                          onClick={() => handleDeleteComment(comment.id)}
+                                          className="bg-red-500 hover:bg-red-600 text-white"
+                                        >
+                                          Delete
+                                        </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
+                                )}
                               </div>
 
                               {/* Reply Input */}
@@ -630,10 +688,41 @@ export default function ProfilePage() {
                                         <ThumbsUp className={`h-3 w-3 mr-1 ${reply.has_liked ? 'text-blue-500' : ''}`} />
                                         {reply.likes_count}
                                       </Button>
+                                      {reply.author.id === user?.id && (
+                                        <AlertDialog>
+                                          <AlertDialogTrigger asChild>
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              className="h-5 px-2 text-xs text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"
+                                            >
+                                              <Trash2 className="h-3 w-3 mr-1" />
+                                              Delete
+                                            </Button>
+                                          </AlertDialogTrigger>
+                                          <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                              <AlertDialogTitle>Delete Reply</AlertDialogTitle>
+                                              <AlertDialogDescription>
+                                                Are you sure you want to delete this reply? This action cannot be undone.
+                                              </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                              <AlertDialogAction
+                                                onClick={() => handleDeleteComment(reply.id)}
+                                                className="bg-red-500 hover:bg-red-600 text-white"
+                                              >
+                                                Delete
+                                              </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                          </AlertDialogContent>
+                                        </AlertDialog>
+                                      )}
                                     </div>
-                                  </div>
-                                </div>
-                              ))}
+                          </div>
+                        </div>
+                      ))}
                             </div>
                           )}
                         </div>

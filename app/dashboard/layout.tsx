@@ -107,9 +107,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                           href="/dashboard"
                           className={cn(
                             "relative px-2 py-1 text-sm font-medium transition-colors",
-                            "hover:text-foreground/80",
-                            currentSection === 'dashboard' ? "text-foreground" : "text-foreground/60",
-                            "after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:bg-foreground after:transition-transform after:duration-200",
+                            "hover:text-primary/80",
+                            currentSection === 'dashboard' ? "text-primary" : "text-muted-foreground",
+                            "after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:bg-primary after:transition-transform after:duration-200",
                             currentSection === 'dashboard' && "after:scale-x-100"
                           )}
                         >
@@ -119,9 +119,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                           href="/dashboard/news-feed"
                           className={cn(
                             "relative px-2 py-1 text-sm font-medium transition-colors",
-                            "hover:text-foreground/80",
-                            currentSection === 'feed' ? "text-foreground" : "text-foreground/60",
-                            "after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:bg-foreground after:transition-transform after:duration-200",
+                            "hover:text-primary/80",
+                            currentSection === 'feed' ? "text-primary" : "text-muted-foreground",
+                            "after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:bg-primary after:transition-transform after:duration-200",
                             currentSection === 'feed' && "after:scale-x-100"
                           )}
                         >

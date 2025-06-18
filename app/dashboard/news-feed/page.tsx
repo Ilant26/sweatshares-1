@@ -1,16 +1,18 @@
 "use client";
 
+import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { motion, Variants } from "framer-motion";
+import { useUser } from "@/hooks/use-user";
+import { usePosts } from "@/hooks/use-posts";
+import { useToast } from "@/components/ui/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/components/ui/use-toast";
-import { useRouter } from "next/navigation";
-import { motion, Variants } from "framer-motion";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,26 +20,32 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
+import {
   Share2,
   ThumbsUp,
   MessageCircle,
   Bookmark,
   Send,
-  Link,
-  Tag,
   ImageIcon,
   Filter,
   ArrowRight,
   FileIcon,
   X,
   Loader2,
-  MoreVertical,
-  Pencil,
+  MoreHorizontal,
+  Edit,
   Trash2,
 } from "lucide-react";
-import { useUser } from "@/hooks/use-user";
-import { usePosts } from "@/hooks/use-posts";
-import { useState, useRef, useEffect } from "react";
 import { AttachmentType } from "@/lib/database.types";
 import { supabase } from "@/lib/supabase";
 
@@ -68,7 +76,7 @@ const itemVariants: Variants = {
 
 export default function NewsFeedPage() {
   const { user } = useUser();
-  const { posts, loading, createPost, likePost, unlikePost, savePost, unsavePost, addComment, addReply, likeComment, unlikeComment, updatePost, deletePost } = usePosts();
+  const { posts, loading, createPost, likePost, unlikePost, savePost, unsavePost, addComment, addReply, likeComment, unlikeComment, deleteComment, updatePost, deletePost } = usePosts();
   const [newPostContent, setNewPostContent] = useState("");
   const [newComments, setNewComments] = useState<{ [key: string]: string }>({});
   const [newReplies, setNewReplies] = useState<{ [key: string]: string }>({});
@@ -233,6 +241,22 @@ export default function NewsFeedPage() {
       case "unlike":
         await unlikeComment(commentId);
         break;
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    try {
+      await deleteComment(commentId);
+      toast({
+        title: "Comment deleted",
+        description: "Your comment has been deleted successfully.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete comment. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -454,11 +478,12 @@ export default function NewsFeedPage() {
                       >
                         <ImageIcon className="mr-2 h-4 w-4" /> Media
                       </Button>
-                      <Button variant="ghost" className="text-green-500 hover:text-green-600">
-                        <Link className="mr-2 h-4 w-4" /> Link
-                      </Button>
-                      <Button variant="ghost" className="text-purple-500 hover:text-purple-600">
-                        <Tag className="mr-2 h-4 w-4" /> Tags
+                      <Button 
+                        variant="ghost" 
+                        className="text-orange-500 hover:text-orange-600"
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        <FileIcon className="mr-2 h-4 w-4" /> Attachments
                       </Button>
                     </div>
                     <Button
@@ -513,7 +538,7 @@ export default function NewsFeedPage() {
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="icon">
-                                <MoreVertical className="h-4 w-4" />
+                                <MoreHorizontal className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
@@ -521,17 +546,38 @@ export default function NewsFeedPage() {
                                 <DropdownMenuItem
                                   onClick={() => setEditingPost({ id: post.id, content: post.content })}
                                 >
-                                  <Pencil className="h-4 w-4 mr-2" />
+                                  <Edit className="h-4 w-4 mr-2" />
                                   Edit
                                 </DropdownMenuItem>
                               )}
-                              <DropdownMenuItem
-                                onClick={() => handleDeletePost(post.id)}
-                                className="text-red-600"
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Delete
-                              </DropdownMenuItem>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <DropdownMenuItem
+                                    className="text-red-600"
+                                    onSelect={(e) => e.preventDefault()}
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Delete
+                                  </DropdownMenuItem>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Delete Post</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Are you sure you want to delete this post? This action cannot be undone.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => handleDeletePost(post.id)}
+                                      className="bg-red-500 hover:bg-red-600 text-white"
+                                    >
+                                      Delete
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         )}
@@ -568,13 +614,6 @@ export default function NewsFeedPage() {
                             <div key={attachment.id}>
                               {getFilePreview(attachment)}
                             </div>
-                          ))}
-                        </div>
-                      )}
-                      {post.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mb-4">
-                          {post.tags.map((tag, idx) => (
-                            <Badge key={idx} variant="secondary">{tag}</Badge>
                           ))}
                         </div>
                       )}
@@ -648,6 +687,37 @@ export default function NewsFeedPage() {
                                   <MessageCircle className="h-3 w-3 mr-1" />
                                   Reply
                                 </Button>
+                                {comment.author.id === user?.id && (
+                                  <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-6 px-2 text-xs text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"
+                                      >
+                                        <Trash2 className="h-3 w-3 mr-1" />
+                                        Delete
+                                      </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>Delete Comment</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                          Are you sure you want to delete this comment? This action cannot be undone.
+                                        </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction
+                                          onClick={() => handleDeleteComment(comment.id)}
+                                          className="bg-red-500 hover:bg-red-600 text-white"
+                                        >
+                                          Delete
+                                        </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
+                                )}
                               </div>
 
                               {/* Reply Input */}
@@ -714,6 +784,37 @@ export default function NewsFeedPage() {
                                         <ThumbsUp className={`h-3 w-3 mr-1 ${reply.has_liked ? 'text-blue-500' : ''}`} />
                                         {reply.likes_count}
                                       </Button>
+                                      {reply.author.id === user?.id && (
+                                        <AlertDialog>
+                                          <AlertDialogTrigger asChild>
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              className="h-5 px-2 text-xs text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"
+                                            >
+                                              <Trash2 className="h-3 w-3 mr-1" />
+                                              Delete
+                                            </Button>
+                                          </AlertDialogTrigger>
+                                          <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                              <AlertDialogTitle>Delete Reply</AlertDialogTitle>
+                                              <AlertDialogDescription>
+                                                Are you sure you want to delete this reply? This action cannot be undone.
+                                              </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                              <AlertDialogAction
+                                                onClick={() => handleDeleteComment(reply.id)}
+                                                className="bg-red-500 hover:bg-red-600 text-white"
+                                              >
+                                                Delete
+                                              </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                          </AlertDialogContent>
+                                        </AlertDialog>
+                                      )}
                                     </div>
                                   </div>
                                 </div>

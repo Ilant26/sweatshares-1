@@ -54,6 +54,7 @@ export function ChatWindow({ userId, onClose, isMinimized, onMinimize }: ChatWin
         ))
       } catch (error) {
         console.error("Error loading messages:", error)
+        // Don't throw error, just log it
       }
     }
 
@@ -63,6 +64,14 @@ export function ChatWindow({ userId, onClose, isMinimized, onMinimize }: ChatWin
         setUserStatus(status)
       } catch (error) {
         console.error("Error loading user status:", error)
+        // Set a default status instead of throwing
+        setUserStatus({
+          id: userId,
+          username: 'Unknown User',
+          avatar_url: null,
+          last_seen: new Date().toISOString(),
+          is_online: false
+        })
       }
     }
 
@@ -285,12 +294,15 @@ export function ChatInterface() {
   const [minimizedChats, setMinimizedChats] = React.useState<string[]>([])
   const [isChatListOpen, setIsChatListOpen] = React.useState(false)
 
+  console.log("ChatInterface rendered, pathname:", pathname, "activeChats:", activeChats)
+
   // Don't show on messages page
   if (pathname.includes('/dashboard/messages')) {
     return null
   }
 
   const handleStartChat = (userId: string) => {
+    console.log("Starting chat with user:", userId)
     if (!activeChats.includes(userId)) {
       setActiveChats(prev => [...prev, userId])
     }
