@@ -7,6 +7,8 @@ import {
   CreditCard,
   LogOut,
   Sparkles,
+  HelpCircle,
+  MessageSquarePlus,
 } from "lucide-react"
 
 import {
@@ -53,6 +55,22 @@ export function NavUser({
 
   return (
     <SidebarMenu>
+      <SidebarMenuItem>
+        <SidebarMenuButton asChild tooltip="Support">
+          <Link href="/support" className="relative flex items-center">
+            <HelpCircle className="size-4" />
+            <span>Support</span>
+          </Link>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+      <SidebarMenuItem>
+        <SidebarMenuButton asChild tooltip="Make a Feedback">
+          <Link href="/feedback" className="relative flex items-center">
+            <MessageSquarePlus className="size-4" />
+            <span>Make a Feedback</span>
+          </Link>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
       <SidebarMenuItem>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
