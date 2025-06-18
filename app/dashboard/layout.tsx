@@ -19,6 +19,8 @@ import { cn } from "@/lib/utils"
 import { ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { NotificationsDropdown } from "@/components/notifications-dropdown"
+import { ChatInterface } from "@/components/chat-interface"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state";
 
@@ -26,6 +28,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname();
   const router = useRouter();
   const { user } = useSession();
+  const isMobile = useIsMobile();
   
   const segments = pathname.split('/').filter(Boolean);
   const [profileName, setProfileName] = useState<string>("");
@@ -125,6 +128,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </div>
               </header>
               {children}
+              {!isMobile && <ChatInterface />}
             </SidebarInset>
           </SidebarProvider>
         </UnreadInvitationsProvider>
