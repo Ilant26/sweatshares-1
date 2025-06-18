@@ -31,7 +31,7 @@ export function ChatWindow({ userId, onClose, isMinimized, onMinimize }: ChatWin
   const { user } = useSession()
   const scrollRef = React.useRef<HTMLDivElement | null>(null)
   const [isTyping, setIsTyping] = React.useState(false)
-  const typingTimeoutRef = React.useRef<NodeJS.Timeout>()
+  const typingTimeoutRef = React.useRef<NodeJS.Timeout | null>(null)
   const messagesEndRef = React.useRef<HTMLDivElement | null>(null)
 
   // Add scroll to bottom function
