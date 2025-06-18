@@ -283,7 +283,7 @@ export function ChatInterface() {
   const pathname = usePathname()
   const [activeChats, setActiveChats] = React.useState<string[]>([])
   const [minimizedChats, setMinimizedChats] = React.useState<string[]>([])
-  const [isChatListOpen, setIsChatListOpen] = React.useState(true)
+  const [isChatListOpen, setIsChatListOpen] = React.useState(false)
 
   // Don't show on messages page
   if (pathname.includes('/dashboard/messages')) {
