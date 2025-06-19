@@ -33,17 +33,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const segments = pathname.split('/').filter(Boolean);
   const [profileName, setProfileName] = useState<string>("");
   const isProfilePage = segments.includes("profile");
-  const currentSection = pathname.includes('news-feed') ? 'feed' : 'dashboard';
+  const isDashboard = pathname === '/dashboard';
+  const isFeed = pathname === '/dashboard/news-feed';
+  const currentSection = isFeed ? 'feed' : isDashboard ? 'dashboard' : null;
   
-  // Check if we're on either the dashboard home or feed page
-  const showSelector = pathname === '/dashboard' || pathname === '/dashboard/news-feed';
-
   // Store last visited section in localStorage
   useEffect(() => {
-    if (showSelector) {
-      localStorage.setItem('lastVisitedSection', currentSection);
-    }
-  }, [currentSection, showSelector]);
+    localStorage.setItem('lastVisitedSection', currentSection || 'dashboard');
+  }, [currentSection]);
 
   const handleGoBack = () => {
     const lastVisitedSection = localStorage.getItem('lastVisitedSection') || 'dashboard';
@@ -87,7 +84,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     orientation="vertical"
                     className="mr-2 data-[orientation=vertical]:h-4"
                   />
-                  {!showSelector && (
+                  {(pathname !== '/dashboard' && pathname !== '/dashboard/news-feed') && (
                     <Button
                       variant="ghost"
                       size="sm"
@@ -99,41 +96,39 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     </Button>
                   )}
                 </div>
-                {showSelector && (
-                  <div className="flex-1 flex justify-center">
-                    <div className="inline-flex items-center justify-center">
-                      <nav className="flex space-x-12">
-                        <Link
-                          href="/dashboard"
-                          className={cn(
-                            "relative px-2 py-1 text-sm font-medium transition-colors",
-                            "hover:text-primary/80",
-                            currentSection === 'dashboard' ? "text-primary" : "text-muted-foreground",
-                            "after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:bg-primary after:transition-transform after:duration-200",
-                            currentSection === 'dashboard' && "after:scale-x-100"
-                          )}
-                        >
-                          Dashboard
-                        </Link>
-                        <Link
-                          href="/dashboard/news-feed"
-                          className={cn(
-                            "relative px-2 py-1 text-sm font-medium transition-colors",
-                            "hover:text-primary/80",
-                            currentSection === 'feed' ? "text-primary" : "text-muted-foreground",
-                            "after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:bg-primary after:transition-transform after:duration-200",
-                            currentSection === 'feed' && "after:scale-x-100"
-                          )}
-                        >
-                          Feed
-                        </Link>
-                      </nav>
-                    </div>
+                <div className="flex-1 flex justify-center">
+                  <div className="inline-flex items-center justify-center">
+                    <nav className="flex space-x-12">
+                      <Link
+                        href="/dashboard"
+                        className={cn(
+                          "relative px-2 py-1 text-sm font-medium transition-colors",
+                          "hover:text-primary/80",
+                          currentSection === 'dashboard' ? "text-primary" : "text-muted-foreground",
+                          "after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:bg-primary after:transition-transform after:duration-200",
+                          currentSection === 'dashboard' && "after:scale-x-100"
+                        )}
+                      >
+                        Dashboard
+                      </Link>
+                      <Link
+                        href="/dashboard/news-feed"
+                        className={cn(
+                          "relative px-2 py-1 text-sm font-medium transition-colors",
+                          "hover:text-primary/80",
+                          currentSection === 'feed' ? "text-primary" : "text-muted-foreground",
+                          "after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:bg-primary after:transition-transform after:duration-200",
+                          currentSection === 'feed' && "after:scale-x-100"
+                        )}
+                      >
+                        Feed
+                      </Link>
+                    </nav>
                   </div>
-                )}
+                </div>
                 <div className={cn(
                   "pr-4 flex items-center gap-2",
-                  showSelector ? "ml-auto" : "flex-1 flex justify-end"
+                  "ml-auto"
                 )}>
                   <NotificationsDropdown />
                   <ThemeSwitcher />

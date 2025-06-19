@@ -39,6 +39,11 @@ import { useSession } from "@/components/providers/session-provider"
 const data = {
   navMain: [
     {
+      title: "Dashboard",
+      url: "/dashboard",
+      icon: LayoutDashboard,
+    },
+    {
       title: "Messages",
       url: "/dashboard/messages",
       icon: MessageCircle,
