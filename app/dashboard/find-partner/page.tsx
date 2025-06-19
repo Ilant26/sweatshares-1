@@ -474,119 +474,129 @@ export default function FindPartnerPage() {
                 const displaySkills = skillsArr.slice(0, 4);
                 const moreSkills = skillsArr.length > 4 ? skillsArr.length - 4 : 0;
                 return (
-                  <Card
-                    key={profile.id}
-                    className={cn(
-                      "group flex flex-col justify-between h-full bg-muted/60 dark:bg-zinc-900/60 border border-primary/10 shadow-lg hover:shadow-xl transition-all duration-200 hover:border-primary/40 rounded-2xl overflow-hidden",
-                      "hover:scale-[1.025] hover:border-gradient-to-tr hover:from-primary/40 hover:to-yellow-300"
-                    )}
-                    tabIndex={0}
-                    aria-label={`Profile card for ${profile.full_name}`}
+                  <motion.div
+                    variants={cardVariants}
+                    initial="hidden"
+                    animate="visible"
+                    whileHover="hover"
+                    custom={idx}
+                    className="h-full"
                   >
-                    {/* Header with Avatar, Name, Role, Company, Profile Type, Location */}
-                    <div className="p-4 pb-2 flex items-center gap-3 border-b border-border/30 relative">
-                      <Avatar className="h-12 w-12 border-2 border-primary/30">
-                        <AvatarImage src={profile.avatar_url || undefined} alt={profile.full_name || undefined} />
-                        <AvatarFallback>{getInitials(profile.full_name)}</AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <div className="font-semibold text-base truncate cursor-pointer hover:text-primary transition-colors" onClick={() => handleProfileClick(profile.id)}>
-                            {profile.full_name}
+                    <Card
+                      key={profile.id}
+                      className={cn(
+                        "group flex flex-col justify-between h-full bg-white dark:bg-zinc-900/60 border border-primary/10 shadow-lg hover:shadow-xl transition-all duration-200 hover:border-primary/40 rounded-2xl overflow-hidden"
+                      )}
+                      tabIndex={0}
+                      aria-label={`Profile card for ${profile.full_name}`}
+                    >
+                      <CardContent className="p-0 flex flex-col h-full">
+                        {/* Header with Avatar, Name, Role, Company, Profile Type, Location */}
+                        <div className="p-4 pb-2 flex items-center gap-3 border-b border-border/30 relative">
+                          <Avatar className="h-12 w-12 border-2 border-primary/30">
+                            <AvatarImage src={profile.avatar_url || undefined} alt={profile.full_name || undefined} />
+                            <AvatarFallback>{getInitials(profile.full_name)}</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <div className="font-semibold text-base truncate cursor-pointer hover:text-primary transition-colors" onClick={() => handleProfileClick(profile.id)}>
+                                {profile.full_name}
+                              </div>
+                              {profile.profile_type && (
+                                <Badge variant="secondary" className="ml-1 text-xs px-2 py-0.5 capitalize">
+                                  {profile.profile_type}
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                              {profile.professional_role && <span className="truncate">{profile.professional_role}</span>}
+                              {profile.company && <span className="truncate">• {profile.company}</span>}
+                            </div>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                              <MapPin className="h-3 w-3" />
+                              <span>{profile.country || "-"}</span>
+                              <span className="ml-auto">{profile.created_at ? format(new Date(profile.created_at), "dd MMM yyyy") : "-"}</span>
+                            </div>
                           </div>
-                          {profile.profile_type && (
-                            <Badge variant="secondary" className="ml-1 text-xs px-2 py-0.5 capitalize">
-                              {profile.profile_type}
-                            </Badge>
-                          )}
                         </div>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-                          {profile.professional_role && <span className="truncate">{profile.professional_role}</span>}
-                          {profile.company && <span className="truncate">• {profile.company}</span>}
-                        </div>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-                          <MapPin className="h-3 w-3" />
-                          <span>{profile.country || "-"}</span>
-                          <span className="ml-auto">{profile.created_at ? format(new Date(profile.created_at), "dd MMM yyyy") : "-"}</span>
-                        </div>
-                      </div>
-                    </div>
-                    {/* Bio, Skills */}
-                    <div className="flex-1 flex flex-col px-4 pt-3 pb-1">
-                      {profile.bio && profile.bio.length > 120 ? (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <div className="line-clamp-3 text-sm mb-2 cursor-help" tabIndex={0} aria-label="Profile bio">
+                        {/* Bio, Skills */}
+                        <div className="flex-1 flex flex-col px-4 pt-3 pb-1">
+                          {profile.bio && profile.bio.length > 120 ? (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div className="line-clamp-3 text-sm mb-2 cursor-help" tabIndex={0} aria-label="Profile bio">
+                                  {profile.bio}
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent side="top">
+                                <span className="max-w-xs block whitespace-pre-line">{profile.bio}</span>
+                              </TooltipContent>
+                            </Tooltip>
+                          ) : (
+                            <div className="line-clamp-3 text-sm mb-2" tabIndex={0} aria-label="Profile bio">
                               {profile.bio}
                             </div>
-                          </TooltipTrigger>
-                          <TooltipContent side="top">
-                            <span className="max-w-xs block whitespace-pre-line">{profile.bio}</span>
-                          </TooltipContent>
-                        </Tooltip>
-                      ) : (
-                        <div className="line-clamp-3 text-sm mb-2" tabIndex={0} aria-label="Profile bio">
-                          {profile.bio}
-                        </div>
-                      )}
-                      <div className="flex flex-wrap gap-2 mt-auto">
-                        {displaySkills.map((skill: string) => (
-                          <Badge key={skill} variant="secondary">{skill}</Badge>
-                        ))}
-                        {moreSkills > 0 && (
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Badge variant="outline" className="cursor-pointer">+{moreSkills} more</Badge>
-                            </TooltipTrigger>
-                            <TooltipContent side="top">
-                              <span>{skillsArr.slice(4).join(", ")}</span>
-                            </TooltipContent>
-                          </Tooltip>
-                        )}
-                      </div>
-                    </div>
-                    {/* Divider */}
-                    <div className="border-t border-border/30" />
-                    {/* Actions */}
-                    <div className="p-4 flex items-center gap-2">
-                      <Button
-                        variant="default"
-                        className="flex-1 font-semibold"
-                        onClick={() => handleProfileClick(profile.id)}
-                        aria-label={`See profile of ${profile.full_name}`}
-                      >
-                        <Eye className="h-4 w-4 mr-1" /> See Profile
-                      </Button>
-                      {user && profile.id !== user.id && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className={cn(
-                            "transition-colors rounded-full border flex items-center justify-center",
-                            isProfileSaved(profile.id)
-                              ? "bg-yellow-100 hover:bg-yellow-200 border-yellow-300"
-                              : "hover:bg-accent border-transparent"
                           )}
-                          onClick={() => {
-                            if (isProfileSaved(profile.id)) unsaveProfile(profile.id);
-                            else saveProfile(profile.id);
-                          }}
-                          disabled={favoritesLoading}
-                          aria-label={isProfileSaved(profile.id) ? `Remove ${profile.full_name} from favorites` : `Add ${profile.full_name} to favorites`}
-                        >
-                          <Star
-                            className={cn(
-                              "h-5 w-5",
-                              isProfileSaved(profile.id)
-                                ? "fill-yellow-400 text-yellow-500"
-                                : "text-muted-foreground"
+                          <div className="flex flex-wrap gap-2 mt-auto">
+                            {displaySkills.map((skill: string) => (
+                              <Badge key={skill} variant="secondary">{skill}</Badge>
+                            ))}
+                            {moreSkills > 0 && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Badge variant="outline" className="cursor-pointer">+{moreSkills} more</Badge>
+                                </TooltipTrigger>
+                                <TooltipContent side="top">
+                                  <span>{skillsArr.slice(4).join(", ")}</span>
+                                </TooltipContent>
+                              </Tooltip>
                             )}
-                            strokeWidth={isProfileSaved(profile.id) ? 0 : 1.5}
-                          />
-                        </Button>
-                      )}
-                    </div>
-                  </Card>
+                          </div>
+                        </div>
+                        {/* Divider */}
+                        <div className="border-t border-border/30" />
+                        {/* Actions */}
+                        <div className="p-4 flex items-center gap-2">
+                          <Button
+                            variant="default"
+                            className="flex-1 font-semibold"
+                            onClick={() => handleProfileClick(profile.id)}
+                            aria-label={`See profile of ${profile.full_name}`}
+                          >
+                            <Eye className="h-4 w-4 mr-1" /> See Profile
+                          </Button>
+                          {user && profile.id !== user.id && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className={cn(
+                                "transition-colors rounded-full border flex items-center justify-center",
+                                isProfileSaved(profile.id)
+                                  ? "bg-yellow-100 hover:bg-yellow-200 border-yellow-300"
+                                  : "hover:bg-accent border-transparent"
+                              )}
+                              onClick={() => {
+                                if (isProfileSaved(profile.id)) unsaveProfile(profile.id);
+                                else saveProfile(profile.id);
+                              }}
+                              disabled={favoritesLoading}
+                              aria-label={isProfileSaved(profile.id) ? `Remove ${profile.full_name} from favorites` : `Add ${profile.full_name} to favorites`}
+                            >
+                              <Star
+                                className={cn(
+                                  "h-5 w-5",
+                                  isProfileSaved(profile.id)
+                                    ? "fill-yellow-400 text-yellow-500"
+                                    : "text-muted-foreground"
+                                )}
+                                strokeWidth={isProfileSaved(profile.id) ? 0 : 1.5}
+                              />
+                            </Button>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
                 );
               } else if (item.type === 'listing') {
                 const listing = item.data;
