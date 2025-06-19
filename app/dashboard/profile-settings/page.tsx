@@ -347,299 +347,297 @@ export default function ProfileSettingsPage() {
     }
 
     return (
-        <div className="flex-1 space-y-8 p-8 pt-6">
-
+        <div className="flex-1 p-8 pt-6">
             <form onSubmit={handleSave} className="space-y-8">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Profile Information</CardTitle>
-                        <CardDescription>Update your personal information and how others see you on the platform.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                        <div className="flex items-center gap-6">
-                            <div className="relative">
-                                <Avatar className="h-24 w-24">
-                                    <AvatarImage src={previewUrl || '/placeholder-user.jpg'} alt={userProfile.full_name || 'User'} />
-                                    <AvatarFallback>{userProfile.full_name?.[0] || 'U'}</AvatarFallback>
-                                </Avatar>
-                                <Button
-                                    type="button"
-                                    size="icon"
-                                    variant="secondary"
-                                    className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full"
-                                    onClick={() => fileInputRef.current?.click()}
-                                >
-                                    <Camera className="h-4 w-4" />
-                                </Button>
-                                <input
-                                    type="file"
-                                    ref={fileInputRef}
-                                    className="hidden"
-                                    accept="image/*"
-                                    onChange={handleFileChange}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Profile Information</CardTitle>
+                            <CardDescription>Update your personal information and how others see you on the platform.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            <div className="flex items-center gap-6">
+                                <div className="relative">
+                                    <Avatar className="h-24 w-24">
+                                        <AvatarImage src={previewUrl || '/placeholder-user.jpg'} alt={userProfile.full_name || 'User'} />
+                                        <AvatarFallback>{userProfile.full_name?.[0] || 'U'}</AvatarFallback>
+                                    </Avatar>
+                                    <Button
+                                        type="button"
+                                        size="icon"
+                                        variant="secondary"
+                                        className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full"
+                                        onClick={() => fileInputRef.current?.click()}
+                                    >
+                                        <Camera className="h-4 w-4" />
+                                    </Button>
+                                    <input
+                                        type="file"
+                                        ref={fileInputRef}
+                                        className="hidden"
+                                        accept="image/*"
+                                        onChange={handleFileChange}
+                                    />
+                                </div>
+                                <div className="flex-1 space-y-4">
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="full_name">Full Name</Label>
+                                        <Input
+                                            id="full_name"
+                                            value={userProfile.full_name || ''}
+                                            onChange={handleInputChange}
+                                            placeholder="Enter your full name"
+                                        />
+                                    </div>
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="username">Username</Label>
+                                        <Input
+                                            id="username"
+                                            value={userProfile.username || ''}
+                                            onChange={handleInputChange}
+                                            placeholder="Enter your username"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label htmlFor="bio">Bio</Label>
+                                <Textarea
+                                    id="bio"
+                                    value={userProfile.bio || ''}
+                                    onChange={handleInputChange}
+                                    placeholder="Tell us about yourself"
+                                    className="min-h-[100px]"
                                 />
                             </div>
-                            <div className="flex-1 space-y-4">
-                                <div className="grid gap-2">
-                                    <Label htmlFor="full_name">Full Name</Label>
-                                    <Input
-                                        id="full_name"
-                                        value={userProfile.full_name || ''}
-                                        onChange={handleInputChange}
-                                        placeholder="Enter your full name"
-                                    />
-                                </div>
-                                <div className="grid gap-2">
-                                    <Label htmlFor="username">Username</Label>
-                                    <Input
-                                        id="username"
-                                        value={userProfile.username || ''}
-                                        onChange={handleInputChange}
-                                        placeholder="Enter your username"
-                                    />
-                                </div>
+
+                            <div className="grid gap-2">
+                                <Label htmlFor="professional_role">Professional Role</Label>
+                                <Select
+                                    value={userProfile.professional_role || ''}
+                                    onValueChange={handleSelectChange('professional_role')}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select your professional role (e.g., Software Engineer, Founder)" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="Founder">Founder</SelectItem>
+                                        <SelectItem value="Startup Owner">Startup Owner</SelectItem>
+                                        <SelectItem value="CEO">CEO</SelectItem>
+                                        <SelectItem value="CTO">CTO</SelectItem>
+                                        <SelectItem value="COO">COO</SelectItem>
+                                        <SelectItem value="CFO">CFO</SelectItem>
+                                        <SelectItem value="Product Manager">Product Manager</SelectItem>
+                                        <SelectItem value="Software Engineer">Software Engineer</SelectItem>
+                                        <SelectItem value="Frontend Developer">Frontend Developer</SelectItem>
+                                        <SelectItem value="Backend Developer">Backend Developer</SelectItem>
+                                        <SelectItem value="Full Stack Developer">Full Stack Developer</SelectItem>
+                                        <SelectItem value="DevOps Engineer">DevOps Engineer</SelectItem>
+                                        <SelectItem value="Data Scientist">Data Scientist</SelectItem>
+                                        <SelectItem value="UI/UX Designer">UI/UX Designer</SelectItem>
+                                        <SelectItem value="Graphic Designer">Graphic Designer</SelectItem>
+                                        <SelectItem value="Marketing Manager">Marketing Manager</SelectItem>
+                                        <SelectItem value="Sales Manager">Sales Manager</SelectItem>
+                                        <SelectItem value="Business Development">Business Development</SelectItem>
+                                        <SelectItem value="Investor">Investor</SelectItem>
+                                        <SelectItem value="Angel Investor">Angel Investor</SelectItem>
+                                        <SelectItem value="Venture Capitalist">Venture Capitalist</SelectItem>
+                                        <SelectItem value="Freelancer">Freelancer</SelectItem>
+                                        <SelectItem value="Consultant">Consultant</SelectItem>
+                                        <SelectItem value="Expert">Expert</SelectItem>
+                                        <SelectItem value="Advisor">Advisor</SelectItem>
+                                        <SelectItem value="Mentor">Mentor</SelectItem>
+                                        <SelectItem value="Coach">Coach</SelectItem>
+                                        <SelectItem value="Other">Other</SelectItem>
+                                    </SelectContent>
+                                </Select>
                             </div>
-                        </div>
 
-                        <div className="grid gap-2">
-                            <Label htmlFor="bio">Bio</Label>
-                            <Textarea
-                                id="bio"
-                                value={userProfile.bio || ''}
-                                onChange={handleInputChange}
-                                placeholder="Tell us about yourself"
-                                className="min-h-[100px]"
-                            />
-                        </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="company">Company</Label>
+                                <Input
+                                    id="company"
+                                    value={userProfile.company || ''}
+                                    onChange={handleInputChange}
+                                    placeholder="Enter your company or organization name"
+                                />
+                            </div>
 
-                        <div className="grid gap-2">
-                            <Label htmlFor="professional_role">Professional Role</Label>
-                            <Select
-                                value={userProfile.professional_role || ''}
-                                onValueChange={handleSelectChange('professional_role')}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select your professional role (e.g., Software Engineer, Founder)" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="Founder">Founder</SelectItem>
-                                    <SelectItem value="Startup Owner">Startup Owner</SelectItem>
-                                    <SelectItem value="CEO">CEO</SelectItem>
-                                    <SelectItem value="CTO">CTO</SelectItem>
-                                    <SelectItem value="COO">COO</SelectItem>
-                                    <SelectItem value="CFO">CFO</SelectItem>
-                                    <SelectItem value="Product Manager">Product Manager</SelectItem>
-                                    <SelectItem value="Software Engineer">Software Engineer</SelectItem>
-                                    <SelectItem value="Frontend Developer">Frontend Developer</SelectItem>
-                                    <SelectItem value="Backend Developer">Backend Developer</SelectItem>
-                                    <SelectItem value="Full Stack Developer">Full Stack Developer</SelectItem>
-                                    <SelectItem value="DevOps Engineer">DevOps Engineer</SelectItem>
-                                    <SelectItem value="Data Scientist">Data Scientist</SelectItem>
-                                    <SelectItem value="UI/UX Designer">UI/UX Designer</SelectItem>
-                                    <SelectItem value="Graphic Designer">Graphic Designer</SelectItem>
-                                    <SelectItem value="Marketing Manager">Marketing Manager</SelectItem>
-                                    <SelectItem value="Sales Manager">Sales Manager</SelectItem>
-                                    <SelectItem value="Business Development">Business Development</SelectItem>
-                                    <SelectItem value="Investor">Investor</SelectItem>
-                                    <SelectItem value="Angel Investor">Angel Investor</SelectItem>
-                                    <SelectItem value="Venture Capitalist">Venture Capitalist</SelectItem>
-                                    <SelectItem value="Freelancer">Freelancer</SelectItem>
-                                    <SelectItem value="Consultant">Consultant</SelectItem>
-                                    <SelectItem value="Expert">Expert</SelectItem>
-                                    <SelectItem value="Advisor">Advisor</SelectItem>
-                                    <SelectItem value="Mentor">Mentor</SelectItem>
-                                    <SelectItem value="Coach">Coach</SelectItem>
-                                    <SelectItem value="Other">Other</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        <div className="grid gap-2">
-                            <Label htmlFor="company">Company</Label>
-                            <Input
-                                id="company"
-                                value={userProfile.company || ''}
-                                onChange={handleInputChange}
-                                placeholder="Enter your company or organization name"
-                            />
-                        </div>
-
-                        <div className="grid gap-2">
-                            <Label>Skills</Label>
-                            <div className="space-y-3">
-                                {/* Selected Skills Display */}
-                                {selectedSkills.length > 0 && (
-                                    <div className="flex flex-wrap gap-2">
-                                        {selectedSkills.map((skill) => (
-                                            <Badge
-                                                key={skill}
-                                                variant="secondary"
-                                                className="flex items-center gap-1 px-3 py-1"
-                                            >
-                                                {skill}
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleSkillRemove(skill)}
-                                                    className="ml-1 hover:text-destructive transition-colors"
+                            <div className="grid gap-2">
+                                <Label>Skills</Label>
+                                <div className="space-y-3">
+                                    {/* Selected Skills Display */}
+                                    {selectedSkills.length > 0 && (
+                                        <div className="flex flex-wrap gap-2">
+                                            {selectedSkills.map((skill) => (
+                                                <Badge
+                                                    key={skill}
+                                                    variant="secondary"
+                                                    className="flex items-center gap-1 px-3 py-1"
                                                 >
-                                                    <X className="h-3 w-3" />
-                                                </button>
-                                            </Badge>
-                                        ))}
-                                    </div>
-                                )}
-
-                                {/* Skills Selection */}
-                                <div className="relative skills-dropdown">
-                                    <div className="flex items-center gap-2">
-                                        <Input
-                                            placeholder="Search and select skills..."
-                                            value={skillsSearchTerm}
-                                            onChange={(e) => setSkillsSearchTerm(e.target.value)}
-                                            onFocus={() => setIsSkillsDropdownOpen(true)}
-                                            className="flex-1"
-                                        />
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => setIsSkillsDropdownOpen(!isSkillsDropdownOpen)}
-                                        >
-                                            <Plus className="h-4 w-4" />
-                                        </Button>
-                                    </div>
-
-                                    {/* Skills Dropdown */}
-                                    {isSkillsDropdownOpen && (
-                                        <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-background border border-border rounded-md shadow-lg max-h-96 overflow-y-auto">
-                                            <div className="p-2">
-                                                {Object.entries(SKILLS_CATEGORIES).map(([category, skills]) => (
-                                                    <div key={category} className="mb-4">
-                                                        <h4 className="font-medium text-sm text-muted-foreground mb-2 px-2">
-                                                            {category}
-                                                        </h4>
-                                                        <div className="grid grid-cols-2 gap-1">
-                                                            {skills
-                                                                .filter(skill => 
-                                                                    skill.toLowerCase().includes(skillsSearchTerm.toLowerCase())
-                                                                )
-                                                                .map((skill) => (
-                                                                    <button
-                                                                        key={skill}
-                                                                        type="button"
-                                                                        onClick={() => handleSkillToggle(skill)}
-                                                                        className={`text-left px-2 py-1 rounded text-sm transition-colors ${
-                                                                            selectedSkills.includes(skill)
-                                                                                ? 'bg-primary text-primary-foreground'
-                                                                                : 'hover:bg-muted'
-                                                                        }`}
-                                                                    >
-                                                                        {skill}
-                                                                    </button>
-                                                                ))}
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
+                                                    {skill}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleSkillRemove(skill)}
+                                                        className="ml-1 hover:text-destructive transition-colors"
+                                                    >
+                                                        <X className="h-3 w-3" />
+                                                    </button>
+                                                </Badge>
+                                            ))}
                                         </div>
                                     )}
+
+                                    {/* Skills Selection */}
+                                    <div className="relative skills-dropdown">
+                                        <div className="flex items-center gap-2">
+                                            <Input
+                                                placeholder="Search and select skills..."
+                                                value={skillsSearchTerm}
+                                                onChange={(e) => setSkillsSearchTerm(e.target.value)}
+                                                onFocus={() => setIsSkillsDropdownOpen(true)}
+                                                className="flex-1"
+                                            />
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => setIsSkillsDropdownOpen(!isSkillsDropdownOpen)}
+                                            >
+                                                <Plus className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+
+                                        {/* Skills Dropdown */}
+                                        {isSkillsDropdownOpen && (
+                                            <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-background border border-border rounded-md shadow-lg max-h-96 overflow-y-auto">
+                                                <div className="p-2">
+                                                    {Object.entries(SKILLS_CATEGORIES).map(([category, skills]) => (
+                                                        <div key={category} className="mb-4">
+                                                            <h4 className="font-medium text-sm text-muted-foreground mb-2 px-2">
+                                                                {category}
+                                                            </h4>
+                                                            <div className="grid grid-cols-2 gap-1">
+                                                                {skills
+                                                                    .filter(skill => 
+                                                                        skill.toLowerCase().includes(skillsSearchTerm.toLowerCase())
+                                                                    )
+                                                                    .map((skill) => (
+                                                                        <button
+                                                                            key={skill}
+                                                                            type="button"
+                                                                            onClick={() => handleSkillToggle(skill)}
+                                                                            className={`text-left px-2 py-1 rounded text-sm transition-colors ${
+                                                                                selectedSkills.includes(skill)
+                                                                                    ? 'bg-primary text-primary-foreground'
+                                                                                    : 'hover:bg-muted'
+                                                                            }`}
+                                                                        >
+                                                                            {skill}
+                                                                        </button>
+                                                                    ))}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <div className="grid gap-2">
-                            <Label htmlFor="website">Website</Label>
-                            <Input
-                                id="website"
-                                type="url"
-                                value={userProfile.website || ''}
-                                onChange={handleInputChange}
-                                placeholder="https://your-website.com"
-                            />
-                        </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="website">Website</Label>
+                                <Input
+                                    id="website"
+                                    type="url"
+                                    value={userProfile.website || ''}
+                                    onChange={handleInputChange}
+                                    placeholder="https://your-website.com"
+                                />
+                            </div>
 
-                        <div className="space-y-4">
-                            <div className="grid gap-4">
-                                <div className="grid gap-2">
-                                    <Label htmlFor="profile_type">Profile Type</Label>
-                                    <Select
-                                        value={userProfile.profile_type || ''}
-                                        onValueChange={handleSelectChange('profile_type')}
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select your profile type" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="Founder">Founder</SelectItem>
-                                            <SelectItem value="Investor">Investor</SelectItem>
-                                            <SelectItem value="Expert">Expert/Freelancer/Consultant</SelectItem>
-                                        </SelectContent>
-                                    </Select>
+                            <div className="space-y-4">
+                                <div className="grid gap-4">
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="profile_type">Profile Type</Label>
+                                        <Select
+                                            value={userProfile.profile_type || ''}
+                                            onValueChange={handleSelectChange('profile_type')}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select your profile type" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="Founder">Founder</SelectItem>
+                                                <SelectItem value="Investor">Investor</SelectItem>
+                                                <SelectItem value="Expert">Expert/Freelancer/Consultant</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Contact Information</CardTitle>
-                        <CardDescription>Update your contact details and preferences.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                        <div className="grid gap-2">
-                            <Label htmlFor="email">Email</Label>
-                            <Input
-                                id="email"
-                                type="email"
-                                value={userProfile.email}
-                                disabled
-                                className="bg-muted"
-                            />
-                            <p className="text-sm text-muted-foreground">Your email address cannot be changed.</p>
-                        </div>
-
-                        <div className="grid gap-2">
-                            <Label htmlFor="phone_number">Phone Number</Label>
-                            <Input
-                                id="phone_number"
-                                type="tel"
-                                value={userProfile.phone_number || ''}
-                                onChange={handleInputChange}
-                                placeholder="+1 (555) 000-0000"
-                            />
-                        </div>
-
-                        <div className="flex items-center justify-between">
-                            <div className="space-y-0.5">
-                                <Label>Email Notifications</Label>
-                                <p className="text-sm text-muted-foreground">Receive email notifications about your account activity.</p>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Contact Information</CardTitle>
+                            <CardDescription>Update your contact details and preferences.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            <div className="grid gap-2">
+                                <Label htmlFor="email">Email</Label>
+                                <Input
+                                    id="email"
+                                    type="email"
+                                    value={userProfile.email}
+                                    disabled
+                                    className="bg-muted"
+                                />
+                                <p className="text-sm text-muted-foreground">Your email address cannot be changed.</p>
                             </div>
-                            <Switch
-                                checked={userProfile.email_notifications}
-                                onCheckedChange={handleSwitchChange('email_notifications')}
-                            />
-                        </div>
 
-                        <div className="flex items-center justify-between">
-                            <div className="space-y-0.5">
-                                <Label>Two-Factor Authentication</Label>
-                                <p className="text-sm text-muted-foreground">Add an extra layer of security to your account.</p>
+                            <div className="grid gap-2">
+                                <Label htmlFor="phone_number">Phone Number</Label>
+                                <Input
+                                    id="phone_number"
+                                    type="tel"
+                                    value={userProfile.phone_number || ''}
+                                    onChange={handleInputChange}
+                                    placeholder="+1 (555) 000-0000"
+                                />
                             </div>
-                            <Switch
-                                checked={userProfile.two_factor_enabled}
-                                onCheckedChange={handleSwitchChange('two_factor_enabled')}
-                            />
-                        </div>
-                    </CardContent>
-                </Card>
 
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-0.5">
+                                    <Label>Email Notifications</Label>
+                                    <p className="text-sm text-muted-foreground">Receive email notifications about your account activity.</p>
+                                </div>
+                                <Switch
+                                    checked={userProfile.email_notifications}
+                                    onCheckedChange={handleSwitchChange('email_notifications')}
+                                />
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-0.5">
+                                    <Label>Two-Factor Authentication</Label>
+                                    <p className="text-sm text-muted-foreground">Add an extra layer of security to your account.</p>
+                                </div>
+                                <Switch
+                                    checked={userProfile.two_factor_enabled}
+                                    onCheckedChange={handleSwitchChange('two_factor_enabled')}
+                                />
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
                 {error && (
                     <Alert variant="destructive">
                         <AlertDescription>{error}</AlertDescription>
                     </Alert>
                 )}
-
                 <div className="flex justify-end">
                     <Button type="submit" disabled={isSaving || !hasChanges}>
                         {isSaving ? (

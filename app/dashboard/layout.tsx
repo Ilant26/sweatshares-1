@@ -35,6 +35,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const isProfilePage = segments.includes("profile");
   const isDashboard = pathname === '/dashboard';
   const isFeed = pathname === '/dashboard/news-feed';
+  const isFindPartner = pathname === '/dashboard/find-partner';
   const currentSection = isFeed ? 'feed' : isDashboard ? 'dashboard' : null;
   
   // Store last visited section in localStorage
@@ -122,6 +123,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         )}
                       >
                         Feed
+                      </Link>
+                      <Link
+                        href="/dashboard/find-partner"
+                        className={cn(
+                          "relative px-2 py-1 text-sm font-medium transition-colors",
+                          "hover:text-primary/80",
+                          isFindPartner ? "text-primary" : "text-muted-foreground",
+                          "after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:bg-primary after:transition-transform after:duration-200",
+                          isFindPartner && "after:scale-x-100"
+                        )}
+                      >
+                        Find My Partner
                       </Link>
                     </nav>
                   </div>
