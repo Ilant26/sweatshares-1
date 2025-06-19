@@ -592,35 +592,39 @@ export default function ProfilePage() {
                                   Reply
                                 </Button>
                                 {comment.author.id === user?.id && (
-                                  <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-6 px-2 text-xs text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"
-                                      >
-                                        <Trash2 className="h-3 w-3 mr-1" />
-                                        Delete
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" size="icon" className="h-6 w-6 p-0">
+                                        <MoreHorizontal className="h-4 w-4" />
                                       </Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                      <AlertDialogHeader>
-                                        <AlertDialogTitle>Delete Comment</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                          Are you sure you want to delete this comment? This action cannot be undone.
-                                        </AlertDialogDescription>
-                                      </AlertDialogHeader>
-                                      <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction
-                                          onClick={() => handleDeleteComment(comment.id)}
-                                          className="bg-red-500 hover:bg-red-600 text-white"
-                                        >
-                                          Delete
-                                        </AlertDialogAction>
-                                      </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                  </AlertDialog>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                      <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                          <DropdownMenuItem className="text-red-600" onSelect={e => e.preventDefault()}>
+                                            <Trash2 className="h-4 w-4 mr-2" /> Delete
+                                          </DropdownMenuItem>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                          <AlertDialogHeader>
+                                            <AlertDialogTitle>Delete Comment</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                              Are you sure you want to delete this comment? This action cannot be undone.
+                                            </AlertDialogDescription>
+                                          </AlertDialogHeader>
+                                          <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                            <AlertDialogAction
+                                              onClick={() => handleDeleteComment(comment.id)}
+                                              className="bg-red-500 hover:bg-red-600 text-white"
+                                            >
+                                              Delete
+                                            </AlertDialogAction>
+                                          </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                      </AlertDialog>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
                                 )}
                               </div>
 
@@ -689,35 +693,39 @@ export default function ProfilePage() {
                                         {reply.likes_count}
                                       </Button>
                                       {reply.author.id === user?.id && (
-                                        <AlertDialog>
-                                          <AlertDialogTrigger asChild>
-                                            <Button
-                                              variant="ghost"
-                                              size="sm"
-                                              className="h-5 px-2 text-xs text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"
-                                            >
-                                              <Trash2 className="h-3 w-3 mr-1" />
-                                              Delete
+                                        <DropdownMenu>
+                                          <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="h-5 w-5 p-0">
+                                              <MoreHorizontal className="h-4 w-4" />
                                             </Button>
-                                          </AlertDialogTrigger>
-                                          <AlertDialogContent>
-                                            <AlertDialogHeader>
-                                              <AlertDialogTitle>Delete Reply</AlertDialogTitle>
-                                              <AlertDialogDescription>
-                                                Are you sure you want to delete this reply? This action cannot be undone.
-                                              </AlertDialogDescription>
-                                            </AlertDialogHeader>
-                                            <AlertDialogFooter>
-                                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                              <AlertDialogAction
-                                                onClick={() => handleDeleteComment(reply.id)}
-                                                className="bg-red-500 hover:bg-red-600 text-white"
-                                              >
-                                                Delete
-                                              </AlertDialogAction>
-                                            </AlertDialogFooter>
-                                          </AlertDialogContent>
-                                        </AlertDialog>
+                                          </DropdownMenuTrigger>
+                                          <DropdownMenuContent align="end">
+                                            <AlertDialog>
+                                              <AlertDialogTrigger asChild>
+                                                <DropdownMenuItem className="text-red-600" onSelect={e => e.preventDefault()}>
+                                                  <Trash2 className="h-4 w-4 mr-2" /> Delete
+                                                </DropdownMenuItem>
+                                              </AlertDialogTrigger>
+                                              <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                  <AlertDialogTitle>Delete Reply</AlertDialogTitle>
+                                                  <AlertDialogDescription>
+                                                    Are you sure you want to delete this reply? This action cannot be undone.
+                                                  </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                  <AlertDialogAction
+                                                    onClick={() => handleDeleteComment(reply.id)}
+                                                    className="bg-red-500 hover:bg-red-600 text-white"
+                                                  >
+                                                    Delete
+                                                  </AlertDialogAction>
+                                                </AlertDialogFooter>
+                                              </AlertDialogContent>
+                                            </AlertDialog>
+                                          </DropdownMenuContent>
+                                        </DropdownMenu>
                                       )}
                                     </div>
                           </div>
