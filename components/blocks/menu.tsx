@@ -9,7 +9,7 @@ import { ThemeSwitcher } from '@/components/theme-switcher';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSession } from '@/components/providers/session-provider';
 import { supabase } from '@/lib/supabase';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 
 const menuItems = [
     { name: 'Accueil', href: '/', icon: Home },
@@ -22,6 +22,7 @@ export const Menu = () => {
     const [menuState, setMenuState] = React.useState(false);
     const { user } = useSession();
     const router = useRouter();
+    const pathname = usePathname();
 
     const handleSignOut = async () => {
         await supabase.auth.signOut();
@@ -73,15 +74,26 @@ export const Menu = () => {
 
                         <div className="flex items-center gap-6">
                             <ul className="hidden lg:flex gap-8 text-sm">
-                                {menuItems.map((item, index) => (
-                                    <li key={index}>
-                                        <Link
-                                            href={item.href}
-                                            className="text-muted-foreground hover:text-accent-foreground block">
-                                            {item.name}
-                                        </Link>
-                                    </li>
-                                ))}
+                                {menuItems.map((item, index) => {
+                                    const isActive = pathname === item.href;
+                                    return (
+                                        <li key={index}>
+                                            <Link
+                                                href={item.href}
+                                                className={cn(
+                                                    "block relative",
+                                                    isActive 
+                                                        ? "text-primary font-medium" 
+                                                        : "text-muted-foreground hover:text-accent-foreground"
+                                                )}>
+                                                {item.name}
+                                                {isActive && (
+                                                    <div className="absolute -bottom-1 left-0 right-0 h-0.5 bg-primary rounded-full" />
+                                                )}
+                                            </Link>
+                                        </li>
+                                    );
+                                })}
                             </ul>
                         </div>
 
@@ -90,17 +102,28 @@ export const Menu = () => {
                                 <div className="mx-auto max-w-4xl px-6 py-6">
                                     <div className="space-y-6">
                                         <ul className="space-y-4">
-                                            {menuItems.map((item, index) => (
-                                                <li key={index}>
-                                                    <Link
-                                                        href={item.href}
-                                                        onClick={() => setMenuState(false)}
-                                                        className="flex items-center gap-3 text-base text-muted-foreground hover:text-accent-foreground">
-                                                        <item.icon className="size-5" />
-                                                        {item.name}
-                                                    </Link>
-                                                </li>
-                                            ))}
+                                            {menuItems.map((item, index) => {
+                                                const isActive = pathname === item.href;
+                                                return (
+                                                    <li key={index}>
+                                                        <Link
+                                                            href={item.href}
+                                                            onClick={() => setMenuState(false)}
+                                                            className={cn(
+                                                                "flex items-center gap-3 text-base",
+                                                                isActive 
+                                                                    ? "text-primary font-medium" 
+                                                                    : "text-muted-foreground hover:text-accent-foreground"
+                                                            )}>
+                                                            <item.icon className={cn(
+                                                                "size-5",
+                                                                isActive ? "text-primary" : ""
+                                                            )} />
+                                                            {item.name}
+                                                        </Link>
+                                                    </li>
+                                                );
+                                            })}
                                         </ul>
 
                                         <div className="flex flex-col gap-4 pt-4 border-t">

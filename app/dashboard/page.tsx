@@ -27,6 +27,13 @@ import {
   Lightbulb,
 } from "lucide-react";
 
+import { useUser } from "@/hooks/use-user";
+import { useFavorites } from "@/hooks/use-favorites";
+import { getFriends } from "@/lib/friends";
+import { getMessages } from "@/lib/messages";
+import { supabase } from "@/lib/supabase";
+import { useEffect, useState } from "react";
+
 const mockUsers = [
   {
     id: "1",
@@ -192,14 +199,145 @@ const suggestions = [
 ];
 
 export default function Page() {
+  const { user, loading: userLoading } = useUser();
+  const { savedProfiles, likedListings, loading: favoritesLoading } = useFavorites();
+
+  const [profile, setProfile] = useState<any>(null);
+  const [connections, setConnections] = useState<any[]>([]);
+  const [connectionsLoading, setConnectionsLoading] = useState(true);
+  const [messages, setMessages] = useState<any[]>([]);
+  const [messagesLoading, setMessagesLoading] = useState(true);
+  const [listings, setListings] = useState<any[]>([]);
+  const [listingsLoading, setListingsLoading] = useState(true);
+
+  // Fetch user profile
+  useEffect(() => {
+    if (user) {
+      supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single()
+        .then(({ data }) => setProfile(data));
+    }
+  }, [user]);
+
+  // Fetch friends (network connections)
+  useEffect(() => {
+    if (user) {
+      setConnectionsLoading(true);
+      (async () => {
+        try {
+          const { data, error } = await supabase
+            .from('connections')
+            .select(`*, sender:sender_id(id, username, full_name, avatar_url, professional_role), receiver:receiver_id(id, username, full_name, avatar_url, professional_role)`)
+            .eq('status', 'accepted')
+            .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`);
+          setConnections(data || []);
+        } catch {
+          setConnections([]);
+        } finally {
+          setConnectionsLoading(false);
+        }
+      })();
+    }
+  }, [user]);
+
+  // Fetch messages
+  useEffect(() => {
+    if (user) {
+      setMessagesLoading(true);
+      (async () => {
+        try {
+          const data = await getMessages(user.id);
+          setMessages(data || []);
+        } catch {
+          setMessages([]);
+        } finally {
+          setMessagesLoading(false);
+        }
+      })();
+    }
+  }, [user]);
+
+  // Fetch active listings
+  useEffect(() => {
+    if (user) {
+      setListingsLoading(true);
+      (async () => {
+        try {
+          const { data } = await supabase
+            .from("listings")
+            .select("*")
+            .eq("user_id", user.id)
+            .eq("status", "active");
+          setListings(data || []);
+        } catch {
+          setListings([]);
+        } finally {
+          setListingsLoading(false);
+        }
+      })();
+    }
+  }, [user]);
+
+  // Unread messages count
+  const unreadMessages = messages.filter(
+    (msg) => msg.receiver_id === user?.id && !msg.read
+  );
+
+  // Helper to get the other user's profile from a connection
+  function getOtherUserProfile(connection: any) {
+    if (!user) return null;
+    return connection.sender_id === user.id ? connection.receiver : connection.sender;
+  }
+
+  // Recent connections (latest 3)
+  const recentConnections = [...connections]
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    .slice(0, 3)
+    .map(getOtherUserProfile)
+    .filter(Boolean);
+
+  // Network connections count
+  const networkConnectionsCount = connections.length;
+
+  // Recent messages (latest 3)
+  const recentMessages = [...messages]
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    .slice(0, 3);
+
+  // My favorites (latest 3 profiles + 2 listings as example)
+  const myFavorites = [
+    ...savedProfiles.slice(0, 3).map((fav) => ({
+      id: fav.profile.id,
+      name: fav.profile.full_name,
+      role: fav.profile.professional_role,
+      avatar: fav.profile.avatar_url === null ? undefined : fav.profile.avatar_url,
+      starred: true,
+    })),
+    ...likedListings.slice(0, 2).map((fav) => ({
+      id: fav.listing.id,
+      name: fav.listing.title,
+      role: fav.listing_profile.professional_role,
+      avatar: fav.listing_profile.avatar_url === null ? undefined : fav.listing_profile.avatar_url,
+      starred: true,
+    })),
+  ];
+
+  // Loading state
+  if (userLoading || favoritesLoading || connectionsLoading || messagesLoading || listingsLoading) {
+    return <div className="p-8">Loading dashboard...</div>;
+  }
+
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 pt-0 md:p-8 md:pt-6">
       <div className="flex items-center justify-between space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight">Hello, Thomas</h2>
+        <h2 className="text-3xl font-bold tracking-tight">
+          Hello, {profile?.full_name || profile?.username || user?.email}
+        </h2>
         <div className="flex items-center space-x-2">
-          <Button variant="outline">
-            Manage Widgets
-          </Button>
+          <Button variant="outline">Manage Widgets</Button>
           <Button>
             <Plus className="mr-2 h-4 w-4" /> New Listing
           </Button>
@@ -217,9 +355,9 @@ export default function Page() {
             <MessageCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">7 <span className="text-sm text-green-500">+3</span></div>
+            <div className="text-2xl font-bold">{unreadMessages.length}</div>
             <p className="text-xs text-muted-foreground">
-              2 new today
+              {unreadMessages.length > 0 ? `${unreadMessages.length} new` : "No new messages"}
             </p>
           </CardContent>
         </Card>
@@ -229,9 +367,9 @@ export default function Page() {
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">3 <span className="text-sm text-yellow-500">+1</span></div>
+            <div className="text-2xl font-bold">{listings.length}</div>
             <p className="text-xs text-muted-foreground">
-              1 pending approval
+              {listings.length > 0 ? `${listings.length} active` : "No active listings"}
             </p>
           </CardContent>
         </Card>
@@ -241,9 +379,9 @@ export default function Page() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">42 <span className="text-sm text-blue-500">+4</span></div>
+            <div className="text-2xl font-bold">{networkConnectionsCount}</div>
             <p className="text-xs text-muted-foreground">
-              3 pending requests
+              {networkConnectionsCount > 0 ? `${networkConnectionsCount} connections` : "No connections"}
             </p>
           </CardContent>
         </Card>
@@ -253,10 +391,8 @@ export default function Page() {
             <BellRing className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">5 <span className="text-sm text-purple-500">+2</span></div>
-            <p className="text-xs text-muted-foreground">
-              12 notifications this week
-            </p>
+            <div className="text-2xl font-bold">-</div>
+            <p className="text-xs text-muted-foreground">Coming soon</p>
           </CardContent>
         </Card>
       </div>
@@ -281,9 +417,8 @@ export default function Page() {
             </div>
           </CardHeader>
           <CardContent className="pl-2">
-            {/* Placeholder for chart/graph with some data visualization */}
             <div className="h-[200px] w-full bg-muted/50 rounded-lg flex items-center justify-center text-muted-foreground">
-              <LineChart data={chartData} />
+              <span>Coming soon</span>
             </div>
           </CardContent>
         </Card>
@@ -298,16 +433,16 @@ export default function Page() {
           </CardHeader>
           <CardContent>
             <div className="grid gap-6">
-              {mockUsers.slice(0, 3).map((user) => (
+              {recentConnections.map((user) => (
                 <div key={user.id} className="flex items-center justify-between">
                   <div className="flex items-center space-x-4">
                     <Avatar>
-                      <AvatarImage src={user.avatarUrl} alt={user.name} />
-                      <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                      <AvatarImage src={user.avatar_url === null ? undefined : user.avatar_url} alt={user.full_name || user.username} />
+                      <AvatarFallback>{(user.full_name || user.username || "?")[0]}</AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="text-sm font-medium leading-none">{user.name}</p>
-                      <p className="text-sm text-muted-foreground">{user.role}</p>
+                      <p className="text-sm font-medium leading-none">{user.full_name || user.username}</p>
+                      <p className="text-sm text-muted-foreground">{user.professional_role}</p>
                     </div>
                   </div>
                   <Button variant="outline" size="sm">
@@ -354,16 +489,16 @@ export default function Page() {
             {recentMessages.map((message) => (
               <div key={message.id} className="flex items-start gap-4">
                 <Avatar>
-                  <AvatarImage src={message.avatar} alt={message.sender} />
-                  <AvatarFallback>{message.sender.charAt(0)}</AvatarFallback>
+                  <AvatarImage src={message.sender.avatar_url === null ? undefined : message.sender.avatar_url} alt={message.sender.full_name || message.sender.username} />
+                  <AvatarFallback>{(message.sender.full_name || message.sender.username || "?")[0]}</AvatarFallback>
                 </Avatar>
                 <div className="flex-1">
                   <div className="flex justify-between items-center">
-                    <p className="text-sm font-medium leading-none">{message.sender}</p>
-                    <p className="text-xs text-muted-foreground">{message.time}</p>
+                    <p className="text-sm font-medium leading-none">{message.sender.full_name || message.sender.username}</p>
+                    <p className="text-xs text-muted-foreground">{new Date(message.created_at).toLocaleString()}</p>
                   </div>
                   <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                    {message.message}
+                    {message.content}
                   </p>
                 </div>
               </div>
@@ -384,8 +519,8 @@ export default function Page() {
               <div key={item.id} className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
                   <Avatar>
-                    <AvatarImage src={item.avatar} alt={item.name} />
-                    <AvatarFallback>{item.name.charAt(0)}</AvatarFallback>
+                    <AvatarImage src={item.avatar === null ? undefined : item.avatar} alt={item.name} />
+                    <AvatarFallback>{item.name?.charAt(0)}</AvatarFallback>
                   </Avatar>
                   <div>
                     <p className="text-sm font-medium leading-none">{item.name}</p>
