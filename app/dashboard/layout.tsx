@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import { AppSidebar } from "@/components/app-sidebar"
 import { Separator } from "@/components/ui/separator"
 import {
@@ -40,7 +40,8 @@ import { ChevronsUpDown } from "lucide-react"
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state";
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+// Component that uses useSearchParams - needs to be wrapped in Suspense
+function DashboardHeader() {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -212,155 +213,219 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [segments, isProfilePage]);
 
   return (
+    <header className="sticky top-0 z-50 flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 px-2 sm:px-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
+      <div className="flex items-center gap-2">
+        <SidebarTrigger className="-ml-1" />
+        <Separator
+          orientation="vertical"
+          className="mr-2 data-[orientation=vertical]:h-4 hidden sm:block"
+        />
+        {(pathname !== '/dashboard' && pathname !== '/dashboard/news-feed') && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="mr-2 h-8 px-2 hover:bg-accent text-xs sm:text-sm"
+            onClick={handleGoBack}
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            <span className="hidden sm:inline">Back to {getPreviousPageInfo().name}</span>
+            <span className="sm:hidden">Back</span>
+          </Button>
+        )}
+      </div>
+      <div className="absolute left-1/2 transform -translate-x-1/2 hidden sm:flex">
+        <div className="inline-flex items-center justify-center">
+          <nav className="flex space-x-6 lg:space-x-12">
+            <Link
+              href="/dashboard/news-feed"
+              className={cn(
+                "relative px-2 py-1 text-xs lg:text-sm font-medium transition-colors",
+                "hover:text-primary/80",
+                currentSection === 'feed' ? "text-primary" : "text-muted-foreground",
+                "after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:bg-primary after:transition-transform after:duration-200",
+                currentSection === 'feed' && "after:scale-x-100"
+              )}
+            >
+              News Feed
+            </Link>
+            <Link
+              href="/dashboard/find-partner"
+              className={cn(
+                "relative px-2 py-1 text-xs lg:text-sm font-medium transition-colors",
+                "hover:text-primary/80",
+                isFindPartner ? "text-primary" : "text-muted-foreground",
+                "after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:bg-primary after:transition-transform after:duration-200",
+                isFindPartner && "after:scale-x-100"
+              )}
+            >
+              Find My Partner
+            </Link>
+          </nav>
+        </div>
+      </div>
+      <div className="absolute left-1/2 transform -translate-x-1/2 sm:hidden">
+        <div className="inline-flex items-center justify-center">
+          <nav className="flex space-x-4">
+            <Link
+              href="/dashboard/news-feed"
+              className={cn(
+                "relative px-2 py-1 text-xs font-medium transition-colors",
+                "hover:text-primary/80",
+                currentSection === 'feed' ? "text-primary" : "text-muted-foreground",
+                "after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:bg-primary after:transition-transform after:duration-200",
+                currentSection === 'feed' && "after:scale-x-100"
+              )}
+            >
+              Feed
+            </Link>
+            <Link
+              href="/dashboard/find-partner"
+              className={cn(
+                "relative px-2 py-1 text-xs font-medium transition-colors",
+                "hover:text-primary/80",
+                isFindPartner ? "text-primary" : "text-muted-foreground",
+                "after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:bg-primary after:transition-transform after:duration-200",
+                isFindPartner && "after:scale-x-100"
+              )}
+            >
+              Find
+            </Link>
+          </nav>
+        </div>
+      </div>
+      <div className={cn(
+        "flex items-center gap-1 sm:gap-2",
+        "ml-auto"
+      )}>
+        <div className="hidden sm:block">
+          <ThemeSwitcher />
+        </div>
+        <div className="hidden sm:block">
+          <NotificationsDropdown />
+        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="sm" className="h-8 px-1 sm:px-2 hover:bg-accent">
+              <Avatar className="h-6 w-6 rounded-lg">
+                <AvatarImage src={userData.avatar} alt={userData.name} />
+                <AvatarFallback className="rounded-lg text-xs">
+                  {userData.name.split(' ').map((n: string) => n[0]).join('').toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <span className="ml-2 text-xs sm:text-sm font-medium hidden sm:inline">{userData.name}</span>
+              <ChevronsUpDown className="ml-1 sm:ml-2 h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-56" align="end">
+            <DropdownMenuLabel className="p-0 font-normal">
+              <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
+                <Avatar className="h-8 w-8 rounded-lg">
+                  <AvatarImage src={userData.avatar} alt={userData.name} />
+                  <AvatarFallback className="rounded-lg">
+                    {userData.name.split(' ').map((n: string) => n[0]).join('').toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="grid flex-1 text-left text-sm leading-tight">
+                  <span className="truncate font-medium">{userData.name}</span>
+                  <span className="truncate text-xs">{userData.email}</span>
+                </div>
+              </div>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
+              <DropdownMenuItem asChild>
+                <Link href="/dashboard/profile-settings">
+                  My Account
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="#">
+                  Billing
+                </Link>
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={async () => {
+              const { signOut } = useSession();
+              await signOut();
+              router.push('/');
+            }}>
+              Log out
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </header>
+  );
+}
+
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const { user } = useSession();
+  const isMobile = useIsMobile();
+
+  return (
     <ProtectedRoute>
       <UnreadMessagesProvider>
         <UnreadInvitationsProvider>
           <SidebarProvider>
             <AppSidebar />
             <SidebarInset>
-              <header className="sticky top-0 z-50 flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 px-2 sm:px-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
-                <div className="flex items-center gap-2">
-                  <SidebarTrigger className="-ml-1" />
-                  <Separator
-                    orientation="vertical"
-                    className="mr-2 data-[orientation=vertical]:h-4 hidden sm:block"
-                  />
-                  {(pathname !== '/dashboard' && pathname !== '/dashboard/news-feed') && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="mr-2 h-8 px-2 hover:bg-accent text-xs sm:text-sm"
-                      onClick={handleGoBack}
-                    >
-                      <ArrowLeft className="mr-2 h-4 w-4" />
-                      <span className="hidden sm:inline">Back to {getPreviousPageInfo().name}</span>
-                      <span className="sm:hidden">Back</span>
-                    </Button>
-                  )}
-                </div>
-                <div className="absolute left-1/2 transform -translate-x-1/2 hidden sm:flex">
-                  <div className="inline-flex items-center justify-center">
-                    <nav className="flex space-x-6 lg:space-x-12">
-                      <Link
-                        href="/dashboard/news-feed"
-                        className={cn(
-                          "relative px-2 py-1 text-xs lg:text-sm font-medium transition-colors",
-                          "hover:text-primary/80",
-                          currentSection === 'feed' ? "text-primary" : "text-muted-foreground",
-                          "after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:bg-primary after:transition-transform after:duration-200",
-                          currentSection === 'feed' && "after:scale-x-100"
-                        )}
-                      >
-                        News Feed
-                      </Link>
-                      <Link
-                        href="/dashboard/find-partner"
-                        className={cn(
-                          "relative px-2 py-1 text-xs lg:text-sm font-medium transition-colors",
-                          "hover:text-primary/80",
-                          isFindPartner ? "text-primary" : "text-muted-foreground",
-                          "after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:bg-primary after:transition-transform after:duration-200",
-                          isFindPartner && "after:scale-x-100"
-                        )}
-                      >
-                        Find My Partner
-                      </Link>
-                    </nav>
+              <Suspense fallback={
+                <header className="sticky top-0 z-50 flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 px-2 sm:px-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
+                  <div className="flex items-center gap-2">
+                    <SidebarTrigger className="-ml-1" />
+                    <Separator
+                      orientation="vertical"
+                      className="mr-2 data-[orientation=vertical]:h-4 hidden sm:block"
+                    />
                   </div>
-                </div>
-                <div className="absolute left-1/2 transform -translate-x-1/2 sm:hidden">
-                  <div className="inline-flex items-center justify-center">
-                    <nav className="flex space-x-4">
-                      <Link
-                        href="/dashboard/news-feed"
-                        className={cn(
-                          "relative px-2 py-1 text-xs font-medium transition-colors",
-                          "hover:text-primary/80",
-                          currentSection === 'feed' ? "text-primary" : "text-muted-foreground",
-                          "after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:bg-primary after:transition-transform after:duration-200",
-                          currentSection === 'feed' && "after:scale-x-100"
-                        )}
-                      >
-                        Feed
-                      </Link>
-                      <Link
-                        href="/dashboard/find-partner"
-                        className={cn(
-                          "relative px-2 py-1 text-xs font-medium transition-colors",
-                          "hover:text-primary/80",
-                          isFindPartner ? "text-primary" : "text-muted-foreground",
-                          "after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:bg-primary after:transition-transform after:duration-200",
-                          isFindPartner && "after:scale-x-100"
-                        )}
-                      >
-                        Find
-                      </Link>
-                    </nav>
-                  </div>
-                </div>
-                <div className={cn(
-                  "flex items-center gap-1 sm:gap-2",
-                  "ml-auto"
-                )}>
-                  <div className="hidden sm:block">
-                    <ThemeSwitcher />
-                  </div>
-                  <div className="hidden sm:block">
-                    <NotificationsDropdown />
-                  </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-8 px-1 sm:px-2 hover:bg-accent">
-                        <Avatar className="h-6 w-6 rounded-lg">
-                          <AvatarImage src={userData.avatar} alt={userData.name} />
-                          <AvatarFallback className="rounded-lg text-xs">
-                            {userData.name.split(' ').map((n: string) => n[0]).join('').toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="ml-2 text-xs sm:text-sm font-medium hidden sm:inline">{userData.name}</span>
-                        <ChevronsUpDown className="ml-1 sm:ml-2 h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-56" align="end">
-                      <DropdownMenuLabel className="p-0 font-normal">
-                        <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                          <Avatar className="h-8 w-8 rounded-lg">
-                            <AvatarImage src={userData.avatar} alt={userData.name} />
-                            <AvatarFallback className="rounded-lg">
-                              {userData.name.split(' ').map((n: string) => n[0]).join('').toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="grid flex-1 text-left text-sm leading-tight">
-                            <span className="truncate font-medium">{userData.name}</span>
-                            <span className="truncate text-xs">{userData.email}</span>
-                          </div>
+                  <div className="absolute left-1/2 transform -translate-x-1/2 hidden sm:flex">
+                    <div className="inline-flex items-center justify-center">
+                      <nav className="flex space-x-6 lg:space-x-12">
+                        <div className="relative px-2 py-1 text-xs lg:text-sm font-medium text-muted-foreground">
+                          News Feed
                         </div>
-                      </DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuGroup>
-                        <DropdownMenuItem asChild>
-                          <Link href="/dashboard/profile-settings">
-                            My Account
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                          <Link href="#">
-                            Billing
-                          </Link>
-                        </DropdownMenuItem>
-                      </DropdownMenuGroup>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={async () => {
-                        const { signOut } = useSession();
-                        await signOut();
-                        router.push('/');
-                      }}>
-                        Log out
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </header>
+                        <div className="relative px-2 py-1 text-xs lg:text-sm font-medium text-muted-foreground">
+                          Find My Partner
+                        </div>
+                      </nav>
+                    </div>
+                  </div>
+                  <div className="absolute left-1/2 transform -translate-x-1/2 sm:hidden">
+                    <div className="inline-flex items-center justify-center">
+                      <nav className="flex space-x-4">
+                        <div className="relative px-2 py-1 text-xs font-medium text-muted-foreground">
+                          Feed
+                        </div>
+                        <div className="relative px-2 py-1 text-xs font-medium text-muted-foreground">
+                          Find
+                        </div>
+                      </nav>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 sm:gap-2 ml-auto">
+                    <div className="hidden sm:block">
+                      <ThemeSwitcher />
+                    </div>
+                    <div className="hidden sm:block">
+                      <NotificationsDropdown />
+                    </div>
+                    <Button variant="ghost" size="sm" className="h-8 px-1 sm:px-2 hover:bg-accent">
+                      <Avatar className="h-6 w-6 rounded-lg">
+                        <AvatarFallback className="rounded-lg text-xs">
+                          {user?.user_metadata?.full_name?.split(' ').map((n: string) => n[0]).join('').toUpperCase() || 'U'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="ml-2 text-xs sm:text-sm font-medium hidden sm:inline">
+                        {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'}
+                      </span>
+                      <ChevronsUpDown className="ml-1 sm:ml-2 h-4 w-4" />
+                    </Button>
+                  </div>
+                </header>
+              }>
+                <DashboardHeader />
+              </Suspense>
               <div className="flex-1 overflow-auto">
                 {children}
               </div>
