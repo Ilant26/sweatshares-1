@@ -12,7 +12,7 @@ import { usePosts } from "@/hooks/use-posts";
 import { useFavorites } from "@/hooks/use-favorites";
 import { supabase } from "@/lib/supabase";
 import { useUser } from "@/hooks/use-user";
-import { MapPin, Briefcase, DollarSign, Heart, Share2, Mail, MessageCircle, Bookmark, FileIcon, ImageIcon, Loader2, Send, UserPlus, MoreHorizontal, Edit, Plus, Globe, ThumbsUp, Trash2 } from "lucide-react";
+import { MapPin, Briefcase, DollarSign, Heart, Share2, Mail, MessageCircle, Bookmark, FileIcon, ImageIcon, Loader2, Send, UserPlus, MoreHorizontal, Edit, Plus, Globe, ThumbsUp, Trash2, Star } from "lucide-react";
 import { motion, Variants } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -444,7 +444,7 @@ export default function ProfilePage() {
                     onClick={handleSaveProfile}
                     className="flex items-center gap-2"
                   >
-                    <Bookmark className={`h-4 w-4 ${isProfileSaved(id as string) ? 'fill-yellow-500 text-yellow-500' : ''}`} />
+                    <Star className={`h-4 w-4 ${isProfileSaved(id as string) ? 'fill-yellow-400 text-yellow-500' : 'text-muted-foreground'}`} strokeWidth={isProfileSaved(id as string) ? 0 : 1.5} />
                     {isProfileSaved(id as string) ? 'Saved' : 'Save Profile'}
                   </Button>
                 )}
@@ -461,7 +461,7 @@ export default function ProfilePage() {
                     </DropdownMenuItem>
                     {user?.id !== id && (
                       <DropdownMenuItem onClick={handleSaveProfile}>
-                      <Bookmark className="h-4 w-4 mr-2" />
+                      <Star className="h-4 w-4 mr-2" />
                         {isProfileSaved(id as string) ? 'Remove from Favorites' : 'Add to Favorites'}
                     </DropdownMenuItem>
                     )}
@@ -542,7 +542,7 @@ export default function ProfilePage() {
                             size="sm"
                             onClick={() => handlePostAction(post.id, post.has_saved ? 'unsave' : 'save')}
                           >
-                            <Bookmark className={`h-4 w-4 ${post.has_saved ? 'text-yellow-500' : ''}`} />
+                            <Star className={`h-4 w-4 ${post.has_saved ? 'fill-yellow-400 text-yellow-500' : 'text-muted-foreground'}`} strokeWidth={post.has_saved ? 0 : 1.5} />
                             Save
                           </Button>
                           <Button variant="ghost" size="sm">
@@ -843,7 +843,7 @@ export default function ProfilePage() {
                                 className="h-8 w-8"
                                 onClick={() => handleLikeListing(listing.id)}
                               >
-                                <Heart className={`h-4 w-4 ${isListingLiked(listing.id) ? 'fill-red-500 text-red-500' : ''}`} />
+                                <Star className={`h-4 w-4 ${isListingLiked(listing.id) ? 'fill-yellow-400 text-yellow-500' : 'text-muted-foreground'}`} strokeWidth={isListingLiked(listing.id) ? 0 : 1.5} />
                               </Button>
                               <Button variant="ghost" size="icon" className="h-8 w-8">
                                 <Share2 className="h-4 w-4" />

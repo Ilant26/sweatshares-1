@@ -23,6 +23,36 @@ import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { RichTextEditor } from '@/components/ui/rich-text-editor';
 
+// Function to format listing type values for display
+const formatListingType = (listingType: string): string => {
+  const typeMap: { [key: string]: string } = {
+    // Founder listing types
+    "find-funding": "Find Funding",
+    "cofounder": "Co Founder",
+    "expert-freelance": "Expert/ Freelance",
+    "employee": "Employee",
+    "mentor": "Mentor",
+    "sell-startup": "Startup Sale",
+    
+    // Investor listing types
+    "investment-opportunity": "Investment Opportunity",
+    "buy-startup": "Buy Startup",
+    "co-investor": "Co-investor",
+    
+    // Expert listing types
+    "mission": "Mission",
+    "job": "Job"
+  };
+  
+  return typeMap[listingType] || listingType;
+};
+
+// Function to format profile type values for display
+const formatProfileType = (profileType: string): string => {
+  if (!profileType) return profileType;
+  return profileType.charAt(0).toUpperCase() + profileType.slice(1);
+};
+
 export default function MyListingsPage() {
     const [selectedListings, setSelectedListings] = useState<string[]>([]);
     const [isNewListingModalOpen, setIsNewListingModalOpen] = useState(false);
@@ -368,8 +398,8 @@ export default function MyListingsPage() {
                                             aria-label="Select row"
                                         />
                                     </TableCell>
-                                    <TableCell>{listing.listing_type}</TableCell>
-                                    <TableCell>{listing.profile_type}</TableCell>
+                                    <TableCell>{formatListingType(listing.listing_type)}</TableCell>
+                                    <TableCell>{formatProfileType(listing.profile_type)}</TableCell>
                                     <TableCell>{listing.location_country}</TableCell>
                                     <TableCell>{listing.title}</TableCell>
                                     <TableCell>{new Date(listing.created_at).toLocaleDateString()}</TableCell>

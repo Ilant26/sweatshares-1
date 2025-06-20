@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useFavorites } from '@/hooks/use-favorites';
 import { useToast } from '@/components/ui/use-toast';
-import { Search, SlidersHorizontal, Eye, Heart, Share2, Mail, Briefcase, MapPin, Building2, Loader2 } from 'lucide-react';
+import { Search, SlidersHorizontal, Eye, Heart, Share2, Mail, Briefcase, MapPin, Building2, Loader2, Star } from 'lucide-react';
 
 interface Profile {
   id: string;
@@ -280,9 +280,9 @@ export default function MyFavoritesPage() {
                     variant="ghost" 
                     size="icon"
                     onClick={() => handleRemoveFavorite(item)}
-                    className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                    className="text-yellow-500 hover:text-yellow-700 hover:bg-yellow-50"
                   >
-                    <Heart className="h-4 w-4 fill-red-500 text-red-500" />
+                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-500" />
                   </Button>
                   <Button variant="ghost" size="icon"><Share2 className="h-4 w-4" /></Button>
                   <Button variant="ghost" size="icon"><Mail className="h-4 w-4" /></Button>

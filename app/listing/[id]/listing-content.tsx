@@ -12,6 +12,30 @@ import { ProfileCard } from './profile-card';
 import ContentSection from '@/components/content-listing-bottom';
 import { motion, Variants } from 'framer-motion';
 
+// Function to format listing type values for display
+const formatListingType = (listingType: string): string => {
+  const typeMap: { [key: string]: string } = {
+    // Founder listing types
+    "find-funding": "Find Funding",
+    "cofounder": "Co Founder",
+    "expert-freelance": "Expert/ Freelance",
+    "employee": "Employee",
+    "mentor": "Mentor",
+    "sell-startup": "Startup Sale",
+    
+    // Investor listing types
+    "investment-opportunity": "Investment Opportunity",
+    "buy-startup": "Buy Startup",
+    "co-investor": "Co-investor",
+    
+    // Expert listing types
+    "mission": "Mission",
+    "job": "Job"
+  };
+  
+  return typeMap[listingType] || listingType;
+};
+
 // Animation variants
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -72,7 +96,7 @@ export function ListingContent({ listing, profile }: ListingContentProps) {
                   variants={itemVariants}
                 >
                   <Badge variant="default" className="text-sm px-3 py-1">{listing.profile_type}</Badge>
-                  <Badge variant="secondary" className="text-sm px-3 py-1">{listing.listing_type}</Badge>
+                  <Badge variant="secondary" className="text-sm px-3 py-1">{formatListingType(listing.listing_type)}</Badge>
                   {listing.sector && <Badge variant="outline" className="text-sm px-3 py-1">{listing.sector}</Badge>}
                 </motion.div>
                 <motion.div variants={itemVariants}>

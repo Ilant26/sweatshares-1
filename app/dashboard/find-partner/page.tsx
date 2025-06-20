@@ -29,6 +29,30 @@ import { motion, AnimatePresence, Variants } from "framer-motion";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
+// Function to format listing type values for display
+const formatListingType = (listingType: string): string => {
+  const typeMap: { [key: string]: string } = {
+    // Founder listing types
+    "find-funding": "Find Funding",
+    "cofounder": "Co Founder",
+    "expert-freelance": "Expert/ Freelance",
+    "employee": "Employee",
+    "mentor": "Mentor",
+    "sell-startup": "Startup Sale",
+    
+    // Investor listing types
+    "investment-opportunity": "Investment Opportunity",
+    "buy-startup": "Buy Startup",
+    "co-investor": "Co-investor",
+    
+    // Expert listing types
+    "mission": "Mission",
+    "job": "Job"
+  };
+  
+  return typeMap[listingType] || listingType;
+};
+
 // --- Filter options ---
 const PROFILE_TYPES = [
   "Founder",
@@ -389,7 +413,7 @@ export default function FindPartnerPage() {
             <SelectContent>
               <SelectItem value="all">All Types</SelectItem>
               {LISTING_TYPES.map((t) => (
-                <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                <SelectItem key={t.value} value={t.value}>{formatListingType(t.value)}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -570,10 +594,10 @@ export default function FindPartnerPage() {
                               variant="ghost"
                               size="icon"
                               className={cn(
-                                "transition-colors rounded-full border flex items-center justify-center",
+                                "transition-colors rounded-full",
                                 isProfileSaved(profile.id)
-                                  ? "bg-yellow-100 hover:bg-yellow-200 border-yellow-300"
-                                  : "hover:bg-accent border-transparent"
+                                  ? "hover:bg-yellow-50"
+                                  : "hover:bg-accent"
                               )}
                               onClick={() => {
                                 if (isProfileSaved(profile.id)) unsaveProfile(profile.id);
@@ -630,7 +654,7 @@ export default function FindPartnerPage() {
                               </div>
                               <div className="text-xs text-muted-foreground truncate">{listing.profiles?.professional_role}</div>
                             </div>
-                            <Badge variant="secondary" className="text-xs px-2 py-1 whitespace-nowrap">{listing.listing_type}</Badge>
+                            <Badge variant="secondary" className="text-xs px-2 py-1 whitespace-nowrap">{formatListingType(listing.listing_type)}</Badge>
                           </motion.div>
                           {/* Title and Publication Date */}
                           <motion.div variants={slideInRight} className="px-4 pt-3 pb-1">
@@ -700,7 +724,7 @@ export default function FindPartnerPage() {
                                     aria-label="Favorite"
                                     onClick={() => handleLikeListing(listing.id)}
                                   >
-                                    <Heart className={`h-4 w-4 ${isListingLiked(listing.id) ? 'fill-red-500 text-red-500' : ''}`} />
+                                    <Star className={`h-4 w-4 ${isListingLiked(listing.id) ? 'fill-yellow-400 text-yellow-500' : 'text-muted-foreground'}`} strokeWidth={isListingLiked(listing.id) ? 0 : 1.5} />
                                   </Button>
                                 </motion.div>
                                 <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>

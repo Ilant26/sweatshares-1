@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/lib/supabase";
-import { MapPin, Heart, Share2, Mail, Briefcase, ArrowRight, ListFilter, Settings2, Filter, DollarSign } from "lucide-react";
+import { MapPin, Heart, Share2, Mail, Briefcase, ArrowRight, ListFilter, Settings2, Filter, DollarSign, Star } from "lucide-react";
 import FooterSection from "@/components/blocks/footer";
 import { Menu } from "@/components/blocks/menu";
 import { AnimatedGroup } from "@/components/ui/animated-group";
@@ -21,6 +21,30 @@ import ContentSection from "@/components/content-listing-bottom";
 import { useSession } from '@/components/providers/session-provider';
 import { useFavorites } from '@/hooks/use-favorites';
 import { useToast } from '@/components/ui/use-toast';
+
+// Function to format listing type values for display
+const formatListingType = (listingType: string): string => {
+  const typeMap: { [key: string]: string } = {
+    // Founder listing types
+    "find-funding": "Find Funding",
+    "cofounder": "Co Founder",
+    "expert-freelance": "Expert/ Freelance",
+    "employee": "Employee",
+    "mentor": "Mentor",
+    "sell-startup": "Startup Sale",
+    
+    // Investor listing types
+    "investment-opportunity": "Investment Opportunity",
+    "buy-startup": "Buy Startup",
+    "co-investor": "Co-investor",
+    
+    // Expert listing types
+    "mission": "Mission",
+    "job": "Job"
+  };
+  
+  return typeMap[listingType] || listingType;
+};
 
 const transitionVariants = {
     item: {
@@ -421,7 +445,7 @@ export default function ListingsPage() {
                             </div>
                             <div className="text-xs text-muted-foreground truncate">{listing.profiles?.professional_role}</div>
                           </div>
-                          <Badge variant="secondary" className="text-xs px-2 py-1 whitespace-nowrap">{listing.listing_type}</Badge>
+                          <Badge variant="secondary" className="text-xs px-2 py-1 whitespace-nowrap">{formatListingType(listing.listing_type)}</Badge>
                         </motion.div>
 
                         {/* Title and Publication Date */}
@@ -496,7 +520,7 @@ export default function ListingsPage() {
                                   aria-label="Favorite"
                                   onClick={() => handleLikeListing(listing.id)}
                                 >
-                                  <Heart className={`h-4 w-4 ${isListingLiked(listing.id) ? 'fill-red-500 text-red-500' : ''}`} />
+                                  <Star className={`h-4 w-4 ${isListingLiked(listing.id) ? 'fill-yellow-400 text-yellow-500' : 'text-muted-foreground'}`} strokeWidth={isListingLiked(listing.id) ? 0 : 1.5} />
                                 </Button>
                               </motion.div>
                               <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
