@@ -144,6 +144,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         const decodedName = profileName ? decodeURIComponent(profileName) : 'User';
         return { name: `${decodedName}'s Profile`, path: `/dashboard/profile/${profileId || ''}` };
       }
+      if (source === 'dashboard') {
+        return { name: 'Dashboard', path: '/dashboard' };
+      }
       return { name: 'Listings', path: '/dashboard/listings' };
     }
 
@@ -235,7 +238,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     </Button>
                   )}
                 </div>
-                <div className="flex-1 flex justify-center hidden sm:flex">
+                <div className="absolute left-1/2 transform -translate-x-1/2 hidden sm:flex">
                   <div className="inline-flex items-center justify-center">
                     <nav className="flex space-x-6 lg:space-x-12">
                       <Link
@@ -265,7 +268,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     </nav>
                   </div>
                 </div>
-                <div className="flex-1 flex justify-center sm:hidden">
+                <div className="absolute left-1/2 transform -translate-x-1/2 sm:hidden">
                   <div className="inline-flex items-center justify-center">
                     <nav className="flex space-x-4">
                       <Link

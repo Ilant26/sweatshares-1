@@ -101,6 +101,7 @@ const myFavorites = [
     role: "Expert Digital Marketing",
     avatar: "https://randomuser.me/api/portraits/women/1.jpg",
     starred: true,
+    type: 'profile'
   },
   {
     id: "2",
@@ -108,6 +109,7 @@ const myFavorites = [
     role: "Freelancer - TechInnov",
     avatar: "/avatars/01.png", // Placeholder for a listing image
     starred: true,
+    type: 'listing'
   },
   {
     id: "3",
@@ -115,6 +117,7 @@ const myFavorites = [
     role: "Startup - Renewable Energy",
     avatar: "/avatars/02.png", // Placeholder for a listing image
     starred: true,
+    type: 'listing'
   },
   {
     id: "4",
@@ -122,6 +125,7 @@ const myFavorites = [
     role: "Investor, Business Angel",
     avatar: "https://randomuser.me/api/portraits/men/2.jpg",
     starred: true,
+    type: 'profile'
   },
 ];
 
@@ -435,6 +439,7 @@ export default function Page() {
       role: fav.profile.professional_role,
       avatar: fav.profile.avatar_url ?? undefined,
       starred: true,
+      type: 'profile'
     })),
     ...likedListings.slice(0, 2).map((fav) => ({
       id: fav.listing.id,
@@ -442,6 +447,7 @@ export default function Page() {
       role: fav.listing_profile.professional_role,
       avatar: fav.listing_profile.avatar_url ?? undefined,
       starred: true,
+      type: 'listing'
     })),
   ];
 
@@ -622,7 +628,7 @@ export default function Page() {
                 <div className="flex-1">
                   <div className="flex justify-between items-center">
                     <p className="text-sm font-medium leading-none">
-                      <Link href={`/dashboard/profile/${message.sender.id}`} className="hover:underline text-primary">
+                      <Link href={`/dashboard/profile/${message.sender_id}`} className="hover:underline text-primary">
                         {message.sender.full_name || message.sender.username}
                       </Link>
                     </p>
@@ -656,9 +662,15 @@ export default function Page() {
                     <AvatarFallback>{item.name?.charAt(0)}</AvatarFallback>
                   </Avatar>
                   <div>
-                    {item.id && item.name && item.role && !item.id.startsWith('listing-') ? (
+                    {item.type === 'profile' ? (
                       <p className="text-sm font-medium leading-none">
                         <Link href={`/dashboard/profile/${item.id}`} className="hover:underline text-primary">
+                          {item.name}
+                        </Link>
+                      </p>
+                    ) : item.type === 'listing' ? (
+                      <p className="text-sm font-medium leading-none">
+                        <Link href={`/dashboard/listings/${item.id}?source=dashboard`} className="hover:underline text-primary">
                           {item.name}
                         </Link>
                       </p>
