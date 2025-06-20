@@ -293,7 +293,7 @@ export default function NewsFeedPage() {
   };
 
   const handleProfileClick = (userId: string) => {
-    router.push(`/dashboard/profile/${userId}`);
+    router.push(`/dashboard/profile/${userId}?source=news-feed`);
   };
 
   const isPostEditable = (createdAt: string) => {

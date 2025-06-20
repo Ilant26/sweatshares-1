@@ -120,10 +120,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     // Check for profile pages
     if (currentPath.startsWith('/dashboard/profile/')) {
       const profileId = currentPath.split('/').pop();
-      // Check if we came from find-partner by looking at the source parameter
+      // Check if we came from find-partner or news-feed by looking at the source parameter
       const source = searchParams.get('source');
       if (source === 'find-partner') {
         return { name: 'Find My Partner', path: '/dashboard/find-partner' };
+      }
+      if (source === 'news-feed') {
+        return { name: 'News Feed', path: '/dashboard/news-feed' };
       }
       return { name: 'Dashboard', path: '/dashboard' };
     }
@@ -134,6 +137,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       const source = searchParams.get('source');
       if (source === 'find-partner') {
         return { name: 'Find My Partner', path: '/dashboard/find-partner' };
+      }
+      if (source === 'profile') {
+        const profileName = searchParams.get('profileName');
+        const profileId = searchParams.get('profileId');
+        const decodedName = profileName ? decodeURIComponent(profileName) : 'User';
+        return { name: `${decodedName}'s Profile`, path: `/dashboard/profile/${profileId || ''}` };
       }
       return { name: 'Listings', path: '/dashboard/listings' };
     }
