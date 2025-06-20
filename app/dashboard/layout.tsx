@@ -141,32 +141,33 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <SidebarProvider>
             <AppSidebar />
             <SidebarInset>
-              <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
-                <div className="flex items-center gap-2 px-4">
+              <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 px-2 sm:px-4">
+                <div className="flex items-center gap-2">
                   <SidebarTrigger className="-ml-1" />
                   <Separator
                     orientation="vertical"
-                    className="mr-2 data-[orientation=vertical]:h-4"
+                    className="mr-2 data-[orientation=vertical]:h-4 hidden sm:block"
                   />
                   {(pathname !== '/dashboard' && pathname !== '/dashboard/news-feed') && (
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="mr-2 h-8 px-2 hover:bg-accent"
+                      className="mr-2 h-8 px-2 hover:bg-accent text-xs sm:text-sm"
                       onClick={handleGoBack}
                     >
                       <ArrowLeft className="mr-2 h-4 w-4" />
-                      Back to {getPreviousPageName()}
+                      <span className="hidden sm:inline">Back to {getPreviousPageName()}</span>
+                      <span className="sm:hidden">Back</span>
                     </Button>
                   )}
                 </div>
-                <div className="flex-1 flex justify-center">
+                <div className="flex-1 flex justify-center hidden sm:flex">
                   <div className="inline-flex items-center justify-center">
-                    <nav className="flex space-x-12">
+                    <nav className="flex space-x-6 lg:space-x-12">
                       <Link
                         href="/dashboard/news-feed"
                         className={cn(
-                          "relative px-2 py-1 text-sm font-medium transition-colors",
+                          "relative px-2 py-1 text-xs lg:text-sm font-medium transition-colors",
                           "hover:text-primary/80",
                           currentSection === 'feed' ? "text-primary" : "text-muted-foreground",
                           "after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:bg-primary after:transition-transform after:duration-200",
@@ -178,7 +179,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       <Link
                         href="/dashboard/find-partner"
                         className={cn(
-                          "relative px-2 py-1 text-sm font-medium transition-colors",
+                          "relative px-2 py-1 text-xs lg:text-sm font-medium transition-colors",
                           "hover:text-primary/80",
                           isFindPartner ? "text-primary" : "text-muted-foreground",
                           "after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:bg-primary after:transition-transform after:duration-200",
@@ -190,23 +191,57 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     </nav>
                   </div>
                 </div>
+                <div className="flex-1 flex justify-center sm:hidden">
+                  <div className="inline-flex items-center justify-center">
+                    <nav className="flex space-x-4">
+                      <Link
+                        href="/dashboard/news-feed"
+                        className={cn(
+                          "relative px-2 py-1 text-xs font-medium transition-colors",
+                          "hover:text-primary/80",
+                          currentSection === 'feed' ? "text-primary" : "text-muted-foreground",
+                          "after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:bg-primary after:transition-transform after:duration-200",
+                          currentSection === 'feed' && "after:scale-x-100"
+                        )}
+                      >
+                        Feed
+                      </Link>
+                      <Link
+                        href="/dashboard/find-partner"
+                        className={cn(
+                          "relative px-2 py-1 text-xs font-medium transition-colors",
+                          "hover:text-primary/80",
+                          isFindPartner ? "text-primary" : "text-muted-foreground",
+                          "after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:bg-primary after:transition-transform after:duration-200",
+                          isFindPartner && "after:scale-x-100"
+                        )}
+                      >
+                        Find
+                      </Link>
+                    </nav>
+                  </div>
+                </div>
                 <div className={cn(
-                  "pr-4 flex items-center gap-2",
+                  "flex items-center gap-1 sm:gap-2",
                   "ml-auto"
                 )}>
-                  <ThemeSwitcher />
-                  <NotificationsDropdown />
+                  <div className="hidden sm:block">
+                    <ThemeSwitcher />
+                  </div>
+                  <div className="hidden sm:block">
+                    <NotificationsDropdown />
+                  </div>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-8 px-2 hover:bg-accent">
+                      <Button variant="ghost" size="sm" className="h-8 px-1 sm:px-2 hover:bg-accent">
                         <Avatar className="h-6 w-6 rounded-lg">
                           <AvatarImage src={userData.avatar} alt={userData.name} />
                           <AvatarFallback className="rounded-lg text-xs">
                             {userData.name.split(' ').map((n: string) => n[0]).join('').toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
-                        <span className="ml-2 text-sm font-medium">{userData.name}</span>
-                        <ChevronsUpDown className="ml-2 h-4 w-4" />
+                        <span className="ml-2 text-xs sm:text-sm font-medium hidden sm:inline">{userData.name}</span>
+                        <ChevronsUpDown className="ml-1 sm:ml-2 h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className="w-56" align="end">
@@ -249,7 +284,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   </DropdownMenu>
                 </div>
               </header>
-              {children}
+              <div className="flex-1 overflow-auto">
+                {children}
+              </div>
               {!isMobile && <ChatInterface />}
             </SidebarInset>
           </SidebarProvider>

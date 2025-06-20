@@ -454,42 +454,42 @@ export default function MyVaultPage() {
   };
 
   return (
-    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-      <div className="flex items-center justify-between space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight">My Vault</h2>
-        <div className="flex items-center space-x-2">
-          <Button variant="outline" className="gap-2">
+    <div className="flex-1 space-y-4 p-4 sm:p-8 pt-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-2">
+        <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">My Vault</h2>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <Button variant="outline" className="gap-2 w-full sm:w-auto">
             <History className="h-4 w-4" /> Access History
           </Button>
-          <Button variant="outline" className="gap-2">
+          <Button variant="outline" className="gap-2 w-full sm:w-auto">
             <ShieldCheck className="h-4 w-4" /> Security Settings
           </Button>
           <Dialog open={addDocumentDialogOpen} onOpenChange={setAddDocumentDialogOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button className="w-full sm:w-auto">
                 <Plus className="mr-2 h-4 w-4" /> Add Document
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px] md:max-w-[700px]">
+            <DialogContent className="sm:max-w-[425px] md:max-w-[700px] w-[95vw]">
               <DialogHeader>
                 <DialogTitle>Add New Document</DialogTitle>
                 <DialogDescription>
                   Upload your document and provide necessary details.
                 </DialogDescription>
               </DialogHeader>
-              <form onSubmit={handleUpload} className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="documentName" className="text-right">
+              <form onSubmit={handleUpload} className="grid gap-4 py-4 w-full">
+                <div className="grid grid-cols-1 sm:grid-cols-4 items-start sm:items-center gap-2 sm:gap-4">
+                  <Label htmlFor="documentName" className="text-left sm:text-right">
                     Document Name
                   </Label>
-                  <Input id="name" value={form.name} onChange={handleFormChange} placeholder="e.g., Annual Report 2024" className="col-span-3" required />
+                  <Input id="name" value={form.name} onChange={handleFormChange} placeholder="e.g., Annual Report 2024" className="col-span-1 sm:col-span-3" required />
                 </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="documentType" className="text-right">
+                <div className="grid grid-cols-1 sm:grid-cols-4 items-start sm:items-center gap-2 sm:gap-4">
+                  <Label htmlFor="documentType" className="text-left sm:text-right">
                     Document Type
                   </Label>
                   <Select value={form.type} onValueChange={(v) => setForm(f => ({ ...f, type: v }))}>
-                    <SelectTrigger className="col-span-3">
+                    <SelectTrigger className="col-span-1 sm:col-span-3">
                       <SelectValue placeholder="Select document type" />
                     </SelectTrigger>
                     <SelectContent>
@@ -500,26 +500,26 @@ export default function MyVaultPage() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="description" className="text-right">
+                <div className="grid grid-cols-1 sm:grid-cols-4 items-start sm:items-center gap-2 sm:gap-4">
+                  <Label htmlFor="description" className="text-left sm:text-right">
                     Description
                   </Label>
-                  <Textarea id="description" value={form.description} onChange={handleFormChange} placeholder="Brief description of the document" className="col-span-3" />
+                  <Textarea id="description" value={form.description} onChange={handleFormChange} placeholder="Brief description of the document" className="col-span-1 sm:col-span-3" />
                 </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="tags" className="text-right">
+                <div className="grid grid-cols-1 sm:grid-cols-4 items-start sm:items-center gap-2 sm:gap-4">
+                  <Label htmlFor="tags" className="text-left sm:text-right">
                     Tags
                   </Label>
-                  <Input id="tags" value={form.tags} onChange={handleFormChange} placeholder="Comma separated tags (e.g., finance, legal)" className="col-span-3" />
+                  <Input id="tags" value={form.tags} onChange={handleFormChange} placeholder="Comma separated tags (e.g., finance, legal)" className="col-span-1 sm:col-span-3" />
                 </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="file" className="text-right">
+                <div className="grid grid-cols-1 sm:grid-cols-4 items-start sm:items-center gap-2 sm:gap-4">
+                  <Label htmlFor="file" className="text-left sm:text-right">
                     File
                   </Label>
-                  <Input id="file" type="file" ref={fileRef} onChange={handleFormChange} className="col-span-3" required />
+                  <Input id="file" type="file" ref={fileRef} onChange={handleFormChange} className="col-span-1 sm:col-span-3" required />
                 </div>
                 <DialogFooter>
-                  <Button type="submit" disabled={uploading}>{uploading ? 'Uploading...' : 'Upload Document'}</Button>
+                  <Button type="submit" disabled={uploading} className="w-full sm:w-auto">{uploading ? 'Uploading...' : 'Upload Document'}</Button>
                 </DialogFooter>
               </form>
             </DialogContent>
@@ -527,55 +527,57 @@ export default function MyVaultPage() {
         </div>
       </div>
 
-      <Card className="p-4">
-        <CardTitle className="text-lg">Secure Vault</CardTitle>
+      <Card className="p-3 sm:p-4">
+        <CardTitle className="text-base sm:text-lg">Secure Vault</CardTitle>
         <CardDescription>Your documents are encrypted and protected</CardDescription>
       </Card>
 
       <Card>
-        <CardContent className="flex items-center gap-2 p-4">
-          <div className="relative flex-1">
+        <CardContent className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-2 p-4">
+          <div className="relative flex-1 w-full">
             <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search documents..."
-              className="pl-8 max-w-sm"
+              className="pl-8 w-full"
             />
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="gap-2">
-                <SlidersHorizontal className="h-4 w-4" /> Filter
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem>All Types</DropdownMenuItem>
-              <DropdownMenuItem>Personal Documents</DropdownMenuItem>
-              <DropdownMenuItem>Contracts</DropdownMenuItem>
-              <DropdownMenuItem>Legal Documents</DropdownMenuItem>
-              <DropdownMenuItem>Others</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="gap-2">
-                <SlidersHorizontal className="h-4 w-4" /> Sort by
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem>Date (newest)</DropdownMenuItem>
-              <DropdownMenuItem>Date (oldest)</DropdownMenuItem>
-              <DropdownMenuItem>Size (asc)</DropdownMenuItem>
-              <DropdownMenuItem>Size (desc)</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div className="flex gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="gap-2 w-full sm:w-auto">
+                  <SlidersHorizontal className="h-4 w-4" /> Filter
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem>All Types</DropdownMenuItem>
+                <DropdownMenuItem>Personal Documents</DropdownMenuItem>
+                <DropdownMenuItem>Contracts</DropdownMenuItem>
+                <DropdownMenuItem>Legal Documents</DropdownMenuItem>
+                <DropdownMenuItem>Others</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="gap-2 w-full sm:w-auto">
+                  <SlidersHorizontal className="h-4 w-4" /> Sort by
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem>Date (newest)</DropdownMenuItem>
+                <DropdownMenuItem>Date (oldest)</DropdownMenuItem>
+                <DropdownMenuItem>Size (asc)</DropdownMenuItem>
+                <DropdownMenuItem>Size (desc)</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="personal-documents" value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-fit grid-cols-3">
-          <TabsTrigger value="personal-documents">Personal Documents</TabsTrigger>
-          <TabsTrigger value="shared-documents">Shared Documents</TabsTrigger>
-          <TabsTrigger value="recent-activities">Recent Activities</TabsTrigger>
+      <Tabs defaultValue="personal-documents" value={activeTab} onValueChange={setActiveTab} className="space-y-4 w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="personal-documents" className="text-xs sm:text-sm">Personal Documents</TabsTrigger>
+          <TabsTrigger value="shared-documents" className="text-xs sm:text-sm">Shared Documents</TabsTrigger>
+          <TabsTrigger value="recent-activities" className="text-xs sm:text-sm">Recent Activities</TabsTrigger>
         </TabsList>
         <TabsContent value="personal-documents" className="space-y-4">
           <Card>
@@ -584,41 +586,86 @@ export default function MyVaultPage() {
               <CardDescription>All your personal documents securely stored.</CardDescription>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>NAME</TableHead>
-                    <TableHead>TYPE</TableHead>
-                    <TableHead>ADDED</TableHead>
-                    <TableHead className="text-right">ACTIONS</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {personalDocuments.map((doc) => (
-                    <TableRow key={doc.id}>
-                      <TableCell className="font-medium flex items-center gap-2">
-                        {getFileIcon(doc.filename)} {doc.filename}
-                      </TableCell>
-                      <TableCell><Badge variant="outline">{doc.type || 'N/A'}</Badge></TableCell>
-                      <TableCell>{doc.created_at ? new Date(doc.created_at).toLocaleString() : 'N/A'}</TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <EllipsisVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem className="gap-2" onClick={() => handleDownload(doc)}><Download className="h-4 w-4" /> Download</DropdownMenuItem>
-                            <DropdownMenuItem className="gap-2" onClick={() => handleShare(doc)}><Share2 className="h-4 w-4" /> Share</DropdownMenuItem>
-                            <DropdownMenuItem className="gap-2 text-red-600" onClick={() => handleDelete(doc)}><Trash2 className="h-4 w-4" /> Delete</DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
+              {/* Mobile card layout */}
+              <div className="space-y-4 sm:hidden">
+                {personalDocuments.map((doc) => (
+                  <Card key={doc.id} className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div className="flex-shrink-0">
+                          {getFileIcon(doc.filename)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate">{doc.filename}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <Badge variant="outline" className="text-xs">{doc.type || 'N/A'}</Badge>
+                            <span className="text-xs text-muted-foreground">
+                              {doc.created_at ? new Date(doc.created_at).toLocaleDateString() : 'N/A'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <EllipsisVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem className="gap-2" onClick={() => handleDownload(doc)}>
+                            <Download className="h-4 w-4" /> Download
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="gap-2" onClick={() => handleShare(doc)}>
+                            <Share2 className="h-4 w-4" /> Share
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="gap-2 text-red-600" onClick={() => handleDelete(doc)}>
+                            <Trash2 className="h-4 w-4" /> Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+              
+              {/* Desktop table */}
+              <div className="hidden sm:block overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>NAME</TableHead>
+                      <TableHead>TYPE</TableHead>
+                      <TableHead>ADDED</TableHead>
+                      <TableHead className="text-right">ACTIONS</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {personalDocuments.map((doc) => (
+                      <TableRow key={doc.id}>
+                        <TableCell className="font-medium flex items-center gap-2">
+                          {getFileIcon(doc.filename)} {doc.filename}
+                        </TableCell>
+                        <TableCell><Badge variant="outline">{doc.type || 'N/A'}</Badge></TableCell>
+                        <TableCell>{doc.created_at ? new Date(doc.created_at).toLocaleString() : 'N/A'}</TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <EllipsisVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem className="gap-2" onClick={() => handleDownload(doc)}><Download className="h-4 w-4" /> Download</DropdownMenuItem>
+                              <DropdownMenuItem className="gap-2" onClick={() => handleShare(doc)}><Share2 className="h-4 w-4" /> Share</DropdownMenuItem>
+                              <DropdownMenuItem className="gap-2 text-red-600" onClick={() => handleDelete(doc)}><Trash2 className="h-4 w-4" /> Delete</DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -629,10 +676,10 @@ export default function MyVaultPage() {
               <CardDescription>Documents shared with you or that you have shared.</CardDescription>
             </CardHeader>
             <CardContent>
-              <Tabs defaultValue="shared-with-me" value={sharedTab} onValueChange={setSharedTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="shared-with-me">Shared with Me</TabsTrigger>
-                  <TabsTrigger value="shared-by-me">Shared by Me</TabsTrigger>
+              <Tabs defaultValue="shared-with-me" value={sharedTab} onValueChange={setSharedTab} className="w-full space-y-4">
+                <TabsList className="grid w-full grid-cols-2 h-auto">
+                  <TabsTrigger value="shared-with-me" className="text-xs sm:text-sm py-2">Shared with Me</TabsTrigger>
+                  <TabsTrigger value="shared-by-me" className="text-xs sm:text-sm py-2">Shared by Me</TabsTrigger>
                 </TabsList>
                 <TabsContent value="shared-with-me" className="mt-4">
                   {sharedWithMe.length === 0 ? (
@@ -644,35 +691,38 @@ export default function MyVaultPage() {
                       </p>
                     </div>
                   ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>NAME</TableHead>
-                          <TableHead>TYPE</TableHead>
-                          <TableHead>SHARED BY</TableHead>
-                          <TableHead>SHARED DATE</TableHead>
-                          <TableHead className="text-right">ACTIONS</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
+                    <>
+                      {/* Mobile card layout */}
+                      <div className="space-y-4 sm:hidden">
                         {sharedWithMe.map((doc) => (
-                          <TableRow key={doc.id}>
-                            <TableCell className="font-medium flex items-center gap-2">
-                              {getFileIcon(doc.filename)} {doc.filename}
-                            </TableCell>
-                            <TableCell><Badge variant="outline">{doc.type || 'N/A'}</Badge></TableCell>
-                            <TableCell className="flex items-center gap-2">
-                              <Avatar className="h-6 w-6">
-                                <AvatarImage src={doc.shared_by?.avatar_url || undefined} />
-                                <AvatarFallback>{doc.shared_by?.full_name?.charAt(0)}</AvatarFallback>
-                              </Avatar>
-                              {doc.shared_by?.full_name || 'Unknown User'}
-                            </TableCell>
-                            <TableCell>{doc.shared_at ? new Date(doc.shared_at).toLocaleString() : 'N/A'}</TableCell>
-                            <TableCell className="text-right">
+                          <Card key={doc.id} className="p-4">
+                            <div className="flex items-start justify-between">
+                              <div className="flex items-center gap-3 flex-1 min-w-0">
+                                <div className="flex-shrink-0">
+                                  {getFileIcon(doc.filename)}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-medium truncate">{doc.filename}</p>
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <Badge variant="outline" className="text-xs">{doc.type || 'N/A'}</Badge>
+                                    <div className="flex items-center gap-1">
+                                      <Avatar className="h-4 w-4">
+                                        <AvatarImage src={doc.shared_by?.avatar_url || undefined} />
+                                        <AvatarFallback className="text-xs">{doc.shared_by?.full_name?.charAt(0)}</AvatarFallback>
+                                      </Avatar>
+                                      <span className="text-xs text-muted-foreground truncate">
+                                        {doc.shared_by?.full_name || 'Unknown User'}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <span className="text-xs text-muted-foreground block mt-1">
+                                    {doc.shared_at ? new Date(doc.shared_at).toLocaleDateString() : 'N/A'}
+                                  </span>
+                                </div>
+                              </div>
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon">
+                                  <Button variant="ghost" size="sm">
                                     <EllipsisVertical className="h-4 w-4" />
                                   </Button>
                                 </DropdownMenuTrigger>
@@ -682,11 +732,58 @@ export default function MyVaultPage() {
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
-                            </TableCell>
-                          </TableRow>
+                            </div>
+                          </Card>
                         ))}
-                      </TableBody>
-                    </Table>
+                      </div>
+                      
+                      {/* Desktop table */}
+                      <div className="hidden sm:block overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>NAME</TableHead>
+                              <TableHead>TYPE</TableHead>
+                              <TableHead>SHARED BY</TableHead>
+                              <TableHead>SHARED DATE</TableHead>
+                              <TableHead className="text-right">ACTIONS</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {sharedWithMe.map((doc) => (
+                              <TableRow key={doc.id}>
+                                <TableCell className="font-medium flex items-center gap-2">
+                                  {getFileIcon(doc.filename)} {doc.filename}
+                                </TableCell>
+                                <TableCell><Badge variant="outline">{doc.type || 'N/A'}</Badge></TableCell>
+                                <TableCell className="flex items-center gap-2">
+                                  <Avatar className="h-6 w-6">
+                                    <AvatarImage src={doc.shared_by?.avatar_url || undefined} />
+                                    <AvatarFallback>{doc.shared_by?.full_name?.charAt(0)}</AvatarFallback>
+                                  </Avatar>
+                                  {doc.shared_by?.full_name || 'Unknown User'}
+                                </TableCell>
+                                <TableCell>{doc.shared_at ? new Date(doc.shared_at).toLocaleString() : 'N/A'}</TableCell>
+                                <TableCell className="text-right">
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" size="icon">
+                                        <EllipsisVertical className="h-4 w-4" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                      <DropdownMenuItem className="gap-2" onClick={() => handleDownload(doc)}>
+                                        <Download className="h-4 w-4" /> Download
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </>
                   )}
                 </TabsContent>
                 <TabsContent value="shared-by-me" className="mt-4">
@@ -699,35 +796,38 @@ export default function MyVaultPage() {
                       </p>
                     </div>
                   ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>NAME</TableHead>
-                          <TableHead>TYPE</TableHead>
-                          <TableHead>SHARED WITH</TableHead>
-                          <TableHead>SHARED DATE</TableHead>
-                          <TableHead className="text-right">ACTIONS</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
+                    <>
+                      {/* Mobile card layout */}
+                      <div className="space-y-4 sm:hidden">
                         {sharedByMe.map((doc) => (
-                          <TableRow key={doc.id}>
-                            <TableCell className="font-medium flex items-center gap-2">
-                              {getFileIcon(doc.filename)} {doc.filename}
-                            </TableCell>
-                            <TableCell><Badge variant="outline">{doc.type || 'N/A'}</Badge></TableCell>
-                            <TableCell className="flex items-center gap-2">
-                              <Avatar className="h-6 w-6">
-                                <AvatarImage src={doc.shared_with?.avatar_url || undefined} />
-                                <AvatarFallback>{doc.shared_with?.full_name?.charAt(0)}</AvatarFallback>
-                              </Avatar>
-                              {doc.shared_with?.full_name || 'Unknown User'}
-                            </TableCell>
-                            <TableCell>{doc.shared_at ? new Date(doc.shared_at).toLocaleString() : 'N/A'}</TableCell>
-                            <TableCell className="text-right">
+                          <Card key={doc.id} className="p-4">
+                            <div className="flex items-start justify-between">
+                              <div className="flex items-center gap-3 flex-1 min-w-0">
+                                <div className="flex-shrink-0">
+                                  {getFileIcon(doc.filename)}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-medium truncate">{doc.filename}</p>
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <Badge variant="outline" className="text-xs">{doc.type || 'N/A'}</Badge>
+                                    <div className="flex items-center gap-1">
+                                      <Avatar className="h-4 w-4">
+                                        <AvatarImage src={doc.shared_with?.avatar_url || undefined} />
+                                        <AvatarFallback className="text-xs">{doc.shared_with?.full_name?.charAt(0)}</AvatarFallback>
+                                      </Avatar>
+                                      <span className="text-xs text-muted-foreground truncate">
+                                        {doc.shared_with?.full_name || 'Unknown User'}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <span className="text-xs text-muted-foreground block mt-1">
+                                    {doc.shared_at ? new Date(doc.shared_at).toLocaleDateString() : 'N/A'}
+                                  </span>
+                                </div>
+                              </div>
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon">
+                                  <Button variant="ghost" size="sm">
                                     <EllipsisVertical className="h-4 w-4" />
                                   </Button>
                                 </DropdownMenuTrigger>
@@ -740,11 +840,61 @@ export default function MyVaultPage() {
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
-                            </TableCell>
-                          </TableRow>
+                            </div>
+                          </Card>
                         ))}
-                      </TableBody>
-                    </Table>
+                      </div>
+                      
+                      {/* Desktop table */}
+                      <div className="hidden sm:block overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>NAME</TableHead>
+                              <TableHead>TYPE</TableHead>
+                              <TableHead>SHARED WITH</TableHead>
+                              <TableHead>SHARED DATE</TableHead>
+                              <TableHead className="text-right">ACTIONS</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {sharedByMe.map((doc) => (
+                              <TableRow key={doc.id}>
+                                <TableCell className="font-medium flex items-center gap-2">
+                                  {getFileIcon(doc.filename)} {doc.filename}
+                                </TableCell>
+                                <TableCell><Badge variant="outline">{doc.type || 'N/A'}</Badge></TableCell>
+                                <TableCell className="flex items-center gap-2">
+                                  <Avatar className="h-6 w-6">
+                                    <AvatarImage src={doc.shared_with?.avatar_url || undefined} />
+                                    <AvatarFallback>{doc.shared_with?.full_name?.charAt(0)}</AvatarFallback>
+                                  </Avatar>
+                                  {doc.shared_with?.full_name || 'Unknown User'}
+                                </TableCell>
+                                <TableCell>{doc.shared_at ? new Date(doc.shared_at).toLocaleString() : 'N/A'}</TableCell>
+                                <TableCell className="text-right">
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" size="icon">
+                                        <EllipsisVertical className="h-4 w-4" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                      <DropdownMenuItem className="gap-2" onClick={() => handleDownload(doc)}>
+                                        <Download className="h-4 w-4" /> Download
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem className="gap-2" onClick={() => handleShare(doc)}>
+                                        <Share2 className="h-4 w-4" /> Share Again
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </>
                   )}
                 </TabsContent>
               </Tabs>
@@ -758,28 +908,50 @@ export default function MyVaultPage() {
               <CardDescription>A log of all recent actions performed in your vault.</CardDescription>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>ACTION</TableHead>
-                    <TableHead>DOCUMENT</TableHead>
-                    <TableHead>USER</TableHead>
-                    <TableHead>DATE</TableHead>
-                    <TableHead className="text-right">IP ADDRESS</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {recentActivities.map((activity) => (
-                    <TableRow key={activity.id}>
-                      <TableCell>{activity.action}</TableCell>
-                      <TableCell className="font-medium">{activity.document}</TableCell>
-                      <TableCell>{activity.user}</TableCell>
-                      <TableCell>{activity.date}</TableCell>
-                      <TableCell className="text-right">{activity.ipAddress}</TableCell>
+              {/* Mobile card layout */}
+              <div className="space-y-4 sm:hidden">
+                {recentActivities.map((activity) => (
+                  <Card key={activity.id} className="p-4">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-sm">{activity.action}</span>
+                        <span className="text-xs text-muted-foreground">{activity.date}</span>
+                      </div>
+                      <div className="text-sm">
+                        <p className="font-medium">{activity.document}</p>
+                        <p className="text-muted-foreground">{activity.user}</p>
+                        <p className="text-xs text-muted-foreground">IP: {activity.ipAddress}</p>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+              
+              {/* Desktop table */}
+              <div className="hidden sm:block overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>ACTION</TableHead>
+                      <TableHead>DOCUMENT</TableHead>
+                      <TableHead>USER</TableHead>
+                      <TableHead>DATE</TableHead>
+                      <TableHead className="text-right">IP ADDRESS</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {recentActivities.map((activity) => (
+                      <TableRow key={activity.id}>
+                        <TableCell>{activity.action}</TableCell>
+                        <TableCell className="font-medium">{activity.document}</TableCell>
+                        <TableCell>{activity.user}</TableCell>
+                        <TableCell>{activity.date}</TableCell>
+                        <TableCell className="text-right">{activity.ipAddress}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -787,65 +959,66 @@ export default function MyVaultPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Storage Usage</CardTitle>
+          <CardTitle className="text-lg sm:text-xl">Storage Usage</CardTitle>
           <CardDescription>Your current storage usage and available space.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center gap-4">
+        <CardContent className="space-y-4 p-4 sm:p-6">
+          <div className="flex items-center gap-3 sm:gap-4">
             <HardDrive className="h-8 w-8 text-blue-500" />
             <div className="flex-1">
-              <div className="flex justify-between text-sm">
+              <div className="flex justify-between text-xs sm:text-sm">
                 <span>Used: 1.5 GB</span>
                 <span>Total: 10 GB</span>
               </div>
               <Progress value={15} className="w-full" />
             </div>
           </div>
-          <p className="text-sm text-muted-foreground">You have 8.5 GB remaining.</p>
+          <p className="text-xs sm:text-sm text-muted-foreground">You have 8.5 GB remaining.</p>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle>Security & Access</CardTitle>
+          <CardTitle className="text-lg sm:text-xl">Security & Access</CardTitle>
           <CardDescription>Manage security settings and access controls for your vault.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
+        <CardContent className="space-y-4 p-4 sm:p-6">
+          <div className="flex items-center justify-between py-2">
             <Label htmlFor="2fa-mode">Two-Factor Authentication</Label>
             <Switch id="2fa-mode" />
           </div>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between py-2">
             <Label htmlFor="notification-alerts">Email Notifications for Access</Label>
             <Switch id="notification-alerts" defaultChecked />
           </div>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between py-2">
             <Label htmlFor="auto-lock">Auto-Lock Vault (5 mins inactivity)</Label>
             <Switch id="auto-lock" />
           </div>
         </CardContent>
-        <CardFooter>
-          <Button><Settings className="mr-2 h-4 w-4" /> Advanced Security Settings</Button>
+        <CardFooter className="p-4 sm:p-6">
+          <Button className="w-full sm:w-auto"><Settings className="mr-2 h-4 w-4" /> Advanced Security Settings</Button>
         </CardFooter>
       </Card>
 
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[425px] w-[95vw]">
           <DialogHeader>
             <DialogTitle>Delete Document</DialogTitle>
             <DialogDescription>
               Are you sure you want to delete "{documentToDelete?.filename}"? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
-          <div className="flex items-center gap-2 p-4 bg-destructive/10 rounded-lg">
+          <div className="flex items-center gap-2 p-3 sm:p-4 bg-destructive/10 rounded-lg">
             <Trash2 className="h-5 w-5 text-destructive" />
-            <p className="text-sm text-destructive">
+            <p className="text-xs sm:text-sm text-destructive">
               This will permanently delete the document and remove it from your vault.
             </p>
           </div>
-          <DialogFooter className="gap-2 sm:gap-0">
+          <DialogFooter className="gap-2 sm:gap-0 flex-col sm:flex-row">
             <Button
               variant="outline"
+              className="w-full sm:w-auto"
               onClick={() => {
                 setDeleteDialogOpen(false);
                 setDocumentToDelete(null);
@@ -855,6 +1028,7 @@ export default function MyVaultPage() {
             </Button>
             <Button
               variant="destructive"
+              className="w-full sm:w-auto"
               onClick={confirmDelete}
             >
               Delete Document
@@ -865,18 +1039,18 @@ export default function MyVaultPage() {
 
       {/* Add Share Dialog */}
       <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[425px] w-[95vw]">
           <DialogHeader>
             <DialogTitle>Share Document</DialogTitle>
             <DialogDescription>
               Share "{documentToShare?.filename}" with your connections
             </DialogDescription>
           </DialogHeader>
-          <div className="py-4">
-            <ScrollArea className="h-[300px] pr-4">
-              <div className="space-y-4">
+          <div className="py-3 sm:py-4">
+            <ScrollArea className="h-[250px] sm:h-[300px] pr-4">
+              <div className="space-y-3 sm:space-y-4">
                 {connections.map((connection) => (
-                  <div key={connection.id} className="flex items-center space-x-4">
+                  <div key={connection.id} className="flex items-center space-x-3 sm:space-x-4">
                     <Checkbox
                       id={`connection-${connection.id}`}
                       checked={selectedConnections.includes(connection.id)}
@@ -890,20 +1064,20 @@ export default function MyVaultPage() {
                     />
                     <label
                       htmlFor={`connection-${connection.id}`}
-                      className="flex items-center space-x-3 cursor-pointer"
+                      className="flex items-center space-x-2 sm:space-x-3 cursor-pointer flex-1"
                     >
-                      <Avatar className="h-8 w-8">
+                      <Avatar className="h-6 w-6 sm:h-8 sm:w-8">
                         <AvatarImage src={connection.avatar_url || undefined} />
                         <AvatarFallback>
                           {connection.full_name?.charAt(0) || connection.username.charAt(0)}
                         </AvatarFallback>
                       </Avatar>
-                      <div>
-                        <p className="text-sm font-medium leading-none">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium leading-none truncate">
                           {connection.full_name || connection.username}
                         </p>
                         {connection.professional_role && (
-                          <p className="text-sm text-muted-foreground">
+                          <p className="text-xs sm:text-sm text-muted-foreground truncate">
                             {connection.professional_role}
                           </p>
                         )}
@@ -914,9 +1088,10 @@ export default function MyVaultPage() {
               </div>
             </ScrollArea>
           </div>
-          <DialogFooter>
+          <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
             <Button
               variant="outline"
+              className="w-full sm:w-auto"
               onClick={() => {
                 setShareDialogOpen(false);
                 setDocumentToShare(null);
@@ -926,6 +1101,7 @@ export default function MyVaultPage() {
               Cancel
             </Button>
             <Button
+              className="w-full sm:w-auto"
               onClick={confirmShare}
               disabled={selectedConnections.length === 0 || sharing}
             >

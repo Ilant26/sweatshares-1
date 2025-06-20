@@ -7,6 +7,7 @@ import { format } from 'date-fns';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { useRouter } from 'next/navigation';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface MyListingTableProps {
   listings: any[];
@@ -73,82 +74,172 @@ export function MyListingTable({
   const router = useRouter();
 
   if (isLoadingListings) {
-    return <div className="p-8 text-center text-muted-foreground">Loading listings...</div>;
+    return <div className="p-4 sm:p-8 text-center text-muted-foreground">Loading listings...</div>;
   }
   if (listingsError) {
-    return <div className="p-8 text-center text-destructive">{listingsError}</div>;
+    return <div className="p-4 sm:p-8 text-center text-destructive">{listingsError}</div>;
   }
-  return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead className="w-[50px]">
-            <Checkbox
-              checked={selectedListings.length === listings.length && listings.length > 0}
-              onCheckedChange={onSelectAll}
-              aria-label="Select all"
-            />
-          </TableHead>
-          <TableHead>Looking for</TableHead>
-          <TableHead>As an</TableHead>
-          <TableHead>Country</TableHead>
-          <TableHead>Title</TableHead>
-          <TableHead>Skills</TableHead>
-          <TableHead>Publication Date</TableHead>
-          <TableHead>Compensation</TableHead>
-          <TableHead>Status</TableHead>
-          <TableHead className="text-right">Actions</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {listings.map((listing) => (
-          <TableRow key={listing.id}>
-            <TableCell>
+
+  // Mobile card layout
+  const renderMobileCards = () => (
+    <div className="space-y-4 sm:hidden">
+      {listings.map((listing) => (
+        <Card key={listing.id} className="p-4">
+          <CardHeader className="p-0 pb-3">
+            <div className="flex items-center justify-between">
               <Checkbox
                 checked={selectedListings.includes(listing.id)}
                 onCheckedChange={(checked: boolean) => onSelectListing(listing.id, checked)}
                 aria-label="Select row"
               />
-            </TableCell>
-            <TableCell>{formatListingType(listing.listing_type)}</TableCell>
-            <TableCell>{formatProfileType(listing.profile_type)}</TableCell>
-            <TableCell>{listing.location_country}</TableCell>
-            <TableCell>{listing.title}</TableCell>
-            <TableCell>
-              {listing.skills ? (
-                <div className="flex flex-wrap gap-1">
-                  {listing.skills.split(', ').filter((skill: string) => skill.trim()).map((skill: string) => (
+              <div className="flex items-center gap-2">
+                <Switch
+                  checked={listing.status === 'active'}
+                  onCheckedChange={() => onToggleStatus(listing)}
+                />
+                <span className="text-xs text-muted-foreground">
+                  {listing.status === 'active' ? 'Active' : 'Inactive'}
+                </span>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0 space-y-3">
+            <div>
+              <CardTitle className="text-base font-semibold">{listing.title || 'Untitled'}</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                {formatListingType(listing.listing_type)} • {formatProfileType(listing.profile_type)}
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              <div>
+                <span className="font-medium">Country:</span>
+                <p className="text-muted-foreground">{listing.location_country || 'Not specified'}</p>
+              </div>
+              <div>
+                <span className="font-medium">Compensation:</span>
+                <p className="text-muted-foreground">{listing.compensation_type || 'Not specified'}</p>
+              </div>
+            </div>
+
+            {listing.skills && (
+              <div>
+                <span className="text-sm font-medium">Skills:</span>
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {listing.skills.split(', ').filter((skill: string) => skill.trim()).slice(0, 3).map((skill: string) => (
                     <Badge key={skill} className={`text-xs ${getSkillColor(skill.trim())}`}>
                       {skill.trim()}
                     </Badge>
                   ))}
+                  {listing.skills.split(', ').filter((skill: string) => skill.trim()).length > 3 && (
+                    <Badge variant="outline" className="text-xs">
+                      +{listing.skills.split(', ').filter((skill: string) => skill.trim()).length - 3} more
+                    </Badge>
+                  )}
                 </div>
-              ) : (
-                <span className="text-muted-foreground text-sm">No skills</span>
-              )}
-            </TableCell>
-            <TableCell>{format(new Date(listing.created_at), 'yyyy-MM-dd')}</TableCell>
-            <TableCell>{listing.compensation_type}</TableCell>
-            <TableCell>
-              <Switch
-                checked={listing.status === 'active'}
-                onCheckedChange={() => onToggleStatus(listing)}
-              />
-            </TableCell>
-            <TableCell className="text-right flex items-center justify-end gap-2">
-              <Button variant="ghost" size="icon" onClick={() => onEditListing(listing)}>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>Published: {format(new Date(listing.created_at), 'MMM dd, yyyy')}</span>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t">
+              <Button variant="ghost" size="sm" onClick={() => onEditListing(listing)}>
                 <Edit className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" onClick={() => onDeleteListing(listing.id)} disabled={deletingId === listing.id}>
+              <Button variant="ghost" size="sm" onClick={() => onDeleteListing(listing.id)} disabled={deletingId === listing.id}>
                 {deletingId === listing.id ? <span className="animate-spin"><Trash2 className="h-4 w-4" /></span> : <Trash2 className="h-4 w-4" />}
               </Button>
-              <Button variant="ghost" size="icon" onClick={() => router.push(`/listing/${listing.id}`)}>
+              <Button variant="ghost" size="sm" onClick={() => router.push(`/listing/${listing.id}`)}>
                 <Eye className="h-4 w-4" />
               </Button>
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+
+  return (
+    <>
+      {/* Mobile cards */}
+      {renderMobileCards()}
+      
+      {/* Desktop table */}
+      <div className="hidden sm:block">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[50px]">
+                <Checkbox
+                  checked={selectedListings.length === listings.length && listings.length > 0}
+                  onCheckedChange={onSelectAll}
+                  aria-label="Select all"
+                />
+              </TableHead>
+              <TableHead>Looking for</TableHead>
+              <TableHead>As an</TableHead>
+              <TableHead>Country</TableHead>
+              <TableHead>Title</TableHead>
+              <TableHead>Skills</TableHead>
+              <TableHead>Publication Date</TableHead>
+              <TableHead>Compensation</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {listings.map((listing) => (
+              <TableRow key={listing.id}>
+                <TableCell>
+                  <Checkbox
+                    checked={selectedListings.includes(listing.id)}
+                    onCheckedChange={(checked: boolean) => onSelectListing(listing.id, checked)}
+                    aria-label="Select row"
+                  />
+                </TableCell>
+                <TableCell>{formatListingType(listing.listing_type)}</TableCell>
+                <TableCell>{formatProfileType(listing.profile_type)}</TableCell>
+                <TableCell>{listing.location_country}</TableCell>
+                <TableCell>{listing.title}</TableCell>
+                <TableCell>
+                  {listing.skills ? (
+                    <div className="flex flex-wrap gap-1">
+                      {listing.skills.split(', ').filter((skill: string) => skill.trim()).map((skill: string) => (
+                        <Badge key={skill} className={`text-xs ${getSkillColor(skill.trim())}`}>
+                          {skill.trim()}
+                        </Badge>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="text-muted-foreground text-sm">No skills</span>
+                  )}
+                </TableCell>
+                <TableCell>{format(new Date(listing.created_at), 'yyyy-MM-dd')}</TableCell>
+                <TableCell>{listing.compensation_type}</TableCell>
+                <TableCell>
+                  <Switch
+                    checked={listing.status === 'active'}
+                    onCheckedChange={() => onToggleStatus(listing)}
+                  />
+                </TableCell>
+                <TableCell className="text-right flex items-center justify-end gap-2">
+                  <Button variant="ghost" size="icon" onClick={() => onEditListing(listing)}>
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" onClick={() => onDeleteListing(listing.id)} disabled={deletingId === listing.id}>
+                    {deletingId === listing.id ? <span className="animate-spin"><Trash2 className="h-4 w-4" /></span> : <Trash2 className="h-4 w-4" />}
+                  </Button>
+                  <Button variant="ghost" size="icon" onClick={() => router.push(`/listing/${listing.id}`)}>
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </>
   );
 } 

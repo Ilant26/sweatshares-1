@@ -189,35 +189,35 @@ export default function MyNetworkPage() {
     };
 
     const renderConnectionCards = (data: Connection[]) => (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {data.map(connection => {
                 const otherUser = getOtherUser(connection);
                 if (!otherUser) return null;
 
                 return (
                     <Card key={connection.id}>
-                        <CardHeader className="flex flex-row items-center gap-4 space-y-0 pb-2">
-                            <Avatar className="h-16 w-16">
+                        <CardHeader className="flex flex-row items-center gap-3 sm:gap-4 space-y-0 pb-2">
+                            <Avatar className="h-12 w-12 sm:h-16 sm:w-16">
                                 <AvatarImage src={otherUser.avatar_url || undefined} />
                                 <AvatarFallback>{otherUser.full_name?.charAt(0) || otherUser.username.charAt(0)}</AvatarFallback>
                             </Avatar>
-                            <div>
+                            <div className="flex-1 min-w-0">
                                 <CardTitle 
-                                    className="text-lg cursor-pointer hover:text-primary transition-colors"
+                                    className="text-base sm:text-lg cursor-pointer hover:text-primary transition-colors truncate"
                                     onClick={() => handleProfileClick(otherUser.id)}
                                 >
                                     {otherUser.full_name || otherUser.username}
                                 </CardTitle>
-                                <CardDescription>{otherUser.professional_role || 'No role specified'}</CardDescription>
+                                <CardDescription className="truncate">{otherUser.professional_role || 'No role specified'}</CardDescription>
                             </div>
                         </CardHeader>
-                        <CardContent className="space-y-3">
+                        <CardContent className="space-y-3 p-4 sm:p-6">
                             <p className="text-xs text-muted-foreground">Connected since {new Date(connection.created_at).toLocaleDateString()}</p>
-                            <div className="flex justify-end gap-2">
-                                <Button variant="outline" size="sm" onClick={() => handleMessage(otherUser.id)}>
+                            <div className="flex flex-col sm:flex-row gap-2 sm:justify-end">
+                                <Button variant="outline" size="sm" onClick={() => handleMessage(otherUser.id)} className="w-full sm:w-auto">
                                     <MessageCircle className="h-4 w-4 mr-2" /> Message
                                 </Button>
-                                <Button variant="ghost" size="icon" onClick={() => handleRemoveConnection(connection.id)}>
+                                <Button variant="ghost" size="sm" onClick={() => handleRemoveConnection(connection.id)} className="w-full sm:w-auto">
                                     <Trash2 className="h-4 w-4" />
                                 </Button>
                             </div>
@@ -229,38 +229,38 @@ export default function MyNetworkPage() {
     );
 
     const renderInvitationCards = (data: Connection[], type: 'received' | 'sent') => (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {data.map(invitation => {
                 const user = type === 'received' ? invitation.sender : invitation.receiver;
                 if (!user) return null;
 
                 return (
                     <Card key={invitation.id}>
-                        <CardHeader className="flex flex-row items-center gap-4 space-y-0 pb-2">
-                            <Avatar className="h-16 w-16">
+                        <CardHeader className="flex flex-row items-center gap-3 sm:gap-4 space-y-0 pb-2">
+                            <Avatar className="h-12 w-12 sm:h-16 sm:w-16">
                                 <AvatarImage src={user.avatar_url || undefined} />
                                 <AvatarFallback>{user.full_name?.charAt(0) || user.username.charAt(0)}</AvatarFallback>
                             </Avatar>
-                            <div>
+                            <div className="flex-1 min-w-0">
                                 <CardTitle 
-                                    className="text-lg cursor-pointer hover:text-primary transition-colors"
+                                    className="text-base sm:text-lg cursor-pointer hover:text-primary transition-colors truncate"
                                     onClick={() => handleProfileClick(user.id)}
                                 >
                                     {user.full_name || user.username}
                                 </CardTitle>
-                                <CardDescription>{user.professional_role || 'No role specified'}</CardDescription>
+                                <CardDescription className="truncate">{user.professional_role || 'No role specified'}</CardDescription>
                             </div>
                         </CardHeader>
-                        <CardContent className="space-y-3">
+                        <CardContent className="space-y-3 p-4 sm:p-6">
                             <p className="text-xs text-muted-foreground">
                                 {type === 'received' ? 'Received' : 'Sent'} on {new Date(invitation.created_at).toLocaleDateString()}
                             </p>
                             {type === 'received' && (
-                                <div className="flex justify-end gap-2">
-                                    <Button variant="outline" size="sm" onClick={() => handleAcceptInvitation(invitation.id)}>
+                                <div className="flex flex-col sm:flex-row gap-2 sm:justify-end">
+                                    <Button variant="outline" size="sm" onClick={() => handleAcceptInvitation(invitation.id)} className="w-full sm:w-auto">
                                         <Check className="h-4 w-4 mr-2" /> Accept
                                     </Button>
-                                    <Button variant="ghost" size="sm" onClick={() => handleRejectInvitation(invitation.id)}>
+                                    <Button variant="ghost" size="sm" onClick={() => handleRejectInvitation(invitation.id)} className="w-full sm:w-auto">
                                         <X className="h-4 w-4 mr-2" /> Decline
                                     </Button>
                                 </div>
@@ -273,19 +273,19 @@ export default function MyNetworkPage() {
     );
 
     return (
-        <div className="flex-1 space-y-8 p-8 pt-6">
-            <div className="flex items-center justify-between space-y-2">
-                <h2 className="text-3xl font-bold tracking-tight">Manage your professional network</h2>
+        <div className="flex-1 space-y-6 p-4 sm:p-8 pt-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-2">
+                <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Manage your professional network</h2>
                 <Link href="/dashboard/my-network/invite-contacts">
-                    <Button>
+                    <Button className="w-full sm:w-auto">
                         <UserPlus className="mr-2 h-4 w-4" /> Invite contacts
                     </Button>
                 </Link>
             </div>
-            <p className="text-muted-foreground">Connect with professionals to grow your entrepreneurial ecosystem</p>
+            <p className="text-sm sm:text-base text-muted-foreground">Connect with professionals to grow your entrepreneurial ecosystem</p>
 
-            <div className="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0 md:space-x-4">
-                <div className="relative w-full md:w-1/3">
+            <div className="flex flex-col lg:flex-row items-center justify-between space-y-4 lg:space-y-0 lg:space-x-4">
+                <div className="relative w-full lg:w-1/3">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input 
                         placeholder="Search your network..." 
@@ -294,9 +294,9 @@ export default function MyNetworkPage() {
                         onChange={(e) => setSearchQuery(e.target.value)}
                     />
                 </div>
-                <div className="flex flex-wrap items-center space-x-2 w-full md:w-2/3 justify-end">
+                <div className="flex flex-wrap items-center gap-2 w-full lg:w-2/3 justify-end">
                     <Select>
-                        <SelectTrigger className="w-[150px]">
+                        <SelectTrigger className="w-full sm:w-[150px]">
                             <Settings2 className="mr-2 h-4 w-4" />
                             <SelectValue placeholder="Filters" />
                         </SelectTrigger>
@@ -307,7 +307,7 @@ export default function MyNetworkPage() {
                     </Select>
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="outline" className="ml-auto md:ml-0">
+                            <Button variant="outline" className="w-full sm:w-auto">
                                 <ArrowUpDown className="mr-2 h-4 w-4" /> Sort by <ChevronDown className="ml-2 h-4 w-4" />
                             </Button>
                         </DropdownMenuTrigger>
@@ -321,15 +321,15 @@ export default function MyNetworkPage() {
                 </div>
             </div>
 
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-                <TabsList>
-                    <TabsTrigger value="connections">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 w-full">
+                <TabsList className="w-full grid grid-cols-3">
+                    <TabsTrigger value="connections" className="text-xs sm:text-sm">
                         My Connections <span className="ml-2 text-xs font-semibold text-primary">{connections.length}</span>
                     </TabsTrigger>
-                    <TabsTrigger value="received-invitations">
+                    <TabsTrigger value="received-invitations" className="text-xs sm:text-sm">
                         Received Invitations <span className="ml-2 text-xs font-semibold text-primary">{receivedInvitations.length}</span>
                     </TabsTrigger>
-                    <TabsTrigger value="sent-invitations">
+                    <TabsTrigger value="sent-invitations" className="text-xs sm:text-sm">
                         Sent Invitations <span className="ml-2 text-xs font-semibold text-primary">{sentInvitations.length}</span>
                     </TabsTrigger>
                 </TabsList>
