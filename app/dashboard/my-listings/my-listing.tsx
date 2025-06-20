@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Edit, Trash2, Eye } from 'lucide-react';
 import { format } from 'date-fns';
 import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
 
 interface MyListingTableProps {
   listings: any[];
@@ -18,6 +19,21 @@ interface MyListingTableProps {
   onToggleStatus: (listing: any) => void;
   deletingId: string | null;
 }
+
+const getSkillColor = (skill: string) => {
+  const colors = [
+    'bg-blue-100 text-blue-800',
+    'bg-purple-100 text-purple-800',
+    'bg-green-100 text-green-800',
+    'bg-yellow-100 text-yellow-800',
+    'bg-red-100 text-red-800',
+    'bg-orange-100 text-orange-800',
+    'bg-indigo-100 text-indigo-800',
+    'bg-teal-100 text-teal-800',
+  ];
+  const index = skill.length % colors.length;
+  return colors[index];
+};
 
 const formatListingType = (listingType: string): string => {
   const typeMap: { [key: string]: string } = {
@@ -74,6 +90,7 @@ export function MyListingTable({
           <TableHead>As an</TableHead>
           <TableHead>Country</TableHead>
           <TableHead>Title</TableHead>
+          <TableHead>Skills</TableHead>
           <TableHead>Publication Date</TableHead>
           <TableHead>Compensation</TableHead>
           <TableHead>Status</TableHead>
@@ -94,6 +111,19 @@ export function MyListingTable({
             <TableCell>{formatProfileType(listing.profile_type)}</TableCell>
             <TableCell>{listing.location_country}</TableCell>
             <TableCell>{listing.title}</TableCell>
+            <TableCell>
+              {listing.skills ? (
+                <div className="flex flex-wrap gap-1">
+                  {listing.skills.split(', ').filter((skill: string) => skill.trim()).map((skill: string) => (
+                    <Badge key={skill} className={`text-xs ${getSkillColor(skill.trim())}`}>
+                      {skill.trim()}
+                    </Badge>
+                  ))}
+                </div>
+              ) : (
+                <span className="text-muted-foreground text-sm">No skills</span>
+              )}
+            </TableCell>
             <TableCell>{format(new Date(listing.created_at), 'yyyy-MM-dd')}</TableCell>
             <TableCell>{listing.compensation_type}</TableCell>
             <TableCell>

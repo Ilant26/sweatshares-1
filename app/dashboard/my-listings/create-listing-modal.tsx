@@ -6,6 +6,54 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { RichTextEditor } from '@/components/ui/rich-text-editor';
+import { Badge } from '@/components/ui/badge';
+import { X, Plus } from 'lucide-react';
+
+// Comprehensive skills list organized by categories
+const SKILLS_CATEGORIES = {
+    "Programming Languages": [
+        "JavaScript", "TypeScript", "Python", "Java", "C++", "C#", "Go", "Rust", "PHP", "Ruby", "Swift", "Kotlin", "Scala", "R", "MATLAB", "Dart", "Elixir", "Clojure", "Haskell", "Perl"
+    ],
+    "Frontend Development": [
+        "React", "Vue.js", "Angular", "Svelte", "Next.js", "Nuxt.js", "HTML5", "CSS3", "Sass", "Less", "Tailwind CSS", "Bootstrap", "Material-UI", "Ant Design", "Webpack", "Vite", "Babel", "Redux", "Zustand", "GraphQL"
+    ],
+    "Backend Development": [
+        "Node.js", "Express.js", "Django", "Flask", "Spring Boot", "ASP.NET", "Laravel", "FastAPI", "Gin", "Echo", "Rails", "Phoenix", "Koa", "Hapi", "Strapi", "NestJS", "AdonisJS", "Meteor", "Sails.js"
+    ],
+    "Database & Storage": [
+        "PostgreSQL", "MySQL", "MongoDB", "Redis", "SQLite", "Oracle", "SQL Server", "Cassandra", "DynamoDB", "Firebase", "Supabase", "Elasticsearch", "InfluxDB", "Neo4j", "ArangoDB", "CouchDB", "RethinkDB"
+    ],
+    "DevOps & Cloud": [
+        "Docker", "Kubernetes", "AWS", "Azure", "Google Cloud", "Heroku", "DigitalOcean", "Vercel", "Netlify", "Terraform", "Ansible", "Jenkins", "GitLab CI", "GitHub Actions", "CircleCI", "Travis CI", "Prometheus", "Grafana", "ELK Stack"
+    ],
+    "Mobile Development": [
+        "React Native", "Flutter", "Ionic", "Xamarin", "Native iOS", "Native Android", "Cordova", "PhoneGap", "Expo", "Kotlin Multiplatform", "SwiftUI", "Jetpack Compose"
+    ],
+    "Data Science & AI": [
+        "Machine Learning", "Deep Learning", "TensorFlow", "PyTorch", "Scikit-learn", "Pandas", "NumPy", "Matplotlib", "Seaborn", "Jupyter", "Apache Spark", "Hadoop", "Data Analysis", "Statistical Modeling", "Natural Language Processing", "Computer Vision", "Reinforcement Learning", "Neural Networks", "Big Data", "Data Visualization"
+    ],
+    "Design & UX": [
+        "UI/UX Design", "Figma", "Sketch", "Adobe XD", "InVision", "Framer", "Adobe Photoshop", "Adobe Illustrator", "Adobe InDesign", "Prototyping", "Wireframing", "User Research", "Usability Testing", "Design Systems", "Brand Identity", "Visual Design", "Interaction Design", "Information Architecture", "Accessibility Design"
+    ],
+    "Business & Management": [
+        "Product Management", "Project Management", "Agile", "Scrum", "Kanban", "Lean", "Six Sigma", "Business Strategy", "Market Research", "Competitive Analysis", "Business Development", "Sales", "Marketing", "Customer Success", "Operations Management", "Financial Modeling", "Budgeting", "Risk Management", "Change Management", "Leadership"
+    ],
+    "Marketing & Growth": [
+        "Digital Marketing", "SEO", "SEM", "Social Media Marketing", "Content Marketing", "Email Marketing", "Influencer Marketing", "Affiliate Marketing", "Growth Hacking", "Conversion Optimization", "Analytics", "Google Analytics", "Facebook Ads", "Google Ads", "Marketing Automation", "Brand Management", "Public Relations", "Event Marketing", "Video Marketing"
+    ],
+    "Finance & Investment": [
+        "Financial Analysis", "Venture Capital", "Angel Investing", "Private Equity", "Investment Banking", "Financial Modeling", "Due Diligence", "Portfolio Management", "Risk Assessment", "Mergers & Acquisitions", "IPO", "Fundraising", "Pitch Decks", "Valuation", "Accounting", "Tax Planning", "Compliance", "Regulatory Affairs"
+    ],
+    "Industry Expertise": [
+        "SaaS", "Fintech", "Healthtech", "Edtech", "E-commerce", "Marketplace", "B2B", "B2C", "Enterprise Software", "Consumer Apps", "Gaming", "Media & Entertainment", "Real Estate", "Transportation", "Logistics", "Manufacturing", "Retail", "Food & Beverage", "Fashion", "Sports", "Travel", "Energy", "Sustainability", "Blockchain", "Cryptocurrency", "NFTs", "Web3", "DeFi", "IoT", "Robotics", "Space Technology", "Biotechnology", "Pharmaceuticals", "Clean Energy", "Cybersecurity", "Data Privacy", "Compliance"
+    ],
+    "Soft Skills": [
+        "Leadership", "Communication", "Team Building", "Problem Solving", "Critical Thinking", "Creativity", "Adaptability", "Time Management", "Negotiation", "Conflict Resolution", "Mentoring", "Coaching", "Public Speaking", "Presentation Skills", "Strategic Thinking", "Decision Making", "Innovation", "Collaboration", "Networking", "Cultural Intelligence"
+    ],
+    "Tools & Platforms": [
+        "Git", "GitHub", "GitLab", "Bitbucket", "Slack", "Discord", "Microsoft Teams", "Zoom", "Notion", "Airtable", "Trello", "Asana", "Monday.com", "Jira", "Confluence", "Miro", "Loom", "Canva", "Zapier", "Make", "HubSpot", "Salesforce", "Stripe", "PayPal", "Shopify", "WooCommerce", "WordPress", "Webflow", "Squarespace", "Wix"
+    ]
+};
 
 interface CreateListingModalProps {
   open: boolean;
@@ -18,8 +66,8 @@ interface CreateListingModalProps {
   setListingType: (v: string) => void;
   fundingStage: string;
   setFundingStage: (v: string) => void;
-  skills: string;
-  setSkills: (v: string) => void;
+  skills: string[];
+  setSkills: (v: string[]) => void;
   locationCountry: string;
   setLocationCountry: (v: string) => void;
   locationCity: string;
@@ -70,7 +118,40 @@ export function CreateListingModal({
   setDescription,
   onSubmit,
 }: CreateListingModalProps) {
-  // ...copy the dialog/modal and form UI from page.tsx here, replacing state/handlers with props...
+  // Skills state management
+  const [skillsSearchTerm, setSkillsSearchTerm] = React.useState('');
+  const [isSkillsDropdownOpen, setIsSkillsDropdownOpen] = React.useState(false);
+
+  // Handle clicking outside skills dropdown
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (!target.closest('.skills-dropdown')) {
+        setIsSkillsDropdownOpen(false);
+      }
+    };
+
+    if (isSkillsDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isSkillsDropdownOpen]);
+
+  const handleSkillToggle = (skill: string) => {
+    if (skills.includes(skill)) {
+      setSkills(skills.filter(s => s !== skill));
+    } else if (skills.length < 5) {
+      setSkills([...skills, skill]);
+    }
+  };
+
+  const handleSkillRemove = (skillToRemove: string) => {
+    setSkills(skills.filter(skill => skill !== skillToRemove));
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
@@ -159,9 +240,89 @@ export function CreateListingModal({
           {!(profileType === "founder" && (["find-funding", "sell-startup"].includes(listingType))) && 
             !(profileType === "investor" && (["investment-opportunity", "buy-startup", "co-investor"].includes(listingType))) && 
             (profileType === "founder" || profileType === "investor" || profileType === "expert") && (
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="skills" className="text-right">Skills</Label>
-              <Textarea id="skills" placeholder="Ex: React, Node.js, Digital Marketing..." className="col-span-3" value={skills} onChange={e => setSkills(e.target.value)} />
+            <div className="grid grid-cols-4 items-start gap-4">
+              <Label className="text-right pt-2">Skills <span className="text-muted-foreground text-xs">({skills.length}/5)</span></Label>
+              <div className="col-span-3 space-y-3">
+                {/* Selected Skills Display */}
+                {skills.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {skills.map((skill) => (
+                      <Badge
+                        key={skill}
+                        variant="secondary"
+                        className="flex items-center gap-1 px-3 py-1"
+                      >
+                        {skill}
+                        <button
+                          type="button"
+                          onClick={() => handleSkillRemove(skill)}
+                          className="ml-1 hover:text-destructive transition-colors"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+
+                {/* Skills Selection */}
+                <div className="relative skills-dropdown">
+                  <div className="flex items-center gap-2">
+                    <Input
+                      placeholder={skills.length >= 5 ? "Maximum 5 skills reached" : "Search and select skills..."}
+                      value={skillsSearchTerm}
+                      onChange={(e) => setSkillsSearchTerm(e.target.value)}
+                      onFocus={() => skills.length < 5 && setIsSkillsDropdownOpen(true)}
+                      className="flex-1"
+                      disabled={skills.length >= 5}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => skills.length < 5 && setIsSkillsDropdownOpen(!isSkillsDropdownOpen)}
+                      disabled={skills.length >= 5}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+
+                  {/* Skills Dropdown */}
+                  {isSkillsDropdownOpen && skills.length < 5 && (
+                    <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-background border border-border rounded-md shadow-lg max-h-96 overflow-y-auto">
+                      <div className="p-2">
+                        {Object.entries(SKILLS_CATEGORIES).map(([category, categorySkills]) => (
+                          <div key={category} className="mb-4">
+                            <h4 className="font-medium text-sm text-muted-foreground mb-2 px-2">
+                              {category}
+                            </h4>
+                            <div className="grid grid-cols-2 gap-1">
+                              {categorySkills
+                                .filter(skill => 
+                                  skill.toLowerCase().includes(skillsSearchTerm.toLowerCase())
+                                )
+                                .map((skill) => (
+                                  <button
+                                    key={skill}
+                                    type="button"
+                                    onClick={() => handleSkillToggle(skill)}
+                                    className={`text-left px-2 py-1 rounded text-sm transition-colors ${
+                                      skills.includes(skill)
+                                        ? 'bg-primary text-primary-foreground'
+                                        : 'hover:bg-muted'
+                                    }`}
+                                  >
+                                    {skill}
+                                  </button>
+                                ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           )}
           {/* Location */}

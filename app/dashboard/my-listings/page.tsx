@@ -63,7 +63,7 @@ export default function MyListingsPage() {
     const [listingType, setListingType] = useState<string>("");
     const { user } = useSession();
     const [fundingStage, setFundingStage] = useState('');
-    const [skills, setSkills] = useState('');
+    const [skills, setSkills] = useState<string[]>([]);
     const [locationCountry, setLocationCountry] = useState('');
     const [locationCity, setLocationCity] = useState('');
     const [compensationValue, setCompensationValue] = useState<any>("");
@@ -181,7 +181,7 @@ export default function MyListingsPage() {
         setProfileType(listing.profile_type || '');
         setListingType(listing.listing_type || '');
         setFundingStage(listing.funding_stage || '');
-        setSkills(listing.skills || '');
+        setSkills(listing.skills ? listing.skills.split(', ').filter((s: string) => s.trim()) : []);
         setLocationCountry(listing.location_country || '');
         setLocationCity(listing.location_city || '');
         setCompensationType(listing.compensation_type || '');
@@ -221,7 +221,7 @@ export default function MyListingsPage() {
                 profile_type: profileType,
                 listing_type: listingType,
                 funding_stage: fundingStage,
-                skills,
+                skills: skills.join(', '),
                 location_country: locationCountry,
                 location_city: locationCity,
                 compensation_type: compensationType,
@@ -237,7 +237,7 @@ export default function MyListingsPage() {
                 profile_type: profileType,
                 listing_type: listingType,
                 funding_stage: fundingStage,
-                skills,
+                skills: skills.join(', '),
                 location_country: locationCountry,
                 location_city: locationCity,
                 compensation_type: compensationType,
@@ -265,7 +265,7 @@ export default function MyListingsPage() {
             setProfileType('');
             setListingType('');
             setFundingStage('');
-            setSkills('');
+            setSkills([]);
             setLocationCountry('');
             setLocationCity('');
             setCompensationType('');

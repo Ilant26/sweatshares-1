@@ -29,6 +29,21 @@ import { motion, AnimatePresence, Variants } from "framer-motion";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
+const getSkillColor = (skill: string) => {
+  const colors = [
+    'bg-blue-100 text-blue-800',
+    'bg-purple-100 text-purple-800',
+    'bg-green-100 text-green-800',
+    'bg-yellow-100 text-yellow-800',
+    'bg-red-100 text-red-800',
+    'bg-orange-100 text-orange-800',
+    'bg-indigo-100 text-indigo-800',
+    'bg-teal-100 text-teal-800',
+  ];
+  const index = skill.length % colors.length;
+  return colors[index];
+};
+
 // Function to format listing type values for display
 const formatListingType = (listingType: string): string => {
   const typeMap: { [key: string]: string } = {
@@ -553,7 +568,7 @@ export default function FindPartnerPage() {
                           )}
                           <div className="flex flex-wrap gap-2 mt-auto">
                             {displaySkills.map((skill: string) => (
-                              <Badge key={skill} variant="secondary">{skill}</Badge>
+                              <Badge key={skill} className={getSkillColor(skill)}>{skill}</Badge>
                             ))}
                             {moreSkills > 0 && (
                               <Tooltip>

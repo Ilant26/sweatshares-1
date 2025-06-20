@@ -35,6 +35,7 @@ import { getFriends } from "@/lib/friends";
 import { getMessages } from "@/lib/messages";
 import { supabase } from "@/lib/supabase";
 import { useEffect, useState } from "react";
+import { useToast } from '@/components/ui/use-toast';
 
 const mockUsers = [
   {
@@ -203,6 +204,7 @@ const suggestions = [
 export default function Page() {
   const { user, loading: userLoading } = useUser();
   const { savedProfiles, likedListings, loading: favoritesLoading } = useFavorites();
+  const { toast } = useToast();
 
   const [profile, setProfile] = useState<any>(null);
   const [connections, setConnections] = useState<any[]>([]);
@@ -212,6 +214,121 @@ export default function Page() {
   const [listings, setListings] = useState<any[]>([]);
   const [listingsLoading, setListingsLoading] = useState(true);
   const [isCreateListingOpen, setIsCreateListingOpen] = useState(false);
+
+  // --- Listing Modal State (copied/adapted from my-listings) ---
+  const [profileType, setProfileType] = useState("");
+  const [listingType, setListingType] = useState("");
+  const [fundingStage, setFundingStage] = useState("");
+  const [skills, setSkills] = useState<string[]>([]);
+  const [locationCountry, setLocationCountry] = useState("");
+  const [locationCity, setLocationCity] = useState("");
+  const [compensationType, setCompensationType] = useState("");
+  const [compensationValue, setCompensationValue] = useState("");
+  const [amount, setAmount] = useState("");
+  const [sector, setSector] = useState("");
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  // --- Effects for default values (copied/adapted) ---
+  useEffect(() => {
+    if (profileType && listingType) {
+      if (profileType === "founder" && listingType === "find-funding") {
+        setCompensationType("Equity");
+      } else if (profileType === "founder" && listingType === "expert-freelance") {
+        setCompensationType("Cash");
+      } else if (profileType === "investor" && listingType === "expert-freelance") {
+        setCompensationType("Cash");
+      } else if (profileType === "expert" && listingType === "expert-freelance") {
+        setCompensationType("Cash");
+      } else if (!compensationType) {
+        if (profileType === "founder" && ["employee", "mentor"].includes(listingType)) {
+          setCompensationType("Salary");
+        } else if (profileType === "founder" && ["cofounder"].includes(listingType)) {
+          setCompensationType("Equity");
+        } else if (profileType === "expert" && ["mission", "cofounder"].includes(listingType)) {
+          setCompensationType("Equity");
+        } else if (profileType === "expert" && ["job"].includes(listingType)) {
+          setCompensationType("Salary");
+        }
+      }
+    }
+  }, [profileType, listingType, compensationType]);
+
+  useEffect(() => {
+    if (!sector && profileType) {
+      if (profileType === "founder") {
+        setSector("Technology");
+      } else if (profileType === "investor") {
+        setSector("Finance");
+      } else if (profileType === "expert") {
+        setSector("Professional Services");
+      }
+    }
+  }, [profileType, sector]);
+
+  // --- Handler for creating a listing ---
+  const handleCreateOrUpdateListing = async () => {
+    if (!user) {
+      toast({ title: 'You must be logged in to create a listing.', variant: 'destructive' });
+      return;
+    }
+    if (!profileType || !listingType || !title || !description) {
+      toast({ title: 'Please fill in all mandatory fields: I am a, Looking to, Title, and Description.', variant: 'destructive' });
+      setIsCreating(false);
+      return;
+    }
+    setIsCreating(true);
+    let error;
+    try {
+      if (editingId) {
+        ({ error } = await supabase.from('listings').update({
+          user_id: user.id,
+          profile_type: profileType,
+          listing_type: listingType,
+          funding_stage: fundingStage,
+          skills: skills.join(', '),
+          location_country: locationCountry,
+          location_city: locationCity,
+          compensation_type: compensationType,
+          compensation_value: typeof compensationValue === 'object' ? compensationValue : { value: compensationValue },
+          amount,
+          sector,
+          title,
+          description: description || '',
+        }).eq('id', editingId));
+      } else {
+        ({ error } = await supabase.from('listings').insert({
+          user_id: user.id,
+          profile_type: profileType,
+          listing_type: listingType,
+          funding_stage: fundingStage,
+          skills: skills.join(', '),
+          location_country: locationCountry,
+          location_city: locationCity,
+          compensation_type: compensationType,
+          compensation_value: typeof compensationValue === 'object' ? compensationValue : { value: compensationValue },
+          amount,
+          sector,
+          title,
+          description: description || '',
+        }));
+      }
+      setIsCreating(false);
+      if (error) {
+        toast({ title: (editingId ? 'Failed to update' : 'Failed to create') + ' listing: ' + error.message, variant: 'destructive' });
+      } else {
+        toast({ title: editingId ? 'Listing updated!' : 'Listing created!' });
+        setIsCreateListingOpen(false);
+        setEditingId(null);
+        // Optionally, refresh listings here if needed
+      }
+    } catch (e) {
+      setIsCreating(false);
+      toast({ title: 'An error occurred.', variant: 'destructive' });
+    }
+  };
 
   // Fetch user profile
   useEffect(() => {
@@ -445,7 +562,11 @@ export default function Page() {
                       <AvatarFallback>{(user.full_name || user.username || "?")[0]}</AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="text-sm font-medium leading-none">{user.full_name || user.username}</p>
+                      <p className="text-sm font-medium leading-none">
+                        <Link href={`/dashboard/profile/${user.id}`} className="hover:underline text-primary">
+                          {user.full_name || user.username}
+                        </Link>
+                      </p>
                       <p className="text-sm text-muted-foreground">{user.professional_role}</p>
                     </div>
                   </div>
@@ -500,7 +621,11 @@ export default function Page() {
                 </Avatar>
                 <div className="flex-1">
                   <div className="flex justify-between items-center">
-                    <p className="text-sm font-medium leading-none">{message.sender.full_name || message.sender.username}</p>
+                    <p className="text-sm font-medium leading-none">
+                      <Link href={`/dashboard/profile/${message.sender.id}`} className="hover:underline text-primary">
+                        {message.sender.full_name || message.sender.username}
+                      </Link>
+                    </p>
                     <p className="text-xs text-muted-foreground">{new Date(message.created_at).toLocaleString()}</p>
                   </div>
                   <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
@@ -531,7 +656,15 @@ export default function Page() {
                     <AvatarFallback>{item.name?.charAt(0)}</AvatarFallback>
                   </Avatar>
                   <div>
-                    <p className="text-sm font-medium leading-none">{item.name}</p>
+                    {item.id && item.name && item.role && !item.id.startsWith('listing-') ? (
+                      <p className="text-sm font-medium leading-none">
+                        <Link href={`/dashboard/profile/${item.id}`} className="hover:underline text-primary">
+                          {item.name}
+                        </Link>
+                      </p>
+                    ) : (
+                      <p className="text-sm font-medium leading-none">{item.name}</p>
+                    )}
                     <p className="text-sm text-muted-foreground">{item.role}</p>
                   </div>
                 </div>
@@ -642,33 +775,33 @@ export default function Page() {
       <CreateListingModal
         open={isCreateListingOpen}
         onOpenChange={setIsCreateListingOpen}
-        isCreating={false}
-        editingId={null}
-        profileType={""}
-        setProfileType={() => {}}
-        listingType={""}
-        setListingType={() => {}}
-        fundingStage={""}
-        setFundingStage={() => {}}
-        skills={""}
-        setSkills={() => {}}
-        locationCountry={""}
-        setLocationCountry={() => {}}
-        locationCity={""}
-        setLocationCity={() => {}}
-        compensationType={""}
-        setCompensationType={() => {}}
-        compensationValue={{}}
-        setCompensationValue={() => {}}
-        amount={""}
-        setAmount={() => {}}
-        sector={""}
-        setSector={() => {}}
-        title={""}
-        setTitle={() => {}}
-        description={""}
-        setDescription={() => {}}
-        onSubmit={() => {}}
+        isCreating={isCreating}
+        editingId={editingId}
+        profileType={profileType}
+        setProfileType={setProfileType}
+        listingType={listingType}
+        setListingType={setListingType}
+        fundingStage={fundingStage}
+        setFundingStage={setFundingStage}
+        skills={skills}
+        setSkills={setSkills}
+        locationCountry={locationCountry}
+        setLocationCountry={setLocationCountry}
+        locationCity={locationCity}
+        setLocationCity={setLocationCity}
+        compensationType={compensationType}
+        setCompensationType={setCompensationType}
+        compensationValue={compensationValue}
+        setCompensationValue={setCompensationValue}
+        amount={amount}
+        setAmount={setAmount}
+        sector={sector}
+        setSector={setSector}
+        title={title}
+        setTitle={setTitle}
+        description={description}
+        setDescription={setDescription}
+        onSubmit={handleCreateOrUpdateListing}
       />
     </div>
   );
