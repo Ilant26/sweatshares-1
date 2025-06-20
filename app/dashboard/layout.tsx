@@ -9,7 +9,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar"
 import { ThemeSwitcher } from "@/components/theme-switcher"
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { ProtectedRoute } from '@/components/protected-route'
 import { useSession, UnreadMessagesProvider, UnreadInvitationsProvider } from '@/components/providers/session-provider'
 import { Toaster } from "@/components/ui/toaster"
@@ -43,6 +43,7 @@ const SIDEBAR_COOKIE_NAME = "sidebar_state";
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user } = useSession();
   const isMobile = useIsMobile();
   
@@ -119,11 +120,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     // Check for profile pages
     if (currentPath.startsWith('/dashboard/profile/')) {
       const profileId = currentPath.split('/').pop();
+      // Check if we came from find-partner by looking at the source parameter
+      const source = searchParams.get('source');
+      if (source === 'find-partner') {
+        return { name: 'Find My Partner', path: '/dashboard/find-partner' };
+      }
       return { name: 'Dashboard', path: '/dashboard' };
     }
 
-    // Check for listing detail pages
+    // Check for listing detail pages - special handling for find-partner navigation
     if (currentPath.startsWith('/dashboard/listings/')) {
+      // Check if we came from find-partner by looking at the source parameter
+      const source = searchParams.get('source');
+      if (source === 'find-partner') {
+        return { name: 'Find My Partner', path: '/dashboard/find-partner' };
+      }
       return { name: 'Listings', path: '/dashboard/listings' };
     }
 

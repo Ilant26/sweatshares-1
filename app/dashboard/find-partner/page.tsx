@@ -354,7 +354,7 @@ export default function FindPartnerPage() {
   };
 
   const handleProfileClick = (userId: string) => {
-    router.push(`/dashboard/profile/${userId}`);
+    router.push(`/dashboard/profile/${userId}?source=find-partner`);
   };
   const handleLikeListing = async (listingId: string) => {
     if (!user) return;
@@ -500,128 +500,142 @@ export default function FindPartnerPage() {
                   : typeof profile.skills === "string"
                   ? profile.skills.split(",").map((s: string) => s.trim()).filter((s: string) => Boolean(s))
                   : [];
-                const displaySkills = skillsArr.slice(0, 4);
-                const moreSkills = skillsArr.length > 4 ? skillsArr.length - 4 : 0;
+                const displaySkills = skillsArr.slice(0, 3);
+                const moreSkills = skillsArr.length > 3 ? skillsArr.length - 3 : 0;
                 return (
                   <motion.div
+                    key={profile.id}
                     variants={cardVariants}
                     initial="hidden"
                     animate="visible"
                     whileHover="hover"
-                    custom={idx}
+                    transition={{ delay: idx * 0.1 }}
                     className="h-full"
                   >
-                    <Card
-                      key={profile.id}
-                      className={cn(
-                        "group flex flex-col justify-between h-full bg-white dark:bg-zinc-900/60 border border-primary/10 shadow-lg hover:shadow-xl transition-all duration-200 hover:border-primary/40 rounded-2xl overflow-hidden"
-                      )}
-                      tabIndex={0}
-                      aria-label={`Profile card for ${profile.full_name}`}
-                    >
-                      <CardContent className="p-0 flex flex-col h-full">
-                        {/* Header with Avatar, Name, Role, Company, Profile Type, Location */}
-                        <div className="p-4 pb-2 flex items-center gap-3 border-b border-border/30 relative">
-                          <Avatar className="h-12 w-12 border-2 border-primary/30">
-                            <AvatarImage src={profile.avatar_url || undefined} alt={profile.full_name || undefined} />
-                            <AvatarFallback>{getInitials(profile.full_name)}</AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <div className="font-semibold text-base truncate cursor-pointer hover:text-primary transition-colors" onClick={() => handleProfileClick(profile.id)}>
-                                {profile.full_name}
+                    <Card className="group relative h-full bg-gradient-to-br from-white to-gray-50/50 dark:from-zinc-900/80 dark:to-zinc-800/60 border-0 shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] rounded-3xl overflow-hidden backdrop-blur-sm">
+                      {/* Gradient overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      
+                      <CardContent className="relative p-0 flex flex-col h-full">
+                        {/* Header Section */}
+                        <div className="p-6 pb-4">
+                          <div className="flex items-start gap-4">
+                            {/* Avatar with status indicator */}
+                            <div className="relative">
+                              <Avatar className="h-16 w-16 border-4 border-white/80 dark:border-zinc-800/80 shadow-lg">
+                                <AvatarImage src={profile.avatar_url || undefined} alt={profile.full_name || undefined} />
+                                <AvatarFallback className="text-lg font-semibold bg-gradient-to-br from-primary to-primary/80 text-white">
+                                  {getInitials(profile.full_name)}
+                                </AvatarFallback>
+                              </Avatar>
+                              {/* Online status indicator */}
+                              <div className="absolute -bottom-1 -right-1 h-4 w-4 bg-green-500 border-2 border-white dark:border-zinc-800 rounded-full" />
+                            </div>
+                            
+                            {/* Profile Info */}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h3 
+                                  className="font-bold text-lg text-gray-900 dark:text-white truncate cursor-pointer hover:text-primary transition-colors"
+                                  onClick={() => handleProfileClick(profile.id)}
+                                >
+                                  {profile.full_name}
+                                </h3>
+                                {profile.profile_type && (
+                                  <Badge className="bg-primary/10 text-primary border-primary/20 text-xs px-2 py-1 capitalize">
+                                    {profile.profile_type}
+                                  </Badge>
+                                )}
                               </div>
-                              {profile.profile_type && (
-                                <Badge variant="secondary" className="ml-1 text-xs px-2 py-0.5 capitalize">
-                                  {profile.profile_type}
+                              
+                              {profile.professional_role && (
+                                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                  {profile.professional_role}
+                                </p>
+                              )}
+                              
+                              {profile.company && (
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                                  {profile.company}
+                                </p>
+                              )}
+                              
+                              {/* Location and Date */}
+                              <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                                <MapPin className="h-3 w-3" />
+                                <span>{profile.country || "Location not specified"}</span>
+                                <span className="mx-1">•</span>
+                                <span>{profile.created_at ? format(new Date(profile.created_at), "MMM yyyy") : "Recently joined"}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Bio Section */}
+                        {profile.bio && (
+                          <div className="px-6 pb-4">
+                            <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-3 leading-relaxed">
+                              {profile.bio}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Skills Section */}
+                        {displaySkills.length > 0 && (
+                          <div className="px-6 pb-4">
+                            <div className="flex flex-wrap gap-2">
+                              {displaySkills.map((skill: string) => (
+                                <Badge 
+                                  key={skill} 
+                                  className={`${getSkillColor(skill)} text-xs px-3 py-1 font-medium border-0`}
+                                >
+                                  {skill}
+                                </Badge>
+                              ))}
+                              {moreSkills > 0 && (
+                                <Badge variant="outline" className="text-xs px-3 py-1 font-medium border-gray-200 dark:border-gray-700">
+                                  +{moreSkills} more
                                 </Badge>
                               )}
                             </div>
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-                              {profile.professional_role && <span className="truncate">{profile.professional_role}</span>}
-                              {profile.company && <span className="truncate">• {profile.company}</span>}
-                            </div>
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-                              <MapPin className="h-3 w-3" />
-                              <span>{profile.country || "-"}</span>
-                              <span className="ml-auto">{profile.created_at ? format(new Date(profile.created_at), "dd MMM yyyy") : "-"}</span>
-                            </div>
                           </div>
-                        </div>
-                        {/* Bio, Skills */}
-                        <div className="flex-1 flex flex-col px-4 pt-3 pb-1">
-                          {profile.bio && profile.bio.length > 120 ? (
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <div className="line-clamp-3 text-sm mb-2 cursor-help" tabIndex={0} aria-label="Profile bio">
-                                  {profile.bio}
-                                </div>
-                              </TooltipTrigger>
-                              <TooltipContent side="top">
-                                <span className="max-w-xs block whitespace-pre-line">{profile.bio}</span>
-                              </TooltipContent>
-                            </Tooltip>
-                          ) : (
-                            <div className="line-clamp-3 text-sm mb-2" tabIndex={0} aria-label="Profile bio">
-                              {profile.bio}
-                            </div>
-                          )}
-                          <div className="flex flex-wrap gap-2 mt-auto">
-                            {displaySkills.map((skill: string) => (
-                              <Badge key={skill} className={getSkillColor(skill)}>{skill}</Badge>
-                            ))}
-                            {moreSkills > 0 && (
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Badge variant="outline" className="cursor-pointer">+{moreSkills} more</Badge>
-                                </TooltipTrigger>
-                                <TooltipContent side="top">
-                                  <span>{skillsArr.slice(4).join(", ")}</span>
-                                </TooltipContent>
-                              </Tooltip>
+                        )}
+
+                        {/* Action Buttons */}
+                        <div className="mt-auto p-6 pt-4">
+                          <div className="flex items-center gap-3">
+                            <Button
+                              variant="default"
+                              size="sm"
+                              className="flex-1 bg-primary hover:bg-primary/90 text-white font-semibold rounded-xl h-10"
+                              onClick={() => handleProfileClick(profile.id)}
+                            >
+                              <Eye className="h-4 w-4 mr-2" />
+                              View Profile
+                            </Button>
+                            
+                            {user && profile.id !== user.id && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-10 w-10 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-yellow-50 dark:hover:bg-yellow-900/20"
+                                onClick={() => {
+                                  if (isProfileSaved(profile.id)) unsaveProfile(profile.id);
+                                  else saveProfile(profile.id);
+                                }}
+                                disabled={favoritesLoading}
+                              >
+                                <Star
+                                  className={`h-4 w-4 ${
+                                    isProfileSaved(profile.id)
+                                      ? "fill-yellow-400 text-yellow-500"
+                                      : "text-gray-400 hover:text-yellow-500"
+                                  }`}
+                                  strokeWidth={isProfileSaved(profile.id) ? 0 : 1.5}
+                                />
+                              </Button>
                             )}
                           </div>
-                        </div>
-                        {/* Divider */}
-                        <div className="border-t border-border/30" />
-                        {/* Actions */}
-                        <div className="p-4 flex items-center gap-2">
-                          <Button
-                            variant="default"
-                            className="flex-1 font-semibold"
-                            onClick={() => handleProfileClick(profile.id)}
-                            aria-label={`See profile of ${profile.full_name}`}
-                          >
-                            <Eye className="h-4 w-4 mr-1" /> See Profile
-                          </Button>
-                          {user && profile.id !== user.id && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className={cn(
-                                "transition-colors rounded-full",
-                                isProfileSaved(profile.id)
-                                  ? "hover:bg-yellow-50"
-                                  : "hover:bg-accent"
-                              )}
-                              onClick={() => {
-                                if (isProfileSaved(profile.id)) unsaveProfile(profile.id);
-                                else saveProfile(profile.id);
-                              }}
-                              disabled={favoritesLoading}
-                              aria-label={isProfileSaved(profile.id) ? `Remove ${profile.full_name} from favorites` : `Add ${profile.full_name} to favorites`}
-                            >
-                              <Star
-                                className={cn(
-                                  "h-5 w-5",
-                                  isProfileSaved(profile.id)
-                                    ? "fill-yellow-400 text-yellow-500"
-                                    : "text-muted-foreground"
-                                )}
-                                strokeWidth={isProfileSaved(profile.id) ? 0 : 1.5}
-                              />
-                            </Button>
-                          )}
                         </div>
                       </CardContent>
                     </Card>
@@ -631,127 +645,149 @@ export default function FindPartnerPage() {
                 const listing = item.data;
                 return (
                   <motion.div
+                    key={listing.id}
                     variants={cardVariants}
                     initial="hidden"
                     animate="visible"
                     whileHover="hover"
-                    custom={idx}
+                    transition={{ delay: idx * 0.1 }}
                     className="h-full"
                   >
-                    <Card className="group flex flex-col justify-between h-full bg-white dark:bg-zinc-900/60 border border-primary/10 shadow-lg hover:shadow-xl transition-all duration-200 hover:border-primary/40 rounded-2xl overflow-hidden">
-                      <CardContent className="p-0 flex flex-col h-full">
-                        <motion.div 
-                          variants={fadeIn}
-                          className="flex flex-col h-full"
-                        >
-                          {/* Header with Badge and Avatar */}
-                          <motion.div variants={slideInLeft} className="p-4 pb-2 flex items-center gap-3 border-b border-border/30">
-                            <Avatar className="h-12 w-12 border-2 border-primary/30">
+                    <Card className="group relative h-full bg-gradient-to-br from-white to-gray-50/50 dark:from-zinc-900/80 dark:to-zinc-800/60 border-0 shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] rounded-3xl overflow-hidden backdrop-blur-sm">
+                      {/* Gradient overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      
+                      <CardContent className="relative p-0 flex flex-col h-full">
+                        {/* Header Section */}
+                        <div className="p-6 pb-4">
+                          <div className="flex items-start gap-4">
+                            {/* Avatar */}
+                            <Avatar className="h-16 w-16 border-4 border-white/80 dark:border-zinc-800/80 shadow-lg">
                               <AvatarImage src={listing.profiles?.avatar_url || undefined} alt={listing.profiles?.full_name || 'User'} />
-                              <AvatarFallback>{listing.profiles?.full_name?.charAt(0) || 'U'}</AvatarFallback>
+                              <AvatarFallback className="text-lg font-semibold bg-gradient-to-br from-primary to-primary/80 text-white">
+                                {listing.profiles?.full_name?.charAt(0) || 'U'}
+                              </AvatarFallback>
                             </Avatar>
+                            
+                            {/* Listing Info */}
                             <div className="flex-1 min-w-0">
-                              <div 
-                                className="font-semibold text-base truncate cursor-pointer hover:text-primary transition-colors"
-                                onClick={() => handleProfileClick(listing.profiles?.id)}
-                              >
-                                {listing.profiles?.full_name || 'Unknown'}
+                              <div className="flex items-center gap-2 mb-1">
+                                <h3 
+                                  className="font-bold text-lg text-gray-900 dark:text-white truncate cursor-pointer hover:text-primary transition-colors"
+                                  onClick={() => handleProfileClick(listing.profiles?.id)}
+                                >
+                                  {listing.profiles?.full_name || 'Unknown User'}
+                                </h3>
+                                <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/20 text-xs px-2 py-1">
+                                  {formatListingType(listing.listing_type)}
+                                </Badge>
                               </div>
-                              <div className="text-xs text-muted-foreground truncate">{listing.profiles?.professional_role}</div>
+                              
+                              {listing.profiles?.professional_role && (
+                                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                  {listing.profiles.professional_role}
+                                </p>
+                              )}
+                              
+                              {/* Date */}
+                              <p className="text-xs text-gray-500 dark:text-gray-400">
+                                {listing.created_at ? format(new Date(listing.created_at), "MMM dd, yyyy") : "Recently posted"}
+                              </p>
                             </div>
-                            <Badge variant="secondary" className="text-xs px-2 py-1 whitespace-nowrap">{formatListingType(listing.listing_type)}</Badge>
-                          </motion.div>
-                          {/* Title and Publication Date */}
-                          <motion.div variants={slideInRight} className="px-4 pt-3 pb-1">
-                            <h2 className="text-lg font-bold line-clamp-2 group-hover:text-primary transition-colors mb-1">{listing.title}</h2>
-                            <span className="text-xs text-muted-foreground">{listing.created_at ? new Date(listing.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : ''}</span>
-                          </motion.div>
-                          {/* Description Preview */}
-                          <motion.div 
-                            variants={fadeIn}
-                            className="px-4 text-sm text-muted-foreground line-clamp-3 mb-2 prose prose-sm max-w-none dark:prose-invert prose-headings:font-semibold prose-p:text-muted-foreground prose-a:text-primary hover:prose-a:text-primary/80 prose-img:rounded-md prose-img:shadow-md"
+                          </div>
+                        </div>
+
+                        {/* Title and Description */}
+                        <div className="px-6 pb-4">
+                          <h4 className="font-bold text-lg text-gray-900 dark:text-white mb-3 line-clamp-2 group-hover:text-primary transition-colors">
+                            {listing.title}
+                          </h4>
+                          
+                          <div 
+                            className="text-sm text-gray-600 dark:text-gray-400 line-clamp-3 leading-relaxed mb-4"
                             dangerouslySetInnerHTML={{ __html: listing.description || '' }}
                           />
-                          {/* Funding Stage and Compensation */}
-                          <motion.div variants={slideInRight} className="px-4 mb-2">
-                            <div className="flex flex-wrap gap-2">
-                              {listing.funding_stage && (
-                                <div className="flex items-center gap-1.5 bg-primary/5 text-primary px-2.5 py-1 rounded-full text-xs font-medium">
-                                  <Briefcase className="h-3.5 w-3.5" />
-                                  <span>{listing.funding_stage}</span>
-                                </div>
-                              )}
-                              {listing.compensation_type && (
-                                <div className="flex items-center gap-1.5 bg-primary/5 text-primary px-2.5 py-1 rounded-full text-xs font-medium">
-                                  <DollarSign className="h-3.5 w-3.5" />
-                                  <span>{listing.compensation_type}</span>
-                                  {listing.compensation_value && (
-                                    <span className="text-primary/80">
-                                      {typeof listing.compensation_value === 'object' 
-                                        ? Object.entries(listing.compensation_value)
-                                            .map(([key, value]) => `${value}`)
-                                            .join(' + ')
-                                        : listing.compensation_value}
-                                    </span>
-                                  )}
-                                </div>
-                              )}
-                              {listing.amount && (
-                                <div className="flex items-center gap-1.5 bg-primary/5 text-primary px-2.5 py-1 rounded-full text-xs font-medium">
-                                  <DollarSign className="h-3.5 w-3.5" />
-                                  <span>Amount: {listing.amount}</span>
-                                </div>
-                              )}
-                            </div>
-                          </motion.div>
-                          {/* Location and Sector */}
-                          <motion.div variants={slideInRight} className="px-4 flex items-center gap-3 text-muted-foreground text-xs mb-2">
-                            <MapPin className="h-4 w-4" />
-                            <span>{listing.location_city ? `${listing.location_city}, ` : ""}{listing.location_country}</span>
-                            {listing.sector && <><span className="mx-2">•</span><Badge variant="outline" className="text-xs">{listing.sector}</Badge></>}
-                          </motion.div>
-                          {/* Action Buttons */}
-                          <motion.div variants={scaleIn} className="mt-auto border-t border-border/30">
-                            <div className="p-4 flex items-center gap-2">
-                              <Button
-                                variant="default"
-                                className="flex-1 font-semibold"
-                                onClick={() => router.push(`/listing/${listing.id}`)}
-                              >
-                                View Details
-                              </Button>
-                              <div className="flex gap-1">
-                                <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
-                                  <Button 
-                                    variant="ghost" 
-                                    size="icon" 
-                                    className="h-8 w-8" 
-                                    aria-label="Favorite"
-                                    onClick={() => handleLikeListing(listing.id)}
-                                  >
-                                    <Star className={`h-4 w-4 ${isListingLiked(listing.id) ? 'fill-yellow-400 text-yellow-500' : 'text-muted-foreground'}`} strokeWidth={isListingLiked(listing.id) ? 0 : 1.5} />
-                                  </Button>
-                                </motion.div>
-                                <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
-                                  <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Share">
-                                    <Share2 className="h-4 w-4" />
-                                  </Button>
-                                </motion.div>
-                                <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
-                                  <Button 
-                                    variant="ghost" 
-                                    size="icon" 
-                                    className="h-8 w-8" 
-                                    aria-label="Contact"
-                                    onClick={() => handleMessage(listing.user_id)}
-                                  >
-                                    <Mail className="h-4 w-4" />
-                                  </Button>
-                                </motion.div>
+                        </div>
+
+                        {/* Details Section */}
+                        <div className="px-6 pb-4 space-y-3">
+                          {/* Funding Stage, Compensation, Amount */}
+                          <div className="flex flex-wrap gap-2">
+                            {listing.funding_stage && (
+                              <div className="flex items-center gap-1.5 bg-blue-500/10 text-blue-600 px-3 py-1.5 rounded-full text-xs font-medium">
+                                <Briefcase className="h-3.5 w-3.5" />
+                                <span>{listing.funding_stage}</span>
                               </div>
+                            )}
+                            {listing.compensation_type && (
+                              <div className="flex items-center gap-1.5 bg-green-500/10 text-green-600 px-3 py-1.5 rounded-full text-xs font-medium">
+                                <DollarSign className="h-3.5 w-3.5" />
+                                <span>{listing.compensation_type}</span>
+                              </div>
+                            )}
+                            {listing.amount && (
+                              <div className="flex items-center gap-1.5 bg-purple-500/10 text-purple-600 px-3 py-1.5 rounded-full text-xs font-medium">
+                                <DollarSign className="h-3.5 w-3.5" />
+                                <span>{listing.amount}</span>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Location and Sector */}
+                          <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                            <MapPin className="h-3 w-3" />
+                            <span>{listing.location_city ? `${listing.location_city}, ` : ""}{listing.location_country}</span>
+                            {listing.sector && (
+                              <>
+                                <span className="mx-1">•</span>
+                                <Badge variant="outline" className="text-xs border-gray-200 dark:border-gray-700">
+                                  {listing.sector}
+                                </Badge>
+                              </>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="mt-auto p-6 pt-4">
+                          <div className="flex items-center gap-3">
+                            <Button
+                              variant="default"
+                              size="sm"
+                              className="flex-1 bg-primary hover:bg-primary/90 text-white font-semibold rounded-xl h-10"
+                              onClick={() => router.push(`/dashboard/listings/${listing.id}?source=find-partner`)}
+                            >
+                              <Eye className="h-4 w-4 mr-2" />
+                              View Listing
+                            </Button>
+                            
+                            <div className="flex gap-1">
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                className="h-10 w-10 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-yellow-50 dark:hover:bg-yellow-900/20" 
+                                onClick={() => handleLikeListing(listing.id)}
+                              >
+                                <Star 
+                                  className={`h-4 w-4 ${
+                                    isListingLiked(listing.id) 
+                                      ? "fill-yellow-400 text-yellow-500" 
+                                      : "text-gray-400 hover:text-yellow-500"
+                                  }`} 
+                                  strokeWidth={isListingLiked(listing.id) ? 0 : 1.5} 
+                                />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                className="h-10 w-10 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                                onClick={() => handleMessage(listing.user_id)}
+                              >
+                                <Mail className="h-4 w-4 text-gray-400 hover:text-blue-500" />
+                              </Button>
                             </div>
-                          </motion.div>
-                        </motion.div>
+                          </div>
+                        </div>
                       </CardContent>
                     </Card>
                   </motion.div>
