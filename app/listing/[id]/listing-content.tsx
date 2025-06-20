@@ -87,6 +87,11 @@ export function ListingContent({ listing, profile }: ListingContentProps) {
             </Button>
           </motion.div>
 
+          {/* Profile Card */}
+          <motion.div variants={itemVariants} className="mb-8">
+            <ProfileCard profile={profile} />
+          </motion.div>
+
           {/* Listing Card */}
           <motion.div variants={itemVariants}>
             <Card className="mb-8 border-none shadow-lg bg-white dark:bg-zinc-900/50">
@@ -143,7 +148,47 @@ export function ListingContent({ listing, profile }: ListingContentProps) {
                   )}
                 </motion.div>
 
-                <Separator className="my-8" />
+                {/* Compensation */}
+                {listing.compensation_value && (
+                  <motion.div variants={itemVariants}>
+                    {(() => {
+                      const entries = Object.entries(listing.compensation_value).filter(([_, v]) => v && v !== '');
+                      if (entries.length === 0) return null;
+                      return (
+                        <>
+                          <Separator className="my-8" />
+                          <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                            <Briefcase className="h-5 w-5 text-primary" />
+                            <div>
+                              <p className="text-sm text-muted-foreground">Compensation</p>
+                              <p className="font-medium">
+                                {listing.compensation_type}
+                                {listing.compensation_value && (
+                                  (() => {
+                                    if (typeof listing.compensation_value === 'object') {
+                                      const val = listing.compensation_value;
+                                      return ' - ' + Object.entries(val).map(([k, v]) => `${k.charAt(0).toUpperCase() + k.slice(1)}: ${v}`).join(' | ');
+                                    } else {
+                                      try {
+                                        const parsed = JSON.parse(listing.compensation_value);
+                                        if (typeof parsed === 'object') {
+                                          return ' - ' + Object.entries(parsed).map(([k, v]) => `${k.charAt(0).toUpperCase() + k.slice(1)}: ${v}`).join(' | ');
+                                        }
+                                      } catch {
+                                        return ` - ${listing.compensation_value}`;
+                                      }
+                                      return ` - ${listing.compensation_value}`;
+                                    }
+                                  })()
+                                )}
+                              </p>
+                            </div>
+                          </div>
+                        </>
+                      );
+                    })()}
+                  </motion.div>
+                )}
 
                 {/* Description */}
                 <motion.div variants={itemVariants} className="space-y-4">
@@ -189,55 +234,8 @@ export function ListingContent({ listing, profile }: ListingContentProps) {
                     </div>
                   </motion.div>
                 )}
-
-                {/* Compensation */}
-                {listing.compensation_value && (
-                  <motion.div variants={itemVariants}>
-                    {(() => {
-                      const entries = Object.entries(listing.compensation_value).filter(([_, v]) => v && v !== '');
-                      if (entries.length === 0) return null;
-                      return (
-                        <>
-                          <Separator className="my-8" />
-                          <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                            <Briefcase className="h-5 w-5 text-primary" />
-                            <div>
-                              <p className="text-sm text-muted-foreground">Compensation</p>
-                              <p className="font-medium">
-                                {listing.compensation_type}
-                                {listing.compensation_value && (
-                                  (() => {
-                                    if (typeof listing.compensation_value === 'object') {
-                                      const val = listing.compensation_value;
-                                      return ' - ' + Object.entries(val).map(([k, v]) => `${k.charAt(0).toUpperCase() + k.slice(1)}: ${v}`).join(' | ');
-                                    } else {
-                                      try {
-                                        const parsed = JSON.parse(listing.compensation_value);
-                                        if (typeof parsed === 'object') {
-                                          return ' - ' + Object.entries(parsed).map(([k, v]) => `${k.charAt(0).toUpperCase() + k.slice(1)}: ${v}`).join(' | ');
-                                        }
-                                      } catch {
-                                        return ` - ${listing.compensation_value}`;
-                                      }
-                                      return ` - ${listing.compensation_value}`;
-                                    }
-                                  })()
-                                )}
-                              </p>
-                            </div>
-                          </div>
-                        </>
-                      );
-                    })()}
-                  </motion.div>
-                )}
               </CardContent>
             </Card>
-          </motion.div>
-
-          {/* Profile Card */}
-          <motion.div variants={itemVariants}>
-            <ProfileCard profile={profile} />
           </motion.div>
         </div>
       </motion.div>
