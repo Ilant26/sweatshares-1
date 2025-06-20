@@ -392,55 +392,57 @@ export default function MyInvoicesPage() {
   }
 
   return (
-    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-      <div className="flex items-center justify-between space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight">Invoice Management</h2>
-        <div className="flex items-center space-x-2">
+    <div className="flex-1 space-y-4 p-4 sm:p-8 pt-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-2">
+        <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Invoice Management</h2>
+        <div className="flex items-center gap-2">
           <Dialog open={newInvoiceDialogOpen} onOpenChange={setNewInvoiceDialogOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button className="w-full sm:w-auto">
                 <Plus className="mr-2 h-4 w-4" /> New Invoice
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+            <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto w-[95vw]">
               <DialogHeader>
-                <DialogTitle className="text-2xl font-bold">Create New Invoice</DialogTitle>
-                <DialogDescription className="text-base">
+                <DialogTitle className="text-xl sm:text-2xl font-bold">Create New Invoice</DialogTitle>
+                <DialogDescription className="text-sm sm:text-base">
                   Fill in the details below to create a new invoice for your client.
                 </DialogDescription>
               </DialogHeader>
-              <div className="grid gap-6 py-4">
+              <div className="grid gap-4 sm:gap-6 py-4">
                 {/* Client Selection Section */}
-                <Card className="p-4">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-semibold">Client Information</h3>
-                      <div className="flex gap-2">
+                <Card className="p-3 sm:p-4">
+                  <div className="space-y-3 sm:space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
+                      <h3 className="text-base sm:text-lg font-semibold">Client Information</h3>
+                      <div className="flex gap-2 w-full sm:w-auto">
                         <Button
                           type="button"
                           variant={clientType === 'network' ? 'default' : 'outline'}
                           size="sm"
                           onClick={() => setClientType('network')}
-                          className="flex items-center gap-2"
+                          className="flex items-center gap-2 flex-1 sm:flex-none"
                         >
                           <User className="h-4 w-4" />
-                          Network Contact
+                          <span className="hidden sm:inline">Network Contact</span>
+                          <span className="sm:hidden">Network</span>
                         </Button>
                         <Button
                           type="button"
                           variant={clientType === 'external' ? 'default' : 'outline'}
                           size="sm"
                           onClick={() => setClientType('external')}
-                          className="flex items-center gap-2"
+                          className="flex items-center gap-2 flex-1 sm:flex-none"
                         >
                           <Building2 className="h-4 w-4" />
-                          External Client
+                          <span className="hidden sm:inline">External Client</span>
+                          <span className="sm:hidden">External</span>
                         </Button>
                       </div>
                     </div>
-                    <div className="grid gap-4">
+                    <div className="grid gap-3 sm:gap-4">
                       <div className="flex flex-col gap-2">
-                        <Label htmlFor="client" className="text-sm font-medium">Select Client</Label>
+                        <Label htmlFor="client" className="text-xs sm:text-sm font-medium">Select Client</Label>
                         {clientType === 'network' ? (
                           <div className="w-full">
                             <Select
@@ -460,7 +462,7 @@ export default function MyInvoicesPage() {
                             </Select>
                           </div>
                         ) : (
-                          <div className="flex gap-2">
+                          <div className="flex flex-col sm:flex-row gap-2">
                             <div className="flex-1">
                               <Select
                                 value={newInvoice.client}
@@ -487,12 +489,12 @@ export default function MyInvoicesPage() {
                 </Card>
 
                 {/* Invoice Details Section */}
-                <Card className="p-4">
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold">Invoice Details</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Card className="p-3 sm:p-4">
+                  <div className="space-y-3 sm:space-y-4">
+                    <h3 className="text-base sm:text-lg font-semibold">Invoice Details</h3>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="invoiceNumber" className="text-sm font-medium">Invoice Number</Label>
+                        <Label htmlFor="invoiceNumber" className="text-xs sm:text-sm font-medium">Invoice Number</Label>
                         <Input
                           id="invoiceNumber"
                           placeholder="e.g., INV-2025-001"
@@ -501,7 +503,7 @@ export default function MyInvoicesPage() {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="description" className="text-sm font-medium">Description</Label>
+                        <Label htmlFor="description" className="text-xs sm:text-sm font-medium">Description</Label>
                         <Input
                           id="description"
                           placeholder="Brief description of the invoice"
@@ -510,9 +512,9 @@ export default function MyInvoicesPage() {
                         />
                       </div>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="issueDate" className="text-sm font-medium">Issue Date</Label>
+                        <Label htmlFor="issueDate" className="text-xs sm:text-sm font-medium">Issue Date</Label>
                         <Popover>
                           <PopoverTrigger asChild>
                             <Button
@@ -537,7 +539,7 @@ export default function MyInvoicesPage() {
                         </Popover>
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="dueDate" className="text-sm font-medium">Due Date</Label>
+                        <Label htmlFor="dueDate" className="text-xs sm:text-sm font-medium">Due Date</Label>
                         <Popover>
                           <PopoverTrigger asChild>
                             <Button
@@ -566,25 +568,25 @@ export default function MyInvoicesPage() {
                 </Card>
 
                 {/* Line Items Section */}
-                <Card className="p-4">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-semibold">Line Items</h3>
+                <Card className="p-3 sm:p-4">
+                  <div className="space-y-3 sm:space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
+                      <h3 className="text-base sm:text-lg font-semibold">Line Items</h3>
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={handleAddLineItem}
-                        className="gap-2"
+                        className="gap-2 w-full sm:w-auto"
                       >
                         <Plus className="h-4 w-4" /> Add Item
                       </Button>
                     </div>
-                    <div className="space-y-4">
+                    <div className="space-y-3 sm:space-y-4">
                       {newInvoice.items.map((item, index) => (
-                        <Card key={index} className="p-4 border-2">
-                          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <Card key={index} className="p-3 sm:p-4 border-2">
+                          <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 sm:gap-4">
                             <div className="space-y-2">
-                              <Label htmlFor={`item-description-${index}`} className="text-sm font-medium">Description</Label>
+                              <Label htmlFor={`item-description-${index}`} className="text-xs sm:text-sm font-medium">Description</Label>
                               <Input
                                 id={`item-description-${index}`}
                                 placeholder="e.g., Web Development"
@@ -593,7 +595,7 @@ export default function MyInvoicesPage() {
                               />
                             </div>
                             <div className="space-y-2">
-                              <Label htmlFor={`item-quantity-${index}`} className="text-sm font-medium">Quantity</Label>
+                              <Label htmlFor={`item-quantity-${index}`} className="text-xs sm:text-sm font-medium">Quantity</Label>
                               <Input
                                 id={`item-quantity-${index}`}
                                 type="number"
@@ -604,7 +606,7 @@ export default function MyInvoicesPage() {
                               />
                             </div>
                             <div className="space-y-2">
-                              <Label htmlFor={`item-price-${index}`} className="text-sm font-medium">Unit Price (€)</Label>
+                              <Label htmlFor={`item-price-${index}`} className="text-xs sm:text-sm font-medium">Unit Price (€)</Label>
                               <Input
                                 id={`item-price-${index}`}
                                 type="number"
@@ -616,7 +618,7 @@ export default function MyInvoicesPage() {
                               />
                             </div>
                             <div className="space-y-2">
-                              <Label htmlFor={`item-total-${index}`} className="text-sm font-medium">Total (€)</Label>
+                              <Label htmlFor={`item-total-${index}`} className="text-xs sm:text-sm font-medium">Total (€)</Label>
                               <Input
                                 id={`item-total-${index}`}
                                 type="number"
@@ -643,10 +645,10 @@ export default function MyInvoicesPage() {
                         </Card>
                       ))}
                       {newInvoice.items.length === 0 && (
-                        <div className="text-center py-8 border-2 border-dashed rounded-lg bg-muted/50">
-                          <FileQuestion className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
-                          <p className="text-base text-muted-foreground font-medium">No line items added yet</p>
-                          <p className="text-sm text-muted-foreground mt-1">Click "Add Item" to start adding items to your invoice</p>
+                        <div className="text-center py-6 border-2 border-dashed rounded-lg">
+                          <FileQuestion className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                          <p className="text-sm text-muted-foreground">No line items added yet</p>
+                          <p className="text-xs text-muted-foreground mt-1">Click "Add Item" to start adding items to your invoice</p>
                         </div>
                       )}
                     </div>
@@ -654,11 +656,11 @@ export default function MyInvoicesPage() {
                 </Card>
 
                 {/* Notes Section */}
-                <Card className="p-4">
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold">Additional Notes</h3>
+                <Card className="p-3 sm:p-4">
+                  <div className="space-y-3 sm:space-y-4">
+                    <h3 className="text-base sm:text-lg font-semibold">Additional Notes</h3>
                     <div className="space-y-2">
-                      <Label htmlFor="notes" className="text-sm font-medium">Notes</Label>
+                      <Label htmlFor="notes" className="text-xs sm:text-sm font-medium">Notes</Label>
                       <Textarea
                         id="notes"
                         placeholder="Add any additional notes or terms for this invoice"
@@ -682,133 +684,193 @@ export default function MyInvoicesPage() {
         </div>
       </div>
 
-      <div className="text-muted-foreground text-sm">View, manage and track all your invoices</div>
+      <div className="text-muted-foreground text-xs sm:text-sm">View, manage and track all your invoices</div>
 
-      <Tabs defaultValue="sent" onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-fit grid-cols-2">
-          <TabsTrigger value="sent">My Invoices ({invoices.length})</TabsTrigger>
-          <TabsTrigger value="received">Received Invoices ({invoices.length})</TabsTrigger>
+      <Tabs defaultValue="sent" onValueChange={setActiveTab} className="space-y-4 w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="sent" className="text-xs sm:text-sm">My Invoices ({invoices.length})</TabsTrigger>
+          <TabsTrigger value="received" className="text-xs sm:text-sm">Received Invoices ({invoices.length})</TabsTrigger>
         </TabsList>
         <TabsContent value="sent" className="space-y-4">
-          <div className="flex items-center gap-2">
-            <div className="relative flex-1">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-2">
+            <div className="relative flex-1 w-full">
               <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search invoices..."
-                className="pl-8 max-w-sm"
+                className="pl-8 w-full"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="gap-2">
-                  Period <ChevronDown className="h-4 w-4 ml-2" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem>Last 30 Days</DropdownMenuItem>
-                <DropdownMenuItem>Last 3 Months</DropdownMenuItem>
-                <DropdownMenuItem>Last 6 Months</DropdownMenuItem>
-                <DropdownMenuItem>Last Year</DropdownMenuItem>
-                <DropdownMenuItem>All Time</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="gap-2">
-                  Status: {filterStatus} <ChevronDown className="h-4 w-4 ml-2" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setFilterStatus('All')}>All</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setFilterStatus('Paid')}>Paid</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setFilterStatus('Pending')}>Pending</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setFilterStatus('Cancelled')}>Cancelled</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setFilterStatus('Overdue')}>Overdue</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="gap-2">
-                  Sort by <ChevronDown className="h-4 w-4 ml-2" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem>Date (newest)</DropdownMenuItem>
-                <DropdownMenuItem>Date (oldest)</DropdownMenuItem>
-                <DropdownMenuItem>Amount (asc)</DropdownMenuItem>
-                <DropdownMenuItem>Amount (desc)</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <div className="flex gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="gap-2 w-full sm:w-auto">
+                    Period <ChevronDown className="h-4 w-4 ml-2" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem>Last 30 Days</DropdownMenuItem>
+                  <DropdownMenuItem>Last 3 Months</DropdownMenuItem>
+                  <DropdownMenuItem>Last 6 Months</DropdownMenuItem>
+                  <DropdownMenuItem>Last Year</DropdownMenuItem>
+                  <DropdownMenuItem>All Time</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="gap-2 w-full sm:w-auto">
+                    Status: {filterStatus} <ChevronDown className="h-4 w-4 ml-2" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setFilterStatus('All')}>All</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setFilterStatus('Paid')}>Paid</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setFilterStatus('Pending')}>Pending</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setFilterStatus('Cancelled')}>Cancelled</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setFilterStatus('Overdue')}>Overdue</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="gap-2 w-full sm:w-auto">
+                    Sort by <ChevronDown className="h-4 w-4 ml-2" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem>Date (newest)</DropdownMenuItem>
+                  <DropdownMenuItem>Date (oldest)</DropdownMenuItem>
+                  <DropdownMenuItem>Amount (asc)</DropdownMenuItem>
+                  <DropdownMenuItem>Amount (desc)</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
 
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[180px]">INVOICE NUMBER</TableHead>
-                  <TableHead>CLIENT</TableHead>
-                  <TableHead>ISSUE DATE</TableHead>
-                  <TableHead>DUE DATE</TableHead>
-                  <TableHead>AMOUNT</TableHead>
-                  <TableHead>STATUS</TableHead>
-                  <TableHead className="text-right">ACTIONS</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {currentInvoices.map((invoice) => (
-                  <TableRow key={invoice.id}>
-                    <TableCell className="font-medium flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-muted-foreground" />
-                      {invoice.invoice_number}
-                    </TableCell>
-                    <TableCell>
-                      {invoice.external_client_id
-                        ? externalClients.find(client => client.id === invoice.external_client_id)?.name || 'Unknown'
-                        : networkContacts.find(contact => contact.id === invoice.receiver_id)?.name || 'Unknown'}
-                    </TableCell>
-                    <TableCell>{format(new Date(invoice.issue_date), 'MMM dd, yyyy')}</TableCell>
-                    <TableCell>{format(new Date(invoice.due_date), 'MMM dd, yyyy')}</TableCell>
-                    <TableCell className="font-medium">€{invoice.amount.toFixed(2)}</TableCell>
-                    <TableCell>
-                      <Badge variant={getStatusBadgeVariant(invoice.status)}>
+          <div className="rounded-md border overflow-x-auto">
+            {/* Mobile card layout */}
+            <div className="space-y-4 sm:hidden">
+              {currentInvoices.map((invoice) => (
+                <Card key={invoice.id} className="p-4">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-medium text-sm">{invoice.invoice_number}</span>
+                      </div>
+                      <Badge variant={getStatusBadgeVariant(invoice.status)} className="text-xs">
                         {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
                       </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="h-8 w-8 p-0">
-                            <EllipsisVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleDownloadPDF(invoice)}>
-                            <Download className="mr-2 h-4 w-4" />
-                            Download PDF
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleStartEdit(invoice)}>
-                            <Pencil className="mr-2 h-4 w-4" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            className="gap-2 text-red-600"
-                            onClick={() => handleStatusChange(invoice.id, 'cancelled')}
-                          >
-                            <Trash2 className="h-4 w-4" /> Cancel
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div>
+                        <span className="text-muted-foreground">Client:</span>
+                        <p className="font-medium">
+                          {invoice.external_client_id
+                            ? externalClients.find(client => client.id === invoice.external_client_id)?.name || 'Unknown'
+                            : networkContacts.find(contact => contact.id === invoice.receiver_id)?.name || 'Unknown'}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Amount:</span>
+                        <p className="font-medium">€{invoice.amount.toFixed(2)}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                      <div>
+                        <span>Issue: {format(new Date(invoice.issue_date), 'MMM dd, yyyy')}</span>
+                      </div>
+                      <div>
+                        <span>Due: {format(new Date(invoice.due_date), 'MMM dd, yyyy')}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-end gap-2 pt-2 border-t">
+                      <Button variant="ghost" size="sm" onClick={() => handleDownloadPDF(invoice)}>
+                        <Download className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => handleStartEdit(invoice)}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => handleStatusChange(invoice.id, 'cancelled')}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+            
+            {/* Desktop table */}
+            <div className="hidden sm:block">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[180px]">INVOICE NUMBER</TableHead>
+                    <TableHead>CLIENT</TableHead>
+                    <TableHead>ISSUE DATE</TableHead>
+                    <TableHead>DUE DATE</TableHead>
+                    <TableHead>AMOUNT</TableHead>
+                    <TableHead>STATUS</TableHead>
+                    <TableHead className="text-right">ACTIONS</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {currentInvoices.map((invoice) => (
+                    <TableRow key={invoice.id}>
+                      <TableCell className="font-medium flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-muted-foreground" />
+                        {invoice.invoice_number}
+                      </TableCell>
+                      <TableCell>
+                        {invoice.external_client_id
+                          ? externalClients.find(client => client.id === invoice.external_client_id)?.name || 'Unknown'
+                          : networkContacts.find(contact => contact.id === invoice.receiver_id)?.name || 'Unknown'}
+                      </TableCell>
+                      <TableCell>{format(new Date(invoice.issue_date), 'MMM dd, yyyy')}</TableCell>
+                      <TableCell>{format(new Date(invoice.due_date), 'MMM dd, yyyy')}</TableCell>
+                      <TableCell className="font-medium">€{invoice.amount.toFixed(2)}</TableCell>
+                      <TableCell>
+                        <Badge variant={getStatusBadgeVariant(invoice.status)}>
+                          {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0">
+                              <EllipsisVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleDownloadPDF(invoice)}>
+                              <Download className="mr-2 h-4 w-4" />
+                              Download PDF
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleStartEdit(invoice)}>
+                              <Pencil className="mr-2 h-4 w-4" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              className="gap-2 text-red-600"
+                              onClick={() => handleStatusChange(invoice.id, 'cancelled')}
+                            >
+                              <Trash2 className="h-4 w-4" /> Cancel
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </div>
 
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-0">
+            <p className="text-xs sm:text-sm text-muted-foreground text-center sm:text-left">
               Showing {indexOfFirstInvoice + 1}-{Math.min(indexOfLastInvoice, filteredInvoices.length)} of {filteredInvoices.length} invoices.
             </p>
             <Pagination>
@@ -946,8 +1008,8 @@ export default function MyInvoicesPage() {
               </TableBody>
             </Table>
           </div>
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-0">
+            <p className="text-xs sm:text-sm text-muted-foreground text-center sm:text-left">
               Showing {indexOfFirstInvoice + 1}-{Math.min(indexOfLastInvoice, filteredInvoices.length)} of {filteredInvoices.length} invoices.
             </p>
             <Pagination>
@@ -971,57 +1033,57 @@ export default function MyInvoicesPage() {
         </TabsContent>
       </Tabs>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 lg:grid-cols-2">
         <div>
-          <h3 className="text-xl font-semibold mb-4">Financial Summary</h3>
+          <h3 className="text-lg sm:text-xl font-semibold mb-4">Financial Summary</h3>
           <Card>
-            <CardContent className="grid grid-cols-2 gap-4 pt-6">
-              <div className="flex flex-col items-start justify-between p-4 border rounded-lg">
+            <CardContent className="grid grid-cols-2 gap-3 sm:gap-4 pt-4 sm:pt-6">
+              <div className="flex flex-col items-start justify-between p-3 sm:p-4 border rounded-lg">
                 <div>
-                  <p className="text-sm text-muted-foreground">Total Sent</p>
-                  <p className="text-2xl text-green-500">€{financialSummary.totalSent}</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Total Sent</p>
+                  <p className="text-lg sm:text-2xl text-green-500">€{financialSummary.totalSent}</p>
                 </div>
-                <CircleDollarSign className="h-8 w-8 text-green-500 mt-2" />
+                <CircleDollarSign className="h-6 w-6 sm:h-8 sm:w-8 text-green-500 mt-2" />
               </div>
-              <div className="flex flex-col items-start justify-between p-4 border rounded-lg">
+              <div className="flex flex-col items-start justify-between p-3 sm:p-4 border rounded-lg">
                 <div>
-                  <p className="text-sm text-muted-foreground">Paid</p>
-                  <p className="text-2xl text-green-500">€{financialSummary.paid}</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Paid</p>
+                  <p className="text-lg sm:text-2xl text-green-500">€{financialSummary.paid}</p>
                 </div>
-                <CheckCircle className="h-8 w-8 text-green-500 mt-2" />
+                <CheckCircle className="h-6 w-6 sm:h-8 sm:w-8 text-green-500 mt-2" />
               </div>
-              <div className="flex flex-col items-start justify-between p-4 border rounded-lg">
+              <div className="flex flex-col items-start justify-between p-3 sm:p-4 border rounded-lg">
                 <div>
-                  <p className="text-sm text-muted-foreground">Pending</p>
-                  <p className="text-2xl text-yellow-500">€{financialSummary.pending}</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Pending</p>
+                  <p className="text-lg sm:text-2xl text-yellow-500">€{financialSummary.pending}</p>
                 </div>
-                <Hourglass className="h-8 w-8 text-yellow-500 mt-2" />
+                <Hourglass className="h-6 w-6 sm:h-8 sm:w-8 text-yellow-500 mt-2" />
               </div>
-              <div className="flex flex-col items-start justify-between p-4 border rounded-lg">
+              <div className="flex flex-col items-start justify-between p-3 sm:p-4 border rounded-lg">
                 <div>
-                  <p className="text-sm text-muted-foreground">Cancelled</p>
-                  <p className="text-2xl text-red-500">€{financialSummary.cancelled}</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Cancelled</p>
+                  <p className="text-lg sm:text-2xl text-red-500">€{financialSummary.cancelled}</p>
                 </div>
-                <XCircle className="h-8 w-8 text-red-500 mt-2" />
+                <XCircle className="h-6 w-6 sm:h-8 sm:w-8 text-red-500 mt-2" />
               </div>
-              <div className="col-span-2 text-center p-4 border rounded-lg">
-                <p className="text-sm text-muted-foreground">Average Time to Pay</p>
-                <p className="text-2xl">{financialSummary.averageTime}</p>
+              <div className="col-span-2 text-center p-3 sm:p-4 border rounded-lg">
+                <p className="text-xs sm:text-sm text-muted-foreground">Average Time to Pay</p>
+                <p className="text-lg sm:text-2xl">{financialSummary.averageTime}</p>
               </div>
             </CardContent>
           </Card>
         </div>
         <div>
-          <h3 className="text-xl font-semibold mb-4">Recent Activity</h3>
+          <h3 className="text-lg sm:text-xl font-semibold mb-4">Recent Activity</h3>
           <Card>
-            <CardContent className="space-y-4 pt-6">
+            <CardContent className="space-y-3 sm:space-y-4 pt-4 sm:pt-6">
               {recentActivities.map((activity) => (
-                <div key={activity.id} className="flex items-start gap-4 p-4 border rounded-lg">
-                  <div className="rounded-full bg-muted p-2">
-                    <FileText className="h-5 w-5 text-muted-foreground" />
+                <div key={activity.id} className="flex items-start gap-3 sm:gap-4 p-3 sm:p-4 border rounded-lg">
+                  <div className="rounded-full bg-muted p-1.5 sm:p-2">
+                    <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
                   </div>
                   <div>
-                    <p className="text-base text-foreground">
+                    <p className="text-sm sm:text-base text-foreground">
                       {activity.action === 'paid' && (
                         <>
                           <span className="font-semibold">{activity.user}</span> paid <span className="font-semibold">{activity.document}</span> for an amount of <span className="font-semibold">{activity.currency}{activity.amount}</span>
@@ -1043,7 +1105,7 @@ export default function MyInvoicesPage() {
                         </>
                       )}
                     </p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-muted-foreground mt-1">
                       {activity.time}
                     </p>
                   </div>
@@ -1056,16 +1118,16 @@ export default function MyInvoicesPage() {
 
       {/* Edit Invoice Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto w-[95vw]">
           <DialogHeader>
-            <DialogTitle>Edit Invoice</DialogTitle>
+            <DialogTitle className="text-lg sm:text-xl">Edit Invoice</DialogTitle>
             <DialogDescription>
               Update the invoice details below.
             </DialogDescription>
           </DialogHeader>
           {editingInvoice && (
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid gap-3 sm:gap-4 py-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="editClientName">Client Name</Label>
                   <Select
@@ -1093,7 +1155,7 @@ export default function MyInvoicesPage() {
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="editIssueDate">Issue Date</Label>
                   <Popover>
@@ -1153,9 +1215,9 @@ export default function MyInvoicesPage() {
                   onChange={(e) => setEditingInvoice(prev => prev ? { ...prev, description: e.target.value } : null)}
                 />
               </div>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="editLineItems" className="text-base">Line Items</Label>
+              <div className="space-y-3 sm:space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
+                  <Label htmlFor="editLineItems" className="text-sm sm:text-base">Line Items</Label>
                   <Button
                     variant="outline"
                     size="sm"
@@ -1165,15 +1227,15 @@ export default function MyInvoicesPage() {
                         items: [...prev.items, { description: '', quantity: 1, unitPrice: 0, amount: 0 }]
                       } : null);
                     }}
-                    className="gap-2"
+                    className="gap-2 w-full sm:w-auto"
                   >
                     <Plus className="h-4 w-4" /> Add Item
                   </Button>
                 </div>
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4">
                   {editingInvoice?.items.map((item, index) => (
-                    <Card key={index} className="p-4">
-                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <Card key={index} className="p-3 sm:p-4">
+                      <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 sm:gap-4">
                         <div className="space-y-2">
                           <Label htmlFor={`edit-item-description-${index}`}>Description</Label>
                           <Input
@@ -1266,7 +1328,7 @@ export default function MyInvoicesPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="mt-2 text-red-500 hover:text-red-600 hover:bg-red-50"
+                          className="mt-2 text-red-500 hover:text-red-600 hover:bg-red-50 w-full sm:w-auto"
                           onClick={() => {
                             const newItems = [...editingInvoice.items];
                             newItems.splice(index, 1);
@@ -1279,9 +1341,9 @@ export default function MyInvoicesPage() {
                     </Card>
                   ))}
                   {editingInvoice?.items.length === 0 && (
-                    <div className="text-center py-6 border-2 border-dashed rounded-lg">
-                      <FileQuestion className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                      <p className="text-sm text-muted-foreground">No line items added yet</p>
+                    <div className="text-center py-4 sm:py-6 border-2 border-dashed rounded-lg">
+                      <FileQuestion className="h-6 w-6 sm:h-8 sm:w-8 mx-auto text-muted-foreground mb-2" />
+                      <p className="text-xs sm:text-sm text-muted-foreground">No line items added yet</p>
                       <p className="text-xs text-muted-foreground mt-1">Click "Add Item" to start adding items to your invoice</p>
                     </div>
                   )}
@@ -1305,8 +1367,8 @@ export default function MyInvoicesPage() {
               </div>
             </div>
           )}
-          <DialogFooter>
-            <Button type="submit" onClick={handleEditInvoice}>Save Changes</Button>
+          <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
+            <Button type="submit" onClick={handleEditInvoice} className="w-full sm:w-auto">Save Changes</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
