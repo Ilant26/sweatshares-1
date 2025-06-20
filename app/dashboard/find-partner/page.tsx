@@ -359,7 +359,7 @@ export default function FindPartnerPage() {
           <h1 className="text-3xl font-bold tracking-tight">Find My Partner</h1>
           <p className="text-muted-foreground text-sm">Browse and connect with talented professionals. Use filters to find your perfect match!</p>
         </div>
-        <div className="flex flex-wrap gap-2 md:gap-4 w-full items-end bg-background/80 rounded-lg p-3 shadow-sm border border-border">
+        <div className="flex flex-wrap gap-2 md:gap-4 w-full items-end mb-6">
           {/* Profile Filters */}
           <Input
             placeholder="Search by name, company, bio, or listing title..."
@@ -448,16 +448,6 @@ export default function FindPartnerPage() {
             <XCircle className="h-4 w-4 mr-1" /> Clear Filters
           </Button>
         </div>
-      </div>
-      {/* Tabs for All / Profiles / Listings */}
-      <div className="px-4 md:px-8 pb-2">
-        <Tabs defaultValue="all" value={viewType} onValueChange={handleViewTypeChange}>
-          <TabsList>
-            <TabsTrigger value="all">All</TabsTrigger>
-            <TabsTrigger value="profiles">Profiles</TabsTrigger>
-            <TabsTrigger value="listings">Listings</TabsTrigger>
-          </TabsList>
-        </Tabs>
       </div>
       <div className="flex-1 flex flex-col px-4 md:px-8 pb-8">
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 w-full flex-1">

@@ -62,14 +62,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   // Function to get the previous page name based on current pathname
   const getPreviousPageName = () => {
-    const lastVisitedSection = localStorage.getItem('lastVisitedSection') || 'dashboard';
-    
+    let lastVisitedSection = 'dashboard';
+    if (typeof window !== 'undefined') {
+      lastVisitedSection = localStorage.getItem('lastVisitedSection') || 'dashboard';
+    }
     if (lastVisitedSection === 'feed') {
       return 'News Feed';
     } else if (lastVisitedSection === 'dashboard') {
       return 'Dashboard';
     }
-    
     // Fallback based on current pathname
     if (pathname.includes('/my-listings')) {
       return 'Dashboard';
@@ -92,17 +93,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     } else if (pathname.includes('/profile/')) {
       return 'Dashboard';
     }
-    
     return 'Dashboard';
   };
 
   // Store last visited section in localStorage
   useEffect(() => {
-    localStorage.setItem('lastVisitedSection', currentSection || 'dashboard');
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('lastVisitedSection', currentSection || 'dashboard');
+    }
   }, [currentSection]);
 
   const handleGoBack = () => {
-    const lastVisitedSection = localStorage.getItem('lastVisitedSection') || 'dashboard';
+    let lastVisitedSection = 'dashboard';
+    if (typeof window !== 'undefined') {
+      lastVisitedSection = localStorage.getItem('lastVisitedSection') || 'dashboard';
+    }
     if (lastVisitedSection === 'feed') {
       router.push('/dashboard/news-feed');
     } else {
