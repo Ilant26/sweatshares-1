@@ -21,6 +21,22 @@ import { Button } from "@/components/ui/button"
 import { NotificationsDropdown } from "@/components/notifications-dropdown"
 import { ChatInterface } from "@/components/chat-interface"
 import { useIsMobile } from "@/hooks/use-mobile"
+import { NavUser } from "@/components/nav-user"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@/components/ui/avatar"
+import { ChevronsUpDown } from "lucide-react"
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state";
 
@@ -38,6 +54,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const isFindPartner = pathname === '/dashboard/find-partner';
   const currentSection = isFeed ? 'feed' : isDashboard ? 'dashboard' : null;
   
+  const userData = {
+    name: user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User',
+    email: user?.email || '',
+    avatar: user?.user_metadata?.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${user?.email}`,
+  };
+
   // Store last visited section in localStorage
   useEffect(() => {
     localStorage.setItem('lastVisitedSection', currentSection || 'dashboard');
@@ -101,18 +123,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   <div className="inline-flex items-center justify-center">
                     <nav className="flex space-x-12">
                       <Link
-                        href="/dashboard"
-                        className={cn(
-                          "relative px-2 py-1 text-sm font-medium transition-colors",
-                          "hover:text-primary/80",
-                          currentSection === 'dashboard' ? "text-primary" : "text-muted-foreground",
-                          "after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:bg-primary after:transition-transform after:duration-200",
-                          currentSection === 'dashboard' && "after:scale-x-100"
-                        )}
-                      >
-                        Dashboard
-                      </Link>
-                      <Link
                         href="/dashboard/news-feed"
                         className={cn(
                           "relative px-2 py-1 text-sm font-medium transition-colors",
@@ -122,7 +132,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                           currentSection === 'feed' && "after:scale-x-100"
                         )}
                       >
-                        Feed
+                        News Feed
                       </Link>
                       <Link
                         href="/dashboard/find-partner"
@@ -143,8 +153,59 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   "pr-4 flex items-center gap-2",
                   "ml-auto"
                 )}>
-                  <NotificationsDropdown />
                   <ThemeSwitcher />
+                  <NotificationsDropdown />
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm" className="h-8 px-2 hover:bg-accent">
+                        <Avatar className="h-6 w-6 rounded-lg">
+                          <AvatarImage src={userData.avatar} alt={userData.name} />
+                          <AvatarFallback className="rounded-lg text-xs">
+                            {userData.name.split(' ').map((n: string) => n[0]).join('').toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="ml-2 text-sm font-medium">{userData.name}</span>
+                        <ChevronsUpDown className="ml-2 h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-56" align="end">
+                      <DropdownMenuLabel className="p-0 font-normal">
+                        <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
+                          <Avatar className="h-8 w-8 rounded-lg">
+                            <AvatarImage src={userData.avatar} alt={userData.name} />
+                            <AvatarFallback className="rounded-lg">
+                              {userData.name.split(' ').map((n: string) => n[0]).join('').toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="grid flex-1 text-left text-sm leading-tight">
+                            <span className="truncate font-medium">{userData.name}</span>
+                            <span className="truncate text-xs">{userData.email}</span>
+                          </div>
+                        </div>
+                      </DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuGroup>
+                        <DropdownMenuItem asChild>
+                          <Link href="/dashboard/profile-settings">
+                            My Account
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link href="#">
+                            Billing
+                          </Link>
+                        </DropdownMenuItem>
+                      </DropdownMenuGroup>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={async () => {
+                        const { signOut } = useSession();
+                        await signOut();
+                        router.push('/');
+                      }}>
+                        Log out
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </header>
               {children}

@@ -20,11 +20,13 @@ import {
   MessageCircle,
   List,
   ReceiptText,
+  HelpCircle,
+  MessageSquarePlus,
 } from "lucide-react"
+import Link from "next/link"
 
 import { NavMain } from "@/components/nav-main"
 import { NavProjects } from "@/components/nav-projects"
-import { NavUser } from "@/components/nav-user"
 import { TeamSwitcher } from "@/components/team-switcher"
 import {
   Sidebar,
@@ -32,6 +34,10 @@ import {
   SidebarFooter,
   SidebarHeader,
   SidebarRail,
+  SidebarGroup,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
 } from "@/components/ui/sidebar"
 import { useSession } from "@/components/providers/session-provider"
 
@@ -54,12 +60,12 @@ const data = {
       icon: Users,
     },
     {
-      title: "My Alerts",
+      title: "Alerts",
       url: "/dashboard/my-alerts",
       icon: BellRing,
     },
     {
-      title: "My Favorites",
+      title: "Favorites",
       url: "/dashboard/my-favorites",
       icon: Star,
     },
@@ -69,7 +75,7 @@ const data = {
       icon: List,
     },
     {
-      title: "My Vault",
+      title: "Vault",
       url: "/dashboard/my-vault",
       icon: Lock,
     },
@@ -82,21 +88,30 @@ const data = {
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const { user } = useSession();
-
-  const userData = {
-    name: user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User',
-    email: user?.email || '',
-    avatar: user?.user_metadata?.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${user?.email}`,
-  };
-
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarContent>
         <NavMain items={data.navMain} />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={userData} />
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild tooltip="Support">
+              <Link href="/support" className="relative flex items-center">
+                <HelpCircle className="size-4" />
+                <span>Support</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild tooltip="Make a Feedback">
+              <Link href="/feedback" className="relative flex items-center">
+                <MessageSquarePlus className="size-4" />
+                <span>Make a Feedback</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
