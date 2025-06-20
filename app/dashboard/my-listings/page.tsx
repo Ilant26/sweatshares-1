@@ -296,7 +296,7 @@ export default function MyListingsPage() {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-2">
                 <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Manage Your Listings</h2>
                 <div className="flex flex-col sm:flex-row gap-2">
-                    <Button onClick={() => router.push('/listing')} variant="outline" className="w-full sm:w-auto">
+                    <Button onClick={() => router.push('/dashboard/listings')} variant="outline" className="w-full sm:w-auto">
                         View Listings
                     </Button>
                     <Button onClick={() => setIsNewListingModalOpen(true)} className="w-full sm:w-auto">

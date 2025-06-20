@@ -60,59 +60,113 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     avatar: user?.user_metadata?.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${user?.email}`,
   };
 
-  // Function to get the previous page name based on current pathname
-  const getPreviousPageName = () => {
-    let lastVisitedSection = 'dashboard';
-    if (typeof window !== 'undefined') {
-      lastVisitedSection = localStorage.getItem('lastVisitedSection') || 'dashboard';
+  // Function to get the previous page name and path based on current pathname
+  const getPreviousPageInfo = () => {
+    const currentPath = pathname;
+    
+    // Define navigation patterns
+    const navigationPatterns = [
+      {
+        current: '/dashboard/my-listings',
+        previous: { name: 'Dashboard', path: '/dashboard' }
+      },
+      {
+        current: '/dashboard/my-network',
+        previous: { name: 'Dashboard', path: '/dashboard' }
+      },
+      {
+        current: '/dashboard/messages',
+        previous: { name: 'Dashboard', path: '/dashboard' }
+      },
+      {
+        current: '/dashboard/my-favorites',
+        previous: { name: 'Dashboard', path: '/dashboard' }
+      },
+      {
+        current: '/dashboard/my-alerts',
+        previous: { name: 'Dashboard', path: '/dashboard' }
+      },
+      {
+        current: '/dashboard/profile-settings',
+        previous: { name: 'Dashboard', path: '/dashboard' }
+      },
+      {
+        current: '/dashboard/my-invoices',
+        previous: { name: 'Dashboard', path: '/dashboard' }
+      },
+      {
+        current: '/dashboard/my-vault',
+        previous: { name: 'Dashboard', path: '/dashboard' }
+      },
+      {
+        current: '/dashboard/connect',
+        previous: { name: 'Dashboard', path: '/dashboard' }
+      },
+      {
+        current: '/dashboard/listings',
+        previous: { name: 'Dashboard', path: '/dashboard' }
+      },
+      {
+        current: '/dashboard/news-feed',
+        previous: { name: 'Dashboard', path: '/dashboard' }
+      },
+      {
+        current: '/dashboard/find-partner',
+        previous: { name: 'Dashboard', path: '/dashboard' }
+      }
+    ];
+
+    // Check for profile pages
+    if (currentPath.startsWith('/dashboard/profile/')) {
+      const profileId = currentPath.split('/').pop();
+      return { name: 'Dashboard', path: '/dashboard' };
     }
-    if (lastVisitedSection === 'feed') {
-      return 'News Feed';
-    } else if (lastVisitedSection === 'dashboard') {
-      return 'Dashboard';
+
+    // Check for listing detail pages
+    if (currentPath.startsWith('/dashboard/listings/')) {
+      return { name: 'Listings', path: '/dashboard/listings' };
     }
-    // Fallback based on current pathname
-    if (pathname.includes('/my-listings')) {
-      return 'Dashboard';
-    } else if (pathname.includes('/my-network')) {
-      return 'Dashboard';
-    } else if (pathname.includes('/messages')) {
-      return 'Dashboard';
-    } else if (pathname.includes('/my-favorites')) {
-      return 'Dashboard';
-    } else if (pathname.includes('/my-alerts')) {
-      return 'Dashboard';
-    } else if (pathname.includes('/profile-settings')) {
-      return 'Dashboard';
-    } else if (pathname.includes('/my-invoices')) {
-      return 'Dashboard';
-    } else if (pathname.includes('/my-vault')) {
-      return 'Dashboard';
-    } else if (pathname.includes('/connect')) {
-      return 'Dashboard';
-    } else if (pathname.includes('/profile/')) {
-      return 'Dashboard';
+
+    // Check for specific patterns
+    for (const pattern of navigationPatterns) {
+      if (currentPath === pattern.current) {
+        return pattern.previous;
+      }
     }
-    return 'Dashboard';
+
+    // Check for sub-pages of main sections
+    if (currentPath.startsWith('/dashboard/my-listings/')) {
+      return { name: 'My Listings', path: '/dashboard/my-listings' };
+    }
+    if (currentPath.startsWith('/dashboard/my-network/')) {
+      return { name: 'My Network', path: '/dashboard/my-network' };
+    }
+    if (currentPath.startsWith('/dashboard/messages/')) {
+      return { name: 'Messages', path: '/dashboard/messages' };
+    }
+    if (currentPath.startsWith('/dashboard/my-favorites/')) {
+      return { name: 'My Favorites', path: '/dashboard/my-favorites' };
+    }
+    if (currentPath.startsWith('/dashboard/my-alerts/')) {
+      return { name: 'My Alerts', path: '/dashboard/my-alerts' };
+    }
+    if (currentPath.startsWith('/dashboard/my-invoices/')) {
+      return { name: 'My Invoices', path: '/dashboard/my-invoices' };
+    }
+    if (currentPath.startsWith('/dashboard/my-vault/')) {
+      return { name: 'My Vault', path: '/dashboard/my-vault' };
+    }
+    if (currentPath.startsWith('/dashboard/connect/')) {
+      return { name: 'Connect', path: '/dashboard/connect' };
+    }
+
+    // Fallback to dashboard
+    return { name: 'Dashboard', path: '/dashboard' };
   };
 
-  // Store last visited section in localStorage
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('lastVisitedSection', currentSection || 'dashboard');
-    }
-  }, [currentSection]);
-
   const handleGoBack = () => {
-    let lastVisitedSection = 'dashboard';
-    if (typeof window !== 'undefined') {
-      lastVisitedSection = localStorage.getItem('lastVisitedSection') || 'dashboard';
-    }
-    if (lastVisitedSection === 'feed') {
-      router.push('/dashboard/news-feed');
-    } else {
-      router.push('/dashboard');
-    }
+    const previousPage = getPreviousPageInfo();
+    router.push(previousPage.path);
   };
 
   useEffect(() => {
@@ -141,7 +195,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <SidebarProvider>
             <AppSidebar />
             <SidebarInset>
-              <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 px-2 sm:px-4">
+              <header className="sticky top-0 z-50 flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 px-2 sm:px-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
                 <div className="flex items-center gap-2">
                   <SidebarTrigger className="-ml-1" />
                   <Separator
@@ -156,7 +210,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       onClick={handleGoBack}
                     >
                       <ArrowLeft className="mr-2 h-4 w-4" />
-                      <span className="hidden sm:inline">Back to {getPreviousPageName()}</span>
+                      <span className="hidden sm:inline">Back to {getPreviousPageInfo().name}</span>
                       <span className="sm:hidden">Back</span>
                     </Button>
                   )}

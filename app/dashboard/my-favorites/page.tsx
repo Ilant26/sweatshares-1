@@ -163,7 +163,7 @@ export default function MyFavoritesPage() {
     if (item.type === 'profile') {
       router.push(`/dashboard/profile/${item.id}`);
     } else {
-      router.push(`/listing/${item.id}`);
+      router.push(`/dashboard/listings/${item.id}`);
     }
   };
 

@@ -151,7 +151,7 @@ export function MyListingTable({
               <Button variant="ghost" size="sm" onClick={() => onDeleteListing(listing.id)} disabled={deletingId === listing.id}>
                 {deletingId === listing.id ? <span className="animate-spin"><Trash2 className="h-4 w-4" /></span> : <Trash2 className="h-4 w-4" />}
               </Button>
-              <Button variant="ghost" size="sm" onClick={() => router.push(`/listing/${listing.id}`)}>
+              <Button variant="ghost" size="sm" onClick={() => router.push(`/dashboard/listings/${listing.id}`)}>
                 <Eye className="h-4 w-4" />
               </Button>
             </div>
@@ -231,7 +231,7 @@ export function MyListingTable({
                   <Button variant="ghost" size="icon" onClick={() => onDeleteListing(listing.id)} disabled={deletingId === listing.id}>
                     {deletingId === listing.id ? <span className="animate-spin"><Trash2 className="h-4 w-4" /></span> : <Trash2 className="h-4 w-4" />}
                   </Button>
-                  <Button variant="ghost" size="icon" onClick={() => router.push(`/listing/${listing.id}`)}>
+                  <Button variant="ghost" size="icon" onClick={() => router.push(`/dashboard/listings/${listing.id}`)}>
                     <Eye className="h-4 w-4" />
                   </Button>
                 </TableCell>

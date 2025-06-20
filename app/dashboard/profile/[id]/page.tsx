@@ -300,7 +300,7 @@ export default function ProfilePage() {
   };
 
   const handleListingClick = (listingId: string) => {
-    router.push(`/listing/${listingId}`);
+    router.push(`/dashboard/listings/${listingId}`);
   };
 
   const handleConnect = async () => {
