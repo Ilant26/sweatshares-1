@@ -77,6 +77,21 @@ const itemVariants: Variants = {
   }
 };
 
+const getSkillColor = (skill: string) => {
+  const colors = [
+    'bg-blue-100 text-blue-800',
+    'bg-purple-100 text-purple-800',
+    'bg-green-100 text-green-800',
+    'bg-yellow-100 text-yellow-800',
+    'bg-red-100 text-red-800',
+    'bg-orange-100 text-orange-800',
+    'bg-indigo-100 text-indigo-800',
+    'bg-teal-100 text-teal-800',
+  ];
+  const index = skill.length % colors.length;
+  return colors[index];
+};
+
 export default function ProfilePage() {
   const { id } = useParams();
   const router = useRouter();
@@ -907,8 +922,7 @@ export default function ProfilePage() {
                           profile.skills.map((skill: string, index: number) => (
                             <Badge 
                               key={index} 
-                              variant="secondary"
-                              className="px-3 py-1 text-sm font-medium bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 transition-colors"
+                              className={`px-3 py-1 text-sm font-medium ${getSkillColor(skill)}`}
                             >
                               {skill}
                             </Badge>

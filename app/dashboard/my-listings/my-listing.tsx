@@ -6,6 +6,7 @@ import { Edit, Trash2, Eye } from 'lucide-react';
 import { format } from 'date-fns';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
+import { useRouter } from 'next/navigation';
 
 interface MyListingTableProps {
   listings: any[];
@@ -69,6 +70,8 @@ export function MyListingTable({
   onToggleStatus,
   deletingId,
 }: MyListingTableProps) {
+  const router = useRouter();
+
   if (isLoadingListings) {
     return <div className="p-8 text-center text-muted-foreground">Loading listings...</div>;
   }
@@ -139,7 +142,7 @@ export function MyListingTable({
               <Button variant="ghost" size="icon" onClick={() => onDeleteListing(listing.id)} disabled={deletingId === listing.id}>
                 {deletingId === listing.id ? <span className="animate-spin"><Trash2 className="h-4 w-4" /></span> : <Trash2 className="h-4 w-4" />}
               </Button>
-              <Button variant="ghost" size="icon">
+              <Button variant="ghost" size="icon" onClick={() => router.push(`/listing/${listing.id}`)}>
                 <Eye className="h-4 w-4" />
               </Button>
             </TableCell>
