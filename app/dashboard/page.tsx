@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LineChart } from "@/components/ui/line-chart";
+import { CreateListingModal } from './my-listings/create-listing-modal';
 
 import {
   MessageCircle,
@@ -209,6 +211,7 @@ export default function Page() {
   const [messagesLoading, setMessagesLoading] = useState(true);
   const [listings, setListings] = useState<any[]>([]);
   const [listingsLoading, setListingsLoading] = useState(true);
+  const [isCreateListingOpen, setIsCreateListingOpen] = useState(false);
 
   // Fetch user profile
   useEffect(() => {
@@ -313,14 +316,14 @@ export default function Page() {
       id: fav.profile.id,
       name: fav.profile.full_name,
       role: fav.profile.professional_role,
-      avatar: fav.profile.avatar_url === null ? undefined : fav.profile.avatar_url,
+      avatar: fav.profile.avatar_url ?? undefined,
       starred: true,
     })),
     ...likedListings.slice(0, 2).map((fav) => ({
       id: fav.listing.id,
       name: fav.listing.title,
       role: fav.listing_profile.professional_role,
-      avatar: fav.listing_profile.avatar_url === null ? undefined : fav.listing_profile.avatar_url,
+      avatar: fav.listing_profile.avatar_url ?? undefined,
       starred: true,
     })),
   ];
@@ -337,8 +340,7 @@ export default function Page() {
           Hello, {profile?.full_name || profile?.username || user?.email}
         </h2>
         <div className="flex items-center space-x-2">
-          <Button variant="outline">Manage Widgets</Button>
-          <Button>
+          <Button onClick={() => setIsCreateListingOpen(true)}>
             <Plus className="mr-2 h-4 w-4" /> New Listing
           </Button>
         </div>
@@ -427,9 +429,11 @@ export default function Page() {
         <Card className="col-span-full lg:col-span-3">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Recent Connections</CardTitle>
-            <Button variant="link" className="px-0 pt-0 justify-start">
-              View all <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
+            <Link href="/dashboard/my-network" passHref legacyBehavior>
+              <a className="px-0 pt-0 justify-start inline-flex items-center text-sm font-medium text-primary hover:underline" style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
+                View all <ArrowRight className="ml-2 h-4 w-4" />
+              </a>
+            </Link>
           </CardHeader>
           <CardContent>
             <div className="grid gap-6">
@@ -481,9 +485,11 @@ export default function Page() {
         <Card className="col-span-full md:col-span-1 lg:col-span-5">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Recent Messages</CardTitle>
-            <Button variant="link" className="px-0 pt-0 justify-start">
-              View all
-            </Button>
+            <Link href="/dashboard/messages" passHref legacyBehavior>
+              <a className="px-0 pt-0 justify-start inline-flex items-center text-sm font-medium text-primary hover:underline" style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
+                View all
+              </a>
+            </Link>
           </CardHeader>
           <CardContent className="grid gap-4">
             {recentMessages.map((message) => (
@@ -510,16 +516,18 @@ export default function Page() {
         <Card className="col-span-full md:col-span-1 lg:col-span-4">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">My Favorites</CardTitle>
-            <Button variant="link" className="px-0 pt-0 justify-start">
-              View all
-            </Button>
+            <Link href="/dashboard/my-favorites" passHref legacyBehavior>
+              <a className="px-0 pt-0 justify-start inline-flex items-center text-sm font-medium text-primary hover:underline" style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
+                View all
+              </a>
+            </Link>
           </CardHeader>
           <CardContent className="grid gap-4">
             {myFavorites.map((item) => (
               <div key={item.id} className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
                   <Avatar>
-                    <AvatarImage src={item.avatar === null ? undefined : item.avatar} alt={item.name} />
+                    <AvatarImage src={item.avatar ?? undefined} />
                     <AvatarFallback>{item.name?.charAt(0)}</AvatarFallback>
                   </Avatar>
                   <div>
@@ -537,9 +545,11 @@ export default function Page() {
         <Card className="col-span-full md:col-span-1 lg:col-span-3">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Active Alerts</CardTitle>
-            <Button variant="link" className="px-0 pt-0 justify-start">
-              Manage
-            </Button>
+            <Link href="/dashboard/my-alerts" passHref legacyBehavior>
+              <a className="px-0 pt-0 justify-start inline-flex items-center text-sm font-medium text-primary hover:underline" style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
+                Manage
+              </a>
+            </Link>
           </CardHeader>
           <CardContent className="grid gap-4">
             {activeAlertsData.map((alert) => (
@@ -587,9 +597,11 @@ export default function Page() {
         <Card className="col-span-full md:col-span-1 lg:col-span-3">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Account Settings</CardTitle>
-            <Button variant="link" className="px-0 pt-0 justify-start">
-              View all
-            </Button>
+            <Link href="/dashboard/profile-settings" passHref legacyBehavior>
+              <a className="px-0 pt-0 justify-start inline-flex items-center text-sm font-medium text-primary hover:underline" style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
+                View all
+              </a>
+            </Link>
           </CardHeader>
           <CardContent className="grid gap-4">
             <div className="flex items-center justify-between">
@@ -627,6 +639,37 @@ export default function Page() {
           </CardContent>
         </Card>
       </div>
+      <CreateListingModal
+        open={isCreateListingOpen}
+        onOpenChange={setIsCreateListingOpen}
+        isCreating={false}
+        editingId={null}
+        profileType={""}
+        setProfileType={() => {}}
+        listingType={""}
+        setListingType={() => {}}
+        fundingStage={""}
+        setFundingStage={() => {}}
+        skills={""}
+        setSkills={() => {}}
+        locationCountry={""}
+        setLocationCountry={() => {}}
+        locationCity={""}
+        setLocationCity={() => {}}
+        compensationType={""}
+        setCompensationType={() => {}}
+        compensationValue={{}}
+        setCompensationValue={() => {}}
+        amount={""}
+        setAmount={() => {}}
+        sector={""}
+        setSector={() => {}}
+        title={""}
+        setTitle={() => {}}
+        description={""}
+        setDescription={() => {}}
+        onSubmit={() => {}}
+      />
     </div>
   );
 }

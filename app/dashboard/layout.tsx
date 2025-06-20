@@ -60,6 +60,42 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     avatar: user?.user_metadata?.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${user?.email}`,
   };
 
+  // Function to get the previous page name based on current pathname
+  const getPreviousPageName = () => {
+    const lastVisitedSection = localStorage.getItem('lastVisitedSection') || 'dashboard';
+    
+    if (lastVisitedSection === 'feed') {
+      return 'News Feed';
+    } else if (lastVisitedSection === 'dashboard') {
+      return 'Dashboard';
+    }
+    
+    // Fallback based on current pathname
+    if (pathname.includes('/my-listings')) {
+      return 'Dashboard';
+    } else if (pathname.includes('/my-network')) {
+      return 'Dashboard';
+    } else if (pathname.includes('/messages')) {
+      return 'Dashboard';
+    } else if (pathname.includes('/my-favorites')) {
+      return 'Dashboard';
+    } else if (pathname.includes('/my-alerts')) {
+      return 'Dashboard';
+    } else if (pathname.includes('/profile-settings')) {
+      return 'Dashboard';
+    } else if (pathname.includes('/my-invoices')) {
+      return 'Dashboard';
+    } else if (pathname.includes('/my-vault')) {
+      return 'Dashboard';
+    } else if (pathname.includes('/connect')) {
+      return 'Dashboard';
+    } else if (pathname.includes('/profile/')) {
+      return 'Dashboard';
+    }
+    
+    return 'Dashboard';
+  };
+
   // Store last visited section in localStorage
   useEffect(() => {
     localStorage.setItem('lastVisitedSection', currentSection || 'dashboard');
@@ -115,7 +151,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       onClick={handleGoBack}
                     >
                       <ArrowLeft className="mr-2 h-4 w-4" />
-                      Go Back
+                      Back to {getPreviousPageName()}
                     </Button>
                   )}
                 </div>
