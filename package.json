@@ -27,6 +27,7 @@
     "@radix-ui/react-tabs": "^1.1.12",
     "@radix-ui/react-toast": "^1.2.14",
     "@radix-ui/react-tooltip": "^1.2.7",
+    "@stripe/stripe-js": "^3.5.0",
     "@supabase/auth-helpers-nextjs": "^0.10.0",
     "@supabase/auth-helpers-react": "^0.5.0",
     "@supabase/supabase-js": "^2.50.0",
@@ -54,6 +55,7 @@
     "react-dom": "^19.0.0",
     "recharts": "^2.15.3",
     "sonner": "^2.0.5",
+    "stripe": "^14.25.0",
     "tailwind-merge": "^3.3.0"
   },
   "devDependencies": {

@@ -22,6 +22,7 @@ import {
   ReceiptText,
   HelpCircle,
   MessageSquarePlus,
+  Handshake,
 } from "lucide-react"
 import Link from "next/link"
 
@@ -73,6 +74,11 @@ const data = {
       title: "Listings",
       url: "/dashboard/my-listings",
       icon: List,
+    },
+    {
+      title: "Deals",
+      url: "/dashboard/deals",
+      icon: Handshake,
     },
     {
       title: "Vault",

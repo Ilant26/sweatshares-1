@@ -11,6 +11,8 @@ import { Separator } from '@/components/ui/separator';
 import { ProfileCard } from './profile-card';
 import ContentSection from '@/components/content-listing-bottom';
 import { motion, Variants } from 'framer-motion';
+import { MakeDealDialog } from '@/components/make-deal-dialog';
+import { useSession } from '@/components/providers/session-provider';
 
 // Function to format listing type values for display
 const formatListingType = (listingType: string): string => {
@@ -68,6 +70,9 @@ interface ListingContentProps {
 }
 
 export function ListingContent({ listing, profile }: ListingContentProps) {
+  const { user } = useSession();
+  const isOwnListing = user?.id === listing.user_id;
+
   return (
     <div className="min-h-screen flex flex-col bg-zinc-50 dark:bg-background">
       <Menu />
@@ -230,6 +235,24 @@ export function ListingContent({ listing, profile }: ListingContentProps) {
                             </Badge>
                           </motion.div>
                         ))}
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* Make a Deal Section */}
+                {!isOwnListing && (
+                  <motion.div variants={itemVariants}>
+                    <Separator className="my-8" />
+                    <div className="space-y-6">
+                      <div className="text-center space-y-2">
+                        <h4 className="text-xl font-semibold">Interested in this opportunity?</h4>
+                        <p className="text-muted-foreground">
+                          Make a deal offer and start collaborating with {profile.full_name}
+                        </p>
+                      </div>
+                      <div className="flex justify-center">
+                        <MakeDealDialog listing={listing} profile={profile} />
                       </div>
                     </div>
                   </motion.div>
