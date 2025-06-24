@@ -518,44 +518,44 @@ export default function FindPartnerPage() {
                       
                       <CardContent className="relative p-0 flex flex-col h-full">
                         {/* Header Section */}
-                        <div className="p-6 pb-4">
+                        <div className="p-4 pb-3">
                           <div className="flex items-start gap-4">
                             {/* Avatar with status indicator */}
                             <div className="relative">
-                              <Avatar className="h-16 w-16 border-4 border-white/80 dark:border-zinc-800/80 shadow-lg">
-                            <AvatarImage src={profile.avatar_url || undefined} alt={profile.full_name || undefined} />
+                              <Avatar className="h-12 w-12 border-4 border-white/80 dark:border-zinc-800/80 shadow-lg">
+                                <AvatarImage src={profile.avatar_url || undefined} alt={profile.full_name || undefined} />
                                 <AvatarFallback className="text-lg font-semibold bg-gradient-to-br from-primary to-primary/80 text-white">
                                   {getInitials(profile.full_name)}
                                 </AvatarFallback>
-                          </Avatar>
+                              </Avatar>
                               {/* Online status indicator */}
-                              <div className="absolute -bottom-1 -right-1 h-4 w-4 bg-green-500 border-2 border-white dark:border-zinc-800 rounded-full" />
+                              <div className="absolute -bottom-1 -right-1 h-3 w-3 bg-green-500 border-2 border-white dark:border-zinc-800 rounded-full" />
                             </div>
                             
                             {/* Profile Info */}
-                          <div className="flex-1 min-w-0">
+                            <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-1">
                                 <h3 
-                                  className="font-bold text-lg text-gray-900 dark:text-white truncate cursor-pointer hover:text-primary transition-colors"
+                                  className="font-bold text-base text-gray-900 dark:text-white truncate cursor-pointer hover:text-primary transition-colors"
                                   onClick={() => handleProfileClick(profile.id)}
                                 >
-                                {profile.full_name}
+                                  {profile.full_name}
                                 </h3>
-                              {profile.profile_type && (
-                                  <Badge className="bg-primary/10 text-primary border-primary/20 text-xs px-2 py-1 capitalize">
-                                  {profile.profile_type}
-                                </Badge>
-                              )}
-                            </div>
+                                {profile.profile_type && (
+                                  <Badge className="bg-primary/10 text-primary border-primary/20 text-xs px-2 py-0.5 capitalize">
+                                    {profile.profile_type}
+                                  </Badge>
+                                )}
+                              </div>
                               
                               {profile.professional_role && (
-                                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                                   {profile.professional_role}
                                 </p>
                               )}
                               
                               {profile.company && (
-                                <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
                                   {profile.company}
                                 </p>
                               )}
@@ -566,75 +566,75 @@ export default function FindPartnerPage() {
                                 <span>{profile.country || "Location not specified"}</span>
                                 <span className="mx-1">•</span>
                                 <span>{profile.created_at ? format(new Date(profile.created_at), "MMM yyyy") : "Recently joined"}</span>
-                            </div>
+                              </div>
                             </div>
                           </div>
                         </div>
 
                         {/* Bio Section */}
                         {profile.bio && (
-                          <div className="px-6 pb-4">
-                            <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-3 leading-relaxed">
+                          <div className="px-4 pb-3">
+                            <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-3 leading-relaxed">
                               {profile.bio}
                             </p>
-                            </div>
-                          )}
+                          </div>
+                        )}
 
                         {/* Skills Section */}
                         {displaySkills.length > 0 && (
-                          <div className="px-6 pb-4">
+                          <div className="px-4 pb-3">
                             <div className="flex flex-wrap gap-2">
-                            {displaySkills.map((skill: string) => (
+                              {displaySkills.map((skill: string) => (
                                 <Badge 
                                   key={skill} 
-                                  className={`${getSkillColor(skill)} text-xs px-3 py-1 font-medium border-0`}
+                                  className={`${getSkillColor(skill)} text-xs px-2 py-0.5 font-medium border-0`}
                                 >
                                   {skill}
                                 </Badge>
-                            ))}
-                            {moreSkills > 0 && (
-                                <Badge variant="outline" className="text-xs px-3 py-1 font-medium border-gray-200 dark:border-gray-700">
+                              ))}
+                              {moreSkills > 0 && (
+                                <Badge variant="outline" className="text-xs px-2 py-0.5 font-medium border-gray-200 dark:border-gray-700">
                                   +{moreSkills} more
                                 </Badge>
-                            )}
+                              )}
+                            </div>
                           </div>
-                        </div>
                         )}
 
                         {/* Action Buttons */}
-                        <div className="mt-auto p-6 pt-4">
+                        <div className="mt-auto p-4 pt-3">
                           <div className="flex items-center gap-3">
-                          <Button
-                            variant="default"
+                            <Button
+                              variant="default"
                               size="sm"
-                              className="flex-1 bg-primary hover:bg-primary/90 text-white font-semibold rounded-xl h-10"
-                            onClick={() => handleProfileClick(profile.id)}
-                          >
+                              className="flex-1 bg-primary hover:bg-primary/90 text-white font-semibold rounded-xl h-8"
+                              onClick={() => handleProfileClick(profile.id)}
+                            >
                               <Eye className="h-4 w-4 mr-2" />
                               View Profile
-                          </Button>
+                            </Button>
                             
-                          {user && profile.id !== user.id && (
-                            <Button
-                              variant="ghost"
+                            {user && profile.id !== user.id && (
+                              <Button
+                                variant="ghost"
                                 size="sm"
-                                className="h-10 w-10 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-yellow-50 dark:hover:bg-yellow-900/20"
-                              onClick={() => {
-                                if (isProfileSaved(profile.id)) unsaveProfile(profile.id);
-                                else saveProfile(profile.id);
-                              }}
-                              disabled={favoritesLoading}
-                            >
-                              <Star
+                                className="h-8 w-8 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-yellow-50 dark:hover:bg-yellow-900/20"
+                                onClick={() => {
+                                  if (isProfileSaved(profile.id)) unsaveProfile(profile.id);
+                                  else saveProfile(profile.id);
+                                }}
+                                disabled={favoritesLoading}
+                              >
+                                <Star
                                   className={`h-4 w-4 ${
-                                  isProfileSaved(profile.id)
-                                    ? "fill-yellow-400 text-yellow-500"
+                                    isProfileSaved(profile.id)
+                                      ? "fill-yellow-400 text-yellow-500"
                                       : "text-gray-400 hover:text-yellow-500"
                                   }`}
-                                strokeWidth={isProfileSaved(profile.id) ? 0 : 1.5}
-                              />
-                            </Button>
-                          )}
+                                  strokeWidth={isProfileSaved(profile.id) ? 0 : 1.5}
+                                />
+                              </Button>
+                            )}
                           </div>
                         </div>
                       </CardContent>
@@ -659,10 +659,10 @@ export default function FindPartnerPage() {
                       
                       <CardContent className="relative p-0 flex flex-col h-full">
                         {/* Header Section */}
-                        <div className="p-6 pb-4">
+                        <div className="p-4 pb-3">
                           <div className="flex items-start gap-4">
                             {/* Avatar */}
-                            <Avatar className="h-16 w-16 border-4 border-white/80 dark:border-zinc-800/80 shadow-lg">
+                            <Avatar className="h-12 w-12 border-4 border-white/80 dark:border-zinc-800/80 shadow-lg">
                               <AvatarImage src={listing.profiles?.avatar_url || undefined} alt={listing.profiles?.full_name || 'User'} />
                               <AvatarFallback className="text-lg font-semibold bg-gradient-to-br from-primary to-primary/80 text-white">
                                 {listing.profiles?.full_name?.charAt(0) || 'U'}
@@ -673,9 +673,9 @@ export default function FindPartnerPage() {
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-1">
                                 <h3 
-                                  className="font-bold text-lg text-gray-900 dark:text-white truncate cursor-pointer hover:text-primary transition-colors"
-                                onClick={() => handleProfileClick(listing.profiles?.id)}
-                              >
+                                  className="font-bold text-base text-gray-900 dark:text-white truncate cursor-pointer hover:text-primary transition-colors"
+                                  onClick={() => handleProfileClick(listing.profiles?.id)}
+                                >
                                   {listing.profiles?.full_name || 'Unknown User'}
                                 </h3>
                                 <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/20 text-xs px-2 py-1">
@@ -684,7 +684,7 @@ export default function FindPartnerPage() {
                               </div>
                               
                               {listing.profiles?.professional_role && (
-                                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
                                   {listing.profiles.professional_role}
                                 </p>
                               )}
@@ -698,40 +698,40 @@ export default function FindPartnerPage() {
                         </div>
 
                         {/* Title and Description */}
-                        <div className="px-6 pb-4">
-                          <h4 className="font-bold text-lg text-gray-900 dark:text-white mb-3 line-clamp-2 group-hover:text-primary transition-colors">
+                        <div className="px-4 pb-4">
+                          <h4 className="font-bold text-base text-gray-900 dark:text-white mb-3 line-clamp-2 group-hover:text-primary transition-colors">
                             {listing.title}
                           </h4>
                           
                           <div 
-                            className="text-sm text-gray-600 dark:text-gray-400 line-clamp-3 leading-relaxed mb-4"
+                            className="text-xs text-gray-600 dark:text-gray-400 line-clamp-3 leading-relaxed mb-4"
                             dangerouslySetInnerHTML={{ __html: listing.description || '' }}
                           />
                         </div>
 
                         {/* Details Section */}
-                        <div className="px-6 pb-4 space-y-3">
+                        <div className="px-4 pb-4 space-y-3">
                           {/* Funding Stage, Compensation, Amount */}
-                            <div className="flex flex-wrap gap-2">
-                              {listing.funding_stage && (
+                          <div className="flex flex-wrap gap-2">
+                            {listing.funding_stage && (
                               <div className="flex items-center gap-1.5 bg-blue-500/10 text-blue-600 px-3 py-1.5 rounded-full text-xs font-medium">
-                                  <Briefcase className="h-3.5 w-3.5" />
-                                  <span>{listing.funding_stage}</span>
-                                </div>
-                              )}
-                              {listing.compensation_type && (
+                                <Briefcase className="h-3.5 w-3.5" />
+                                <span>{listing.funding_stage}</span>
+                              </div>
+                            )}
+                            {listing.compensation_type && (
                               <div className="flex items-center gap-1.5 bg-green-500/10 text-green-600 px-3 py-1.5 rounded-full text-xs font-medium">
-                                  <DollarSign className="h-3.5 w-3.5" />
-                                  <span>{listing.compensation_type}</span>
-                                </div>
-                              )}
-                              {listing.amount && (
+                                <DollarSign className="h-3.5 w-3.5" />
+                                <span>{listing.compensation_type}</span>
+                              </div>
+                            )}
+                            {listing.amount && (
                               <div className="flex items-center gap-1.5 bg-purple-500/10 text-purple-600 px-3 py-1.5 rounded-full text-xs font-medium">
-                                  <DollarSign className="h-3.5 w-3.5" />
+                                <DollarSign className="h-3.5 w-3.5" />
                                 <span>{listing.amount}</span>
-                                </div>
-                              )}
-                            </div>
+                              </div>
+                            )}
+                          </div>
 
                           {/* Location and Sector */}
                           <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
@@ -748,26 +748,26 @@ export default function FindPartnerPage() {
                           </div>
                         </div>
 
-                          {/* Action Buttons */}
-                        <div className="mt-auto p-6 pt-4">
+                        {/* Action Buttons */}
+                        <div className="mt-auto p-4 pt-3">
                           <div className="flex items-center gap-3">
-                              <Button
-                                variant="default"
+                            <Button
+                              variant="default"
                               size="sm"
-                              className="flex-1 bg-primary hover:bg-primary/90 text-white font-semibold rounded-xl h-10"
+                              className="flex-1 bg-primary hover:bg-primary/90 text-white font-semibold rounded-xl h-8"
                               onClick={() => router.push(`/dashboard/listings/${listing.id}?source=find-partner`)}
-                              >
+                            >
                               <Eye className="h-4 w-4 mr-2" />
                               View Listing
-                              </Button>
+                            </Button>
                             
-                              <div className="flex gap-1">
-                                  <Button 
-                                    variant="ghost" 
+                            <div className="flex gap-1">
+                              <Button 
+                                variant="ghost" 
                                 size="sm"
-                                className="h-10 w-10 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-yellow-50 dark:hover:bg-yellow-900/20" 
-                                    onClick={() => handleLikeListing(listing.id)}
-                                  >
+                                className="h-8 w-8 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-yellow-50 dark:hover:bg-yellow-900/20" 
+                                onClick={() => handleLikeListing(listing.id)}
+                              >
                                 <Star 
                                   className={`h-4 w-4 ${
                                     isListingLiked(listing.id) 
@@ -776,15 +776,15 @@ export default function FindPartnerPage() {
                                   }`} 
                                   strokeWidth={isListingLiked(listing.id) ? 0 : 1.5} 
                                 />
-                                  </Button>
-                                  <Button 
-                                    variant="ghost" 
+                              </Button>
+                              <Button 
+                                variant="ghost" 
                                 size="sm"
-                                className="h-10 w-10 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                                    onClick={() => handleMessage(listing.user_id)}
-                                  >
+                                className="h-8 w-8 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                                onClick={() => handleMessage(listing.user_id)}
+                              >
                                 <Mail className="h-4 w-4 text-gray-400 hover:text-blue-500" />
-                                  </Button>
+                              </Button>
                             </div>
                           </div>
                         </div>
