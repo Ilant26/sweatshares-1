@@ -89,7 +89,12 @@ export default function MyInvoicesPage() {
     status: 'pending',
     description: '',
     items: [] as InvoiceItem[],
-    notes: ''
+    notes: '',
+    vat_enabled: false,
+    vat_rate: 20,
+    vat_amount: 0,
+    subtotal: 0,
+    total: 0
   });
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -229,7 +234,12 @@ export default function MyInvoicesPage() {
         status: newInvoice.status as 'pending' | 'paid' | 'cancelled',
         description: newInvoice.description,
         items: newInvoice.items,
-        currency: 'EUR'
+        currency: 'EUR',
+        vat_enabled: newInvoice.vat_enabled,
+        vat_rate: newInvoice.vat_rate,
+        vat_amount: newInvoice.vat_amount,
+        subtotal: newInvoice.subtotal,
+        total: newInvoice.total
       };
 
       const createdInvoice = await createInvoice(invoiceData);
@@ -251,7 +261,12 @@ export default function MyInvoicesPage() {
       status: 'pending',
       description: '',
       items: [],
-      notes: ''
+      notes: '',
+      vat_enabled: false,
+      vat_rate: 20,
+      vat_amount: 0,
+      subtotal: 0,
+      total: 0
     });
     setInvoiceDate(undefined);
     setDueDate(undefined);
@@ -280,13 +295,20 @@ export default function MyInvoicesPage() {
       const unitPrice = Number(newItems[index].unitPrice) || 0;
       newItems[index].amount = Number((quantity * unitPrice).toFixed(2));
 
-      // Calculate total invoice amount
-      const totalAmount = newItems.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+      // Calculate subtotal
+      const subtotal = newItems.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+      
+      // Calculate VAT and total
+      const vatAmount = prev.vat_enabled ? Number((subtotal * (prev.vat_rate / 100)).toFixed(2)) : 0;
+      const total = subtotal + vatAmount;
 
       return {
         ...prev,
         items: newItems,
-        amount: Number(totalAmount.toFixed(2))
+        subtotal: Number(subtotal.toFixed(2)),
+        vat_amount: vatAmount,
+        total: Number(total.toFixed(2)),
+        amount: Number(total.toFixed(2)) // Keep amount for backward compatibility
       };
     });
   };
@@ -349,6 +371,11 @@ export default function MyInvoicesPage() {
         status: editingInvoice.status,
         description: editingInvoice.description,
         items: editingInvoice.items,
+        vat_enabled: editingInvoice.vat_enabled,
+        vat_rate: editingInvoice.vat_rate,
+        vat_amount: editingInvoice.vat_amount,
+        subtotal: editingInvoice.subtotal,
+        total: editingInvoice.total
       });
 
       setInvoices(prev => prev.map(inv => inv.id === editingInvoice.id ? updatedInvoice : inv));
@@ -385,6 +412,34 @@ export default function MyInvoicesPage() {
     } catch (error) {
       console.error('Error refreshing external clients:', error);
     }
+  };
+
+  const handleVatRateChange = (rate: number) => {
+    setNewInvoice(prev => {
+      const vatAmount = prev.vat_enabled ? Number((prev.subtotal * (rate / 100)).toFixed(2)) : 0;
+      const total = prev.subtotal + vatAmount;
+      return {
+        ...prev,
+        vat_rate: rate,
+        vat_amount: vatAmount,
+        total: Number(total.toFixed(2)),
+        amount: Number(total.toFixed(2))
+      };
+    });
+  };
+
+  const handleVatToggle = (enabled: boolean) => {
+    setNewInvoice(prev => {
+      const vatAmount = enabled ? Number((prev.subtotal * (prev.vat_rate / 100)).toFixed(2)) : 0;
+      const total = prev.subtotal + vatAmount;
+      return {
+        ...prev,
+        vat_enabled: enabled,
+        vat_amount: vatAmount,
+        total: Number(total.toFixed(2)),
+        amount: Number(total.toFixed(2))
+      };
+    });
   };
 
   if (loading) {
@@ -655,6 +710,80 @@ export default function MyInvoicesPage() {
                   </div>
                 </Card>
 
+                {/* VAT Section */}
+                <Card className="p-3 sm:p-4">
+                  <div className="space-y-3 sm:space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
+                      <h3 className="text-base sm:text-lg font-semibold">VAT Settings</h3>
+                      <div className="flex items-center gap-2">
+                        <Label htmlFor="vat-enabled" className="text-xs sm:text-sm font-medium">Enable VAT</Label>
+                        <input
+                          id="vat-enabled"
+                          type="checkbox"
+                          checked={newInvoice.vat_enabled}
+                          onChange={(e) => {
+                            const enabled = e.target.checked;
+                            handleVatToggle(enabled);
+                          }}
+                          className="h-4 w-4"
+                        />
+                      </div>
+                    </div>
+                    
+                    {newInvoice.vat_enabled && (
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="vat-rate" className="text-xs sm:text-sm font-medium">VAT Rate (%)</Label>
+                          <Select
+                            value={newInvoice.vat_rate.toString()}
+                            onValueChange={(value) => {
+                              const rate = Number(value);
+                              handleVatRateChange(rate);
+                            }}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="0">0%</SelectItem>
+                              <SelectItem value="5">5%</SelectItem>
+                              <SelectItem value="10">10%</SelectItem>
+                              <SelectItem value="20">20%</SelectItem>
+                              <SelectItem value="25">25%</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs sm:text-sm font-medium">VAT Amount (€)</Label>
+                          <Input
+                            value={newInvoice.vat_amount.toFixed(2)}
+                            readOnly
+                            className="bg-muted"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Summary */}
+                    <div className="border-t pt-4 space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Subtotal:</span>
+                        <span className="font-medium">€{newInvoice.subtotal.toFixed(2)}</span>
+                      </div>
+                      {newInvoice.vat_enabled && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">VAT ({newInvoice.vat_rate}%):</span>
+                          <span className="font-medium">€{newInvoice.vat_amount.toFixed(2)}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between text-base font-semibold border-t pt-2">
+                        <span>Total:</span>
+                        <span>€{newInvoice.total.toFixed(2)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+
                 {/* Notes Section */}
                 <Card className="p-3 sm:p-4">
                   <div className="space-y-3 sm:space-y-4">
@@ -774,7 +903,12 @@ export default function MyInvoicesPage() {
                       </div>
                       <div>
                         <span className="text-muted-foreground">Amount:</span>
-                        <p className="font-medium">€{invoice.amount.toFixed(2)}</p>
+                        <p className="font-medium">€{invoice.total?.toFixed(2) || invoice.amount.toFixed(2)}</p>
+                        {invoice.vat_enabled && (
+                          <p className="text-xs text-muted-foreground">
+                            incl. VAT ({invoice.vat_rate}%)
+                          </p>
+                        )}
                       </div>
                     </div>
                     
@@ -831,7 +965,14 @@ export default function MyInvoicesPage() {
                       </TableCell>
                       <TableCell>{format(new Date(invoice.issue_date), 'MMM dd, yyyy')}</TableCell>
                       <TableCell>{format(new Date(invoice.due_date), 'MMM dd, yyyy')}</TableCell>
-                      <TableCell className="font-medium">€{invoice.amount.toFixed(2)}</TableCell>
+                      <TableCell className="font-medium">
+                        €{invoice.total?.toFixed(2) || invoice.amount.toFixed(2)}
+                        {invoice.vat_enabled && (
+                          <div className="text-xs text-muted-foreground">
+                            incl. VAT ({invoice.vat_rate}%)
+                          </div>
+                        )}
+                      </TableCell>
                       <TableCell>
                         <Badge variant={getStatusBadgeVariant(invoice.status)}>
                           {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
@@ -972,7 +1113,14 @@ export default function MyInvoicesPage() {
                     </TableCell>
                     <TableCell>{format(new Date(invoice.issue_date), 'MMM dd, yyyy')}</TableCell>
                     <TableCell>{format(new Date(invoice.due_date), 'MMM dd, yyyy')}</TableCell>
-                    <TableCell className="font-medium">€{invoice.amount.toFixed(2)}</TableCell>
+                    <TableCell className="font-medium">
+                      €{invoice.total?.toFixed(2) || invoice.amount.toFixed(2)}
+                      {invoice.vat_enabled && (
+                        <div className="text-xs text-muted-foreground">
+                          incl. VAT ({invoice.vat_rate}%)
+                        </div>
+                      )}
+                    </TableCell>
                     <TableCell>
                       <Badge variant={getStatusBadgeVariant(invoice.status)}>
                         {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
@@ -1271,13 +1419,20 @@ export default function MyInvoicesPage() {
                                 amount: Number((quantity * unitPrice).toFixed(2))
                               };
 
-                              // Calculate total invoice amount
-                              const totalAmount = newItems.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+                              // Calculate subtotal
+                              const subtotal = newItems.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+                              
+                              // Calculate VAT and total
+                              const vatAmount = editingInvoice.vat_enabled ? Number((subtotal * (editingInvoice.vat_rate / 100)).toFixed(2)) : 0;
+                              const total = subtotal + vatAmount;
                               
                               setEditingInvoice(prev => prev ? {
                                 ...prev,
                                 items: newItems,
-                                amount: Number(totalAmount.toFixed(2))
+                                subtotal: Number(subtotal.toFixed(2)),
+                                vat_amount: vatAmount,
+                                total: Number(total.toFixed(2)),
+                                amount: Number(total.toFixed(2))
                               } : null);
                             }}
                           />
@@ -1365,6 +1520,100 @@ export default function MyInvoicesPage() {
                   </SelectContent>
                 </Select>
               </div>
+              
+              {/* VAT Section for Edit */}
+              <Card className="p-3 sm:p-4">
+                <div className="space-y-3 sm:space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
+                    <h3 className="text-base sm:text-lg font-semibold">VAT Settings</h3>
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="edit-vat-enabled" className="text-xs sm:text-sm font-medium">Enable VAT</Label>
+                      <input
+                        id="edit-vat-enabled"
+                        type="checkbox"
+                        checked={editingInvoice?.vat_enabled || false}
+                        onChange={(e) => {
+                          const enabled = e.target.checked;
+                          if (editingInvoice) {
+                            const vatAmount = enabled ? Number((editingInvoice.subtotal * (editingInvoice.vat_rate / 100)).toFixed(2)) : 0;
+                            const total = editingInvoice.subtotal + vatAmount;
+                            setEditingInvoice({
+                              ...editingInvoice,
+                              vat_enabled: enabled,
+                              vat_amount: vatAmount,
+                              total: Number(total.toFixed(2)),
+                              amount: Number(total.toFixed(2))
+                            });
+                          }
+                        }}
+                        className="h-4 w-4"
+                      />
+                    </div>
+                  </div>
+                  
+                  {editingInvoice?.vat_enabled && (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-vat-rate" className="text-xs sm:text-sm font-medium">VAT Rate (%)</Label>
+                        <Select
+                          value={editingInvoice?.vat_rate?.toString() || "20"}
+                          onValueChange={(value) => {
+                            if (editingInvoice) {
+                              const rate = Number(value);
+                              const vatAmount = Number((editingInvoice.subtotal * (rate / 100)).toFixed(2));
+                              const total = editingInvoice.subtotal + vatAmount;
+                              setEditingInvoice({
+                                ...editingInvoice,
+                                vat_rate: rate,
+                                vat_amount: vatAmount,
+                                total: Number(total.toFixed(2)),
+                                amount: Number(total.toFixed(2))
+                              });
+                            }
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="0">0%</SelectItem>
+                            <SelectItem value="5">5%</SelectItem>
+                            <SelectItem value="10">10%</SelectItem>
+                            <SelectItem value="20">20%</SelectItem>
+                            <SelectItem value="25">25%</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs sm:text-sm font-medium">VAT Amount (€)</Label>
+                        <Input
+                          value={editingInvoice?.vat_amount?.toFixed(2) || "0.00"}
+                          readOnly
+                          className="bg-muted"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Summary for Edit */}
+                  <div className="border-t pt-4 space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Subtotal:</span>
+                      <span className="font-medium">€{editingInvoice?.subtotal?.toFixed(2) || editingInvoice?.amount?.toFixed(2) || "0.00"}</span>
+                    </div>
+                    {editingInvoice?.vat_enabled && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">VAT ({editingInvoice.vat_rate}%):</span>
+                        <span className="font-medium">€{editingInvoice.vat_amount?.toFixed(2) || "0.00"}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between text-base font-semibold border-t pt-2">
+                      <span>Total:</span>
+                      <span>€{editingInvoice?.total?.toFixed(2) || editingInvoice?.amount?.toFixed(2) || "0.00"}</span>
+                    </div>
+                  </div>
+                </div>
+              </Card>
             </div>
           )}
           <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">

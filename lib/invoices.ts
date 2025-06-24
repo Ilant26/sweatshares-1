@@ -23,6 +23,11 @@ export interface Invoice {
   status: 'pending' | 'paid' | 'cancelled';
   description?: string;
   items: InvoiceItem[];
+  vat_enabled: boolean;
+  vat_rate: number;
+  vat_amount: number;
+  subtotal: number;
+  total: number;
   created_at: string;
   updated_at: string;
   external_client?: {
@@ -42,7 +47,28 @@ export async function createInvoice(invoice: Omit<Invoice, 'id' | 'created_at' |
     .single();
 
   if (error) throw error;
-  return data;
+  return ensureVatFields(data);
+}
+
+// Helper function to ensure VAT fields are properly set
+function ensureVatFields(invoice: any): Invoice {
+  // Calculate subtotal from items if not present
+  const subtotal = invoice.subtotal || invoice.items?.reduce((sum: number, item: any) => sum + (item.amount || 0), 0) || 0;
+  
+  // Set default VAT values if not present
+  const vatEnabled = invoice.vat_enabled ?? false;
+  const vatRate = invoice.vat_rate ?? 20;
+  const vatAmount = invoice.vat_amount ?? (vatEnabled ? Number((subtotal * (vatRate / 100)).toFixed(2)) : 0);
+  const total = invoice.total ?? (subtotal + vatAmount);
+  
+  return {
+    ...invoice,
+    subtotal: Number(subtotal.toFixed(2)),
+    vat_enabled: vatEnabled,
+    vat_rate: vatRate,
+    vat_amount: vatAmount,
+    total: Number(total.toFixed(2))
+  };
 }
 
 export async function getInvoices(userId: string) {
@@ -57,7 +83,9 @@ export async function getInvoices(userId: string) {
     .order('created_at', { ascending: false });
 
   if (error) throw error;
-  return data;
+  
+  // Ensure all invoices have proper VAT fields
+  return data?.map(ensureVatFields) || [];
 }
 
 export async function updateInvoiceStatus(invoiceId: string, status: 'pending' | 'paid' | 'cancelled') {
@@ -70,7 +98,7 @@ export async function updateInvoiceStatus(invoiceId: string, status: 'pending' |
     .single();
 
   if (error) throw error;
-  return data;
+  return ensureVatFields(data);
 }
 
 export async function editInvoice(invoiceId: string, updates: Partial<Omit<Invoice, 'id' | 'created_at' | 'updated_at'>>) {
@@ -83,11 +111,22 @@ export async function editInvoice(invoiceId: string, updates: Partial<Omit<Invoi
     .single();
 
   if (error) throw error;
-  return data;
+  return ensureVatFields(data);
 }
 
 export function generateInvoicePDF(invoice: Invoice, senderProfile: any, receiverProfile: any) {
   const doc = new jsPDF();
+  
+  // Debug logging
+  console.log('PDF Generation - Invoice data:', {
+    invoice_number: invoice.invoice_number,
+    vat_enabled: invoice.vat_enabled,
+    vat_rate: invoice.vat_rate,
+    vat_amount: invoice.vat_amount,
+    subtotal: invoice.subtotal,
+    total: invoice.total,
+    items: invoice.items
+  });
   
   // Add header
   doc.setFontSize(20);
@@ -117,6 +156,21 @@ export function generateInvoicePDF(invoice: Invoice, senderProfile: any, receive
     doc.text(receiverProfile.email || '', 120, 85);
   }
   
+  // Calculate totals if not present
+  const subtotal = invoice.subtotal || invoice.items.reduce((sum, item) => sum + (item.amount || 0), 0);
+  const vatEnabled = invoice.vat_enabled || false;
+  const vatRate = invoice.vat_rate || 20;
+  const vatAmount = invoice.vat_amount || (vatEnabled ? Number((subtotal * (vatRate / 100)).toFixed(2)) : 0);
+  const total = invoice.total || (subtotal + vatAmount);
+  
+  console.log('PDF Generation - Calculated values:', {
+    subtotal,
+    vatEnabled,
+    vatRate,
+    vatAmount,
+    total
+  });
+  
   // Add items table
   const tableData = invoice.items.map(item => [
     item.description,
@@ -125,18 +179,27 @@ export function generateInvoicePDF(invoice: Invoice, senderProfile: any, receive
     `${item.amount.toFixed(2)} ${invoice.currency}`
   ]);
   
+  // Prepare footer rows
+  const footerRows = [
+    ['Subtotal', '', '', `${subtotal.toFixed(2)} ${invoice.currency}`]
+  ];
+  
+  if (vatEnabled) {
+    footerRows.push([`VAT (${vatRate}%)`, '', '', `${vatAmount.toFixed(2)} ${invoice.currency}`]);
+  }
+  
+  footerRows.push(['Total', '', '', `${total.toFixed(2)} ${invoice.currency}`]);
+  
+  console.log('PDF Generation - Footer rows:', footerRows);
+  
   autoTable(doc, {
     startY: 100,
     head: [['Description', 'Quantity', 'Unit Price', 'Amount']],
     body: tableData,
-    foot: [[
-      'Total',
-      '',
-      '',
-      `${invoice.amount.toFixed(2)} ${invoice.currency}`
-    ]],
+    foot: footerRows,
     theme: 'grid',
-    headStyles: { fillColor: [41, 128, 185] }
+    headStyles: { fillColor: [41, 128, 185] },
+    footStyles: { fillColor: [240, 240, 240] }
   });
   
   // Add notes

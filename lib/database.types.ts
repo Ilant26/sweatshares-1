@@ -211,6 +211,11 @@ export interface Database {
           status: 'pending' | 'paid' | 'cancelled';
           description: string | null;
           items: InvoiceItem[];
+          vat_enabled: boolean;
+          vat_rate: number;
+          vat_amount: number;
+          subtotal: number;
+          total: number;
           created_at: string;
           updated_at: string;
         };
@@ -227,6 +232,11 @@ export interface Database {
           status?: 'pending' | 'paid' | 'cancelled';
           description?: string | null;
           items: InvoiceItem[];
+          vat_enabled?: boolean;
+          vat_rate?: number;
+          vat_amount?: number;
+          subtotal?: number;
+          total?: number;
           created_at?: string;
           updated_at?: string;
         };
@@ -243,6 +253,11 @@ export interface Database {
           status?: 'pending' | 'paid' | 'cancelled';
           description?: string | null;
           items?: InvoiceItem[];
+          vat_enabled?: boolean;
+          vat_rate?: number;
+          vat_amount?: number;
+          subtotal?: number;
+          total?: number;
           created_at?: string;
           updated_at?: string;
         };
