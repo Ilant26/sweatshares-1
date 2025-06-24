@@ -310,9 +310,9 @@ function DashboardHeader() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="sm" className="h-8 px-1 sm:px-2 hover:bg-accent">
-              <Avatar className="h-6 w-6 rounded-lg">
+              <Avatar className="h-8 w-8 rounded-full">
                 <AvatarImage src={userData.avatar} alt={userData.name} />
-                <AvatarFallback className="rounded-lg text-xs">
+                <AvatarFallback className="rounded-full text-xs">
                   {userData.name.split(' ').map((n: string) => n[0]).join('').toUpperCase()}
                 </AvatarFallback>
               </Avatar>
@@ -419,8 +419,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       </div>
                     </div>
                     <Button variant="ghost" size="sm" className="h-8 px-1 sm:px-2 hover:bg-accent">
-                      <Avatar className="h-6 w-6 rounded-lg">
-                        <AvatarFallback className="rounded-lg text-xs">
+                      <Avatar className="h-8 w-8 rounded-full">
+                        <AvatarFallback className="rounded-full text-xs">
                           {user?.user_metadata?.full_name?.split(' ').map((n: string) => n[0]).join('').toUpperCase() || 'U'}
                         </AvatarFallback>
                       </Avatar>
