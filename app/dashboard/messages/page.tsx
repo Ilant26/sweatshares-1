@@ -638,9 +638,9 @@ export default function MessagesPage() {
     }
 
     return (
-        <div className="flex flex-col h-screen bg-background">
-            <div className="flex h-full gap-4 p-4">
-                <Card className="w-1/3 flex flex-col">
+        <div className="flex flex-col h-[90vh] bg-background">
+            <div className="flex flex-1 min-h-0 gap-4 p-4">
+                <Card className="w-1/3 flex flex-col flex-1 min-h-0 h-full">
                     <CardHeader className="flex-none">
                         <div className="flex justify-between items-center">
                             <div className="relative w-full flex-1 mr-4">
@@ -687,7 +687,7 @@ export default function MessagesPage() {
                             </Button>
                         </div>
                     </CardHeader>
-                    <CardContent className="flex-1 p-0 overflow-hidden">
+                    <CardContent className="flex-1 min-h-0 p-0 overflow-hidden">
                         <ScrollArea className="h-full pr-4">
                             {isLoadingAllMessages ? (
                                 <div className="flex items-center justify-center h-32">
@@ -742,7 +742,7 @@ export default function MessagesPage() {
                     </CardContent>
                 </Card>
 
-                <Card className="flex-1 flex flex-col">
+                <Card className="flex-1 flex flex-col min-h-0 h-full">
                     {selectedConversation && activeConversation ? (
                         <>
                             <CardHeader className="flex-none">
@@ -781,7 +781,7 @@ export default function MessagesPage() {
                                     </div>
                                 </div>
                             </CardHeader>
-                            <CardContent className="flex-1 p-4 overflow-hidden">
+                            <CardContent className="flex-1 min-h-0 p-4 overflow-hidden">
                                 <ScrollArea className="h-full">
                                     <div className="flex flex-col gap-4 pr-4">
                                         {filteredMessages.length === 0 ? (
