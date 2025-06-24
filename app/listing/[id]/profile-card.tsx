@@ -7,7 +7,6 @@ import { MessageSquare, UserPlus, MapPin, Briefcase, Building2 } from 'lucide-re
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import { Badge } from '@/components/ui/badge';
 
 interface ProfileCardProps {
   profile: {

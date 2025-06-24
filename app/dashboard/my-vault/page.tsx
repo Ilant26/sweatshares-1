@@ -467,59 +467,83 @@ export default function MyVaultPage() {
           <Dialog open={addDocumentDialogOpen} onOpenChange={setAddDocumentDialogOpen}>
             <DialogTrigger asChild>
               <Button className="w-full sm:w-auto">
-                <Plus className="mr-2 h-4 w-4" /> Add Document
+                <Plus className="mr-2 h-4 w-4" />
+                Add Document
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px] md:max-w-[700px] w-[95vw]">
+            <DialogContent className="sm:max-w-[525px]">
               <DialogHeader>
-                <DialogTitle>Add New Document</DialogTitle>
+                <DialogTitle>Upload Files</DialogTitle>
                 <DialogDescription>
-                  Upload your document and provide necessary details.
+                  Drag and drop files here or click to select files
                 </DialogDescription>
               </DialogHeader>
-              <form onSubmit={handleUpload} className="grid gap-4 py-4 w-full">
-                <div className="grid grid-cols-1 sm:grid-cols-4 items-start sm:items-center gap-2 sm:gap-4">
-                  <Label htmlFor="documentName" className="text-left sm:text-right">
-                    Document Name
-                  </Label>
-                  <Input id="name" value={form.name} onChange={handleFormChange} placeholder="e.g., Annual Report 2024" className="col-span-1 sm:col-span-3" required />
+              <form onSubmit={handleUpload}>
+                <div className="space-y-4">
+                  <div
+                    className="relative flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg cursor-pointer bg-muted hover:bg-muted/50 transition-colors"
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                        setFileInput(e.dataTransfer.files[0]);
+                        setForm({ ...form, name: e.dataTransfer.files[0].name });
+                      }
+                    }}
+                  >
+                    <UploadCloud className="w-10 h-10 text-muted-foreground mb-2" />
+                    <p className="text-sm text-muted-foreground">
+                      <span className="font-semibold text-primary">Upload a file</span> or drag and drop
+                    </p>
+                    <p className="text-xs text-muted-foreground">PNG, JPG, GIF up to 10MB</p>
+                    <input
+                      id="file-upload"
+                      type="file"
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files[0]) {
+                          setFileInput(e.target.files[0]);
+                          setForm({ ...form, name: e.target.files[0].name });
+                        }
+                      }}
+                    />
+                  </div>
+                  {fileInput && (
+                    <div className="text-sm text-center">Selected file: {fileInput.name}</div>
+                  )}
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Document Name</Label>
+                    <Input id="name" value={form.name} onChange={handleFormChange} placeholder="e.g., Q4 Financial Report" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="type">Document Type</Label>
+                    <Select onValueChange={(value) => setForm(f => ({ ...f, type: value }))} value={form.type}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select document type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="invoice">Invoice</SelectItem>
+                        <SelectItem value="contract">Contract</SelectItem>
+                        <SelectItem value="report">Report</SelectItem>
+                        <SelectItem value="nda">NDA</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="description">Description</Label>
+                    <Textarea id="description" value={form.description} onChange={handleFormChange} placeholder="Add a short description..." />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="tags">Tags</Label>
+                    <Input id="tags" value={form.tags} onChange={handleFormChange} placeholder="e.g., finance, q4, confidential" />
+                  </div>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-4 items-start sm:items-center gap-2 sm:gap-4">
-                  <Label htmlFor="documentType" className="text-left sm:text-right">
-                    Document Type
-                  </Label>
-                  <Select value={form.type} onValueChange={(v) => setForm(f => ({ ...f, type: v }))}>
-                    <SelectTrigger className="col-span-1 sm:col-span-3">
-                      <SelectValue placeholder="Select document type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="personal">Personal Document</SelectItem>
-                      <SelectItem value="contract">Contract</SelectItem>
-                      <SelectItem value="legal">Legal Document</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-4 items-start sm:items-center gap-2 sm:gap-4">
-                  <Label htmlFor="description" className="text-left sm:text-right">
-                    Description
-                  </Label>
-                  <Textarea id="description" value={form.description} onChange={handleFormChange} placeholder="Brief description of the document" className="col-span-1 sm:col-span-3" />
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-4 items-start sm:items-center gap-2 sm:gap-4">
-                  <Label htmlFor="tags" className="text-left sm:text-right">
-                    Tags
-                  </Label>
-                  <Input id="tags" value={form.tags} onChange={handleFormChange} placeholder="Comma separated tags (e.g., finance, legal)" className="col-span-1 sm:col-span-3" />
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-4 items-start sm:items-center gap-2 sm:gap-4">
-                  <Label htmlFor="file" className="text-left sm:text-right">
-                    File
-                  </Label>
-                  <Input id="file" type="file" ref={fileRef} onChange={handleFormChange} className="col-span-1 sm:col-span-3" required />
-                </div>
-                <DialogFooter>
-                  <Button type="submit" disabled={uploading} className="w-full sm:w-auto">{uploading ? 'Uploading...' : 'Upload Document'}</Button>
+                <DialogFooter className="mt-6">
+                  <Button type="button" variant="outline" onClick={() => setAddDocumentDialogOpen(false)}>Cancel</Button>
+                  <Button type="submit" disabled={uploading}>
+                    {uploading ? 'Uploading...' : 'Upload'}
+                  </Button>
                 </DialogFooter>
               </form>
             </DialogContent>
