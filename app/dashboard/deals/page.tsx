@@ -4,7 +4,6 @@ import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { 
@@ -103,7 +102,6 @@ const formatStatus = (status: string) => {
 export default function DealsPage() {
   const [deals, setDeals] = useState<Deal[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('all');
   const { user } = useSession();
   const { toast } = useToast();
 
@@ -132,11 +130,6 @@ export default function DealsPage() {
 
     fetchDeals();
   }, [user, toast]);
-
-  const filteredDeals = deals.filter(deal => {
-    if (activeTab === 'all') return true;
-    return deal.status === activeTab;
-  });
 
   const getDealRole = (deal: Deal) => {
     if (deal.buyer_id === user?.id) return 'buyer';
@@ -207,135 +200,118 @@ export default function DealsPage() {
           ))}
         </motion.div>
 
-        {/* Tabs */}
-        <motion.div variants={itemVariants}>
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-7">
-              <TabsTrigger value="all">All</TabsTrigger>
-              <TabsTrigger value="pending">Pending</TabsTrigger>
-              <TabsTrigger value="counter_offered">Counter Offers</TabsTrigger>
-              <TabsTrigger value="accepted">Accepted</TabsTrigger>
-              <TabsTrigger value="in_progress">In Progress</TabsTrigger>
-              <TabsTrigger value="completed">Completed</TabsTrigger>
-              <TabsTrigger value="rejected">Rejected</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value={activeTab} className="space-y-4">
-              {loading ? (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-                  <p className="mt-2 text-muted-foreground">Loading deals...</p>
-                </div>
-              ) : filteredDeals.length === 0 ? (
-                <Card className="p-8 text-center">
-                  <Handshake className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">No deals found</h3>
-                  <p className="text-muted-foreground mb-4">
-                    {activeTab === 'all' 
-                      ? "You haven't made or received any deals yet."
-                      : `No ${activeTab.replace('_', ' ')} deals found.`
-                    }
-                  </p>
-                  <Button asChild>
-                    <Link href="/dashboard/listings">
-                      Browse Listings
-                    </Link>
-                  </Button>
-                </Card>
-              ) : (
-                <div className="grid gap-4">
-                  {filteredDeals.map((deal, index) => (
-                    <motion.div
-                      key={deal.id}
-                      variants={itemVariants}
-                      initial="hidden"
-                      animate="visible"
-                      transition={{ delay: index * 0.1 }}
-                    >
-                      <Card className="hover:shadow-lg transition-shadow">
-                        <CardContent className="p-6">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1 space-y-4">
-                              {/* Header */}
-                              <div className="flex items-center gap-4">
-                                <Avatar className="h-12 w-12">
-                                  <AvatarImage src={getOtherParty(deal)?.avatar_url} />
-                                  <AvatarFallback>
-                                    {getOtherParty(deal)?.full_name?.charAt(0) || 'U'}
-                                  </AvatarFallback>
-                                </Avatar>
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-2 mb-1">
-                                    <h3 className="font-semibold text-lg">
-                                      {deal.listing?.title || 'Untitled Listing'}
-                                    </h3>
-                                    <Badge className={getStatusColor(deal.status)}>
-                                      <div className="flex items-center gap-1">
-                                        {getStatusIcon(deal.status)}
-                                        {formatStatus(deal.status)}
-                                      </div>
-                                    </Badge>
+        {/* Deals List */}
+        <motion.div variants={itemVariants} className="space-y-4">
+          {loading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+              <p className="mt-2 text-muted-foreground">Loading deals...</p>
+            </div>
+          ) : deals.length === 0 ? (
+            <Card className="p-8 text-center">
+              <Handshake className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2">No deals found</h3>
+              <p className="text-muted-foreground mb-4">
+                You haven't made or received any deals yet.
+              </p>
+              <Button asChild>
+                <Link href="/dashboard/listings">
+                  Browse Listings
+                </Link>
+              </Button>
+            </Card>
+          ) : (
+            <div className="grid gap-4">
+              {deals.map((deal, index) => (
+                <motion.div
+                  key={deal.id}
+                  variants={itemVariants}
+                  initial="hidden"
+                  animate="visible"
+                  transition={{ delay: index * 0.1 }}
+                >
+                  <Card className="hover:shadow-lg transition-shadow">
+                    <CardContent className="p-6">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1 space-y-4">
+                          {/* Header */}
+                          <div className="flex items-center gap-4">
+                            <Avatar className="h-12 w-12">
+                              <AvatarImage src={getOtherParty(deal)?.avatar_url} />
+                              <AvatarFallback>
+                                {getOtherParty(deal)?.full_name?.charAt(0) || 'U'}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h3 className="font-semibold text-lg">
+                                  {deal.listing?.title || 'Untitled Listing'}
+                                </h3>
+                                <Badge className={getStatusColor(deal.status)}>
+                                  <div className="flex items-center gap-1">
+                                    {getStatusIcon(deal.status)}
+                                    {formatStatus(deal.status)}
                                   </div>
-                                  <p className="text-muted-foreground">
-                                    with {getOtherParty(deal)?.full_name || 'Unknown User'}
-                                  </p>
-                                </div>
+                                </Badge>
                               </div>
-
-                              {/* Deal Details */}
-                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div className="flex items-center gap-2">
-                                  <DollarSign className="h-4 w-4 text-primary" />
-                                  <span className="font-medium">${deal.amount}</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <Calendar className="h-4 w-4 text-primary" />
-                                  <span className="text-sm text-muted-foreground">
-                                    {format(new Date(deal.created_at), 'MMM dd, yyyy')}
-                                  </span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <User className="h-4 w-4 text-primary" />
-                                  <span className="text-sm text-muted-foreground capitalize">
-                                    You are the {getRoleLabel(deal, getDealRole(deal))}
-                                  </span>
-                                </div>
-                              </div>
-
-                              {/* Description */}
-                              {deal.description && (
-                                <div>
-                                  <p className="text-sm text-muted-foreground line-clamp-2">
-                                    {deal.description}
-                                  </p>
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Actions */}
-                            <div className="flex flex-col gap-2 ml-4">
-                              <Button asChild size="sm" variant="outline">
-                                <Link href={`/dashboard/deals/${deal.id}`}>
-                                  <Eye className="h-4 w-4 mr-2" />
-                                  View Details
-                                </Link>
-                              </Button>
-                              <Button asChild size="sm">
-                                <Link href={`/dashboard/deals/${deal.id}`}>
-                                  <MessageSquare className="h-4 w-4 mr-2" />
-                                  Message
-                                </Link>
-                              </Button>
+                              <p className="text-muted-foreground">
+                                with {getOtherParty(deal)?.full_name || 'Unknown User'}
+                              </p>
                             </div>
                           </div>
-                        </CardContent>
-                      </Card>
-                    </motion.div>
-                  ))}
-                </div>
-              )}
-            </TabsContent>
-          </Tabs>
+
+                          {/* Deal Details */}
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="flex items-center gap-2">
+                              <DollarSign className="h-4 w-4 text-primary" />
+                              <span className="font-medium">${deal.amount}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Calendar className="h-4 w-4 text-primary" />
+                              <span className="text-sm text-muted-foreground">
+                                {format(new Date(deal.created_at), 'MMM dd, yyyy')}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <User className="h-4 w-4 text-primary" />
+                              <span className="text-sm text-muted-foreground capitalize">
+                                You are the {getRoleLabel(deal, getDealRole(deal))}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Description */}
+                          {deal.description && (
+                            <div>
+                              <p className="text-sm text-muted-foreground line-clamp-2">
+                                {deal.description}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex flex-col gap-2 ml-4">
+                          <Button asChild size="sm" variant="outline">
+                            <Link href={`/dashboard/deals/${deal.id}`}>
+                              <Eye className="h-4 w-4 mr-2" />
+                              View Details
+                            </Link>
+                          </Button>
+                          <Button asChild size="sm">
+                            <Link href={`/dashboard/deals/${deal.id}`}>
+                              <MessageSquare className="h-4 w-4 mr-2" />
+                              Message
+                            </Link>
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ))}
+            </div>
+          )}
         </motion.div>
       </motion.div>
     </div>
