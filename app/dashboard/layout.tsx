@@ -215,7 +215,7 @@ function DashboardHeader() {
   return (
     <header className="sticky top-0 z-50 flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 px-2 sm:px-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
       <div className="flex items-center gap-2">
-        <SidebarTrigger className="-ml-1" />
+        <SidebarTrigger className="rounded-md bg-white dark:bg-muted border border-input dark:border-muted shadow-sm hover:bg-accent dark:hover:bg-accent transition-colors size-8 flex items-center justify-center p-0" />
         <Separator
           orientation="vertical"
           className="mr-2 data-[orientation=vertical]:h-4 hidden sm:block"
@@ -298,10 +298,14 @@ function DashboardHeader() {
         "ml-auto"
       )}>
         <div className="hidden sm:block">
-          <ThemeSwitcher />
+          <div className="rounded-md bg-white dark:bg-muted border border-input dark:border-muted shadow-sm hover:bg-accent dark:hover:bg-accent transition-colors size-8 flex items-center justify-center p-0">
+            <ThemeSwitcher />
+          </div>
         </div>
         <div className="hidden sm:block">
-          <NotificationsDropdown />
+          <div className="rounded-md bg-white dark:bg-muted border border-input dark:border-muted shadow-sm hover:bg-accent dark:hover:bg-accent transition-colors size-8 flex items-center justify-center p-0">
+            <NotificationsDropdown />
+          </div>
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -373,7 +377,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Suspense fallback={
                 <header className="sticky top-0 z-50 flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 px-2 sm:px-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
                   <div className="flex items-center gap-2">
-                    <SidebarTrigger className="-ml-1" />
+                    <SidebarTrigger className="rounded-md bg-white dark:bg-muted border border-input dark:border-muted shadow-sm hover:bg-accent dark:hover:bg-accent transition-colors size-8 flex items-center justify-center p-0" />
                     <Separator
                       orientation="vertical"
                       className="mr-2 data-[orientation=vertical]:h-4 hidden sm:block"
@@ -405,10 +409,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   </div>
                   <div className="flex items-center gap-1 sm:gap-2 ml-auto">
                     <div className="hidden sm:block">
-                      <ThemeSwitcher />
+                      <div className="rounded-md bg-white dark:bg-muted border border-input dark:border-muted shadow-sm hover:bg-accent dark:hover:bg-accent transition-colors size-8 flex items-center justify-center p-0">
+                        <ThemeSwitcher />
+                      </div>
                     </div>
                     <div className="hidden sm:block">
-                      <NotificationsDropdown />
+                      <div className="rounded-md bg-white dark:bg-muted border border-input dark:border-muted shadow-sm hover:bg-accent dark:hover:bg-accent transition-colors size-8 flex items-center justify-center p-0">
+                        <NotificationsDropdown />
+                      </div>
                     </div>
                     <Button variant="ghost" size="sm" className="h-8 px-1 sm:px-2 hover:bg-accent">
                       <Avatar className="h-6 w-6 rounded-lg">

@@ -39,13 +39,13 @@ const getSkillColor = (skill: string) => {
 
 const formatListingType = (listingType: string): string => {
   const typeMap: { [key: string]: string } = {
-    'find-funding': 'Find Funding',
-    'cofounder': 'Co Founder',
-    'expert-freelance': 'Expert/ Freelance',
+    'find-funding': 'Funding',
+    'cofounder': 'Co-Founder',
+    'expert-freelance': 'Expert',
     'employee': 'Employee',
     'mentor': 'Mentor',
     'sell-startup': 'Startup Sale',
-    'investment-opportunity': 'Investment Opportunity',
+    'investment-opportunity': 'Investment',
     'buy-startup': 'Buy Startup',
     'co-investor': 'Co-investor',
     'mission': 'Mission',
@@ -74,18 +74,18 @@ export function MyListingTable({
   const router = useRouter();
 
   if (isLoadingListings) {
-    return <div className="p-4 sm:p-8 text-center text-muted-foreground">Loading listings...</div>;
+    return <div className="p-4 text-center text-muted-foreground">Loading listings...</div>;
   }
   if (listingsError) {
-    return <div className="p-4 sm:p-8 text-center text-destructive">{listingsError}</div>;
+    return <div className="p-4 text-center text-destructive">{listingsError}</div>;
   }
 
-  // Mobile card layout
+  // Mobile card layout - more compact
   const renderMobileCards = () => (
-    <div className="space-y-4 sm:hidden">
+    <div className="space-y-3 sm:hidden">
       {listings.map((listing) => (
-        <Card key={listing.id} className="p-4">
-          <CardHeader className="p-0 pb-3">
+        <Card key={listing.id} className="p-3">
+          <CardHeader className="p-0 pb-2">
             <div className="flex items-center justify-between">
               <Checkbox
                 checked={selectedListings.includes(listing.id)}
@@ -103,56 +103,43 @@ export function MyListingTable({
               </div>
             </div>
           </CardHeader>
-          <CardContent className="p-0 space-y-3">
+          <CardContent className="p-0 space-y-2">
             <div>
-              <CardTitle className="text-base font-semibold">{listing.title || 'Untitled'}</CardTitle>
-              <p className="text-sm text-muted-foreground">
+              <CardTitle className="text-sm font-semibold">{listing.title || 'Untitled'}</CardTitle>
+              <p className="text-xs text-muted-foreground">
                 {formatListingType(listing.listing_type)} • {formatProfileType(listing.profile_type)}
               </p>
             </div>
             
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              <div>
-                <span className="font-medium">Country:</span>
-                <p className="text-muted-foreground">{listing.location_country || 'Not specified'}</p>
-              </div>
-              <div>
-                <span className="font-medium">Compensation:</span>
-                <p className="text-muted-foreground">{listing.compensation_type || 'Not specified'}</p>
-              </div>
+            <div className="flex justify-between text-xs">
+              <span className="text-muted-foreground">{listing.location_country || 'No location'}</span>
+              <span className="text-muted-foreground">{format(new Date(listing.created_at), 'MMM dd')}</span>
             </div>
 
             {listing.skills && (
-              <div>
-                <span className="text-sm font-medium">Skills:</span>
-                <div className="flex flex-wrap gap-1 mt-1">
-                  {listing.skills.split(', ').filter((skill: string) => skill.trim()).slice(0, 3).map((skill: string) => (
-                    <Badge key={skill} className={`text-xs ${getSkillColor(skill.trim())}`}>
-                      {skill.trim()}
-                    </Badge>
-                  ))}
-                  {listing.skills.split(', ').filter((skill: string) => skill.trim()).length > 3 && (
-                    <Badge variant="outline" className="text-xs">
-                      +{listing.skills.split(', ').filter((skill: string) => skill.trim()).length - 3} more
-                    </Badge>
-                  )}
-                </div>
+              <div className="flex flex-wrap gap-1">
+                {listing.skills.split(', ').filter((skill: string) => skill.trim()).slice(0, 2).map((skill: string) => (
+                  <Badge key={skill} className={`text-xs ${getSkillColor(skill.trim())}`}>
+                    {skill.trim()}
+                  </Badge>
+                ))}
+                {listing.skills.split(', ').filter((skill: string) => skill.trim()).length > 2 && (
+                  <Badge variant="outline" className="text-xs">
+                    +{listing.skills.split(', ').filter((skill: string) => skill.trim()).length - 2}
+                  </Badge>
+                )}
               </div>
             )}
 
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span>Published: {format(new Date(listing.created_at), 'MMM dd, yyyy')}</span>
-            </div>
-
-            <div className="flex items-center justify-end gap-2 pt-2 border-t">
+            <div className="flex items-center justify-end gap-1 pt-1 border-t">
               <Button variant="ghost" size="sm" onClick={() => onEditListing(listing)}>
-                <Edit className="h-4 w-4" />
+                <Edit className="h-3 w-3" />
               </Button>
               <Button variant="ghost" size="sm" onClick={() => onDeleteListing(listing.id)} disabled={deletingId === listing.id}>
-                {deletingId === listing.id ? <span className="animate-spin"><Trash2 className="h-4 w-4" /></span> : <Trash2 className="h-4 w-4" />}
+                {deletingId === listing.id ? <span className="animate-spin"><Trash2 className="h-3 w-3" /></span> : <Trash2 className="h-3 w-3" />}
               </Button>
               <Button variant="ghost" size="sm" onClick={() => router.push(`/dashboard/listings/${listing.id}`)}>
-                <Eye className="h-4 w-4" />
+                <Eye className="h-3 w-3" />
               </Button>
             </div>
           </CardContent>
@@ -166,27 +153,25 @@ export function MyListingTable({
       {/* Mobile cards */}
       {renderMobileCards()}
       
-      {/* Desktop table */}
+      {/* Desktop table - optimized for screen fit */}
       <div className="hidden sm:block">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[50px]">
+              <TableHead className="w-[40px]">
                 <Checkbox
                   checked={selectedListings.length === listings.length && listings.length > 0}
                   onCheckedChange={onSelectAll}
                   aria-label="Select all"
                 />
               </TableHead>
-              <TableHead>Looking for</TableHead>
-              <TableHead>As an</TableHead>
-              <TableHead>Country</TableHead>
-              <TableHead>Title</TableHead>
-              <TableHead>Skills</TableHead>
-              <TableHead>Publication Date</TableHead>
-              <TableHead>Compensation</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead className="w-[120px]">Type</TableHead>
+              <TableHead className="w-[100px]">Profile</TableHead>
+              <TableHead className="w-[120px]">Title</TableHead>
+              <TableHead className="w-[150px]">Skills</TableHead>
+              <TableHead className="w-[80px]">Date</TableHead>
+              <TableHead className="w-[80px]">Status</TableHead>
+              <TableHead className="w-[100px] text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -199,41 +184,48 @@ export function MyListingTable({
                     aria-label="Select row"
                   />
                 </TableCell>
-                <TableCell>{formatListingType(listing.listing_type)}</TableCell>
-                <TableCell>{formatProfileType(listing.profile_type)}</TableCell>
-                <TableCell>{listing.location_country}</TableCell>
-                <TableCell>{listing.title}</TableCell>
+                <TableCell className="text-sm">{formatListingType(listing.listing_type)}</TableCell>
+                <TableCell className="text-sm">{formatProfileType(listing.profile_type)}</TableCell>
+                <TableCell className="text-sm max-w-[120px] truncate" title={listing.title}>
+                  {listing.title || 'Untitled'}
+                </TableCell>
                 <TableCell>
                   {listing.skills ? (
                     <div className="flex flex-wrap gap-1">
-                      {listing.skills.split(', ').filter((skill: string) => skill.trim()).map((skill: string) => (
+                      {listing.skills.split(', ').filter((skill: string) => skill.trim()).slice(0, 2).map((skill: string) => (
                         <Badge key={skill} className={`text-xs ${getSkillColor(skill.trim())}`}>
                           {skill.trim()}
                         </Badge>
                       ))}
+                      {listing.skills.split(', ').filter((skill: string) => skill.trim()).length > 2 && (
+                        <Badge variant="outline" className="text-xs">
+                          +{listing.skills.split(', ').filter((skill: string) => skill.trim()).length - 2}
+                        </Badge>
+                      )}
                     </div>
                   ) : (
-                    <span className="text-muted-foreground text-sm">No skills</span>
+                    <span className="text-muted-foreground text-xs">-</span>
                   )}
                 </TableCell>
-                <TableCell>{format(new Date(listing.created_at), 'yyyy-MM-dd')}</TableCell>
-                <TableCell>{listing.compensation_type}</TableCell>
+                <TableCell className="text-sm">{format(new Date(listing.created_at), 'MMM dd')}</TableCell>
                 <TableCell>
                   <Switch
                     checked={listing.status === 'active'}
                     onCheckedChange={() => onToggleStatus(listing)}
                   />
                 </TableCell>
-                <TableCell className="text-right flex items-center justify-end gap-2">
-                  <Button variant="ghost" size="icon" onClick={() => onEditListing(listing)}>
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={() => onDeleteListing(listing.id)} disabled={deletingId === listing.id}>
-                    {deletingId === listing.id ? <span className="animate-spin"><Trash2 className="h-4 w-4" /></span> : <Trash2 className="h-4 w-4" />}
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={() => router.push(`/dashboard/listings/${listing.id}`)}>
-                    <Eye className="h-4 w-4" />
-                  </Button>
+                <TableCell className="text-right">
+                  <div className="flex items-center justify-end gap-1">
+                    <Button variant="ghost" size="icon" onClick={() => onEditListing(listing)}>
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => onDeleteListing(listing.id)} disabled={deletingId === listing.id}>
+                      {deletingId === listing.id ? <span className="animate-spin"><Trash2 className="h-4 w-4" /></span> : <Trash2 className="h-4 w-4" />}
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => router.push(`/dashboard/listings/${listing.id}`)}>
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
