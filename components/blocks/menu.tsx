@@ -54,7 +54,24 @@ export const Menu = () => {
                                 href="/"
                                 aria-label="home"
                                 className="flex items-center space-x-2">
-                                <span className="text-xl font-bold">SweatShares</span>
+                                {/* Light mode logo */}
+                                <Image
+                                  src="/logo/logo-svg-dark-text.svg"
+                                  alt="SweatShares Logo"
+                                  width={120}
+                                  height={40}
+                                  priority
+                                  className="block dark:hidden"
+                                />
+                                {/* Dark mode logo */}
+                                <Image
+                                  src="/logo/logo-svg-white-text.svg"
+                                  alt="SweatShares Logo (White)"
+                                  width={120}
+                                  height={40}
+                                  priority
+                                  className="hidden dark:block"
+                                />
                             </Link>
 
                             <button

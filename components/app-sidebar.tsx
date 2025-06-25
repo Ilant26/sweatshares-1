@@ -25,6 +25,7 @@ import {
   Handshake,
 } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
 
 import { NavMain } from "@/components/nav-main"
 import { NavProjects } from "@/components/nav-projects"
@@ -96,6 +97,28 @@ const data = {
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="icon" {...props}>
+      <SidebarHeader>
+        <Link href="/" className="flex items-center justify-start p-2">
+          {/* Light mode logo */}
+          <Image
+            src="/logo/logo-svg-dark-text.svg"
+            alt="SweatShares Logo"
+            width={150}
+            height={50}
+            priority
+            className="block dark:hidden"
+          />
+          {/* Dark mode logo */}
+          <Image
+            src="/logo/logo-svg-white-text.svg"
+            alt="SweatShares Logo (White)"
+            width={150}
+            height={50}
+            priority
+            className="hidden dark:block"
+          />
+        </Link>
+      </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
       </SidebarContent>
