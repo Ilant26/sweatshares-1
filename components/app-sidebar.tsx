@@ -77,11 +77,6 @@ const data = {
       icon: List,
     },
     {
-      title: "Deals",
-      url: "/dashboard/deals",
-      icon: Handshake,
-    },
-    {
       title: "Vault",
       url: "/dashboard/my-vault",
       icon: Lock,
