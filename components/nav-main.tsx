@@ -33,7 +33,7 @@ export function NavMain({
   const { state } = useSidebar();
   const pathname = usePathname();
   return (
-    <SidebarGroup>
+    <SidebarGroup className="pt-0">
       <SidebarGroupLabel>Platform</SidebarGroupLabel>
       <SidebarMenu>
         {items.map((item) => {

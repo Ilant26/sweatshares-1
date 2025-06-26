@@ -23,9 +23,12 @@ import {
   HelpCircle,
   MessageSquarePlus,
   Handshake,
+  MessageSquare,
 } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
+import { useSidebar } from "@/components/ui/sidebar"
+import { cn } from "@/lib/utils"
 
 import { NavMain } from "@/components/nav-main"
 import { NavProjects } from "@/components/nav-projects"
@@ -52,6 +55,16 @@ const data = {
       icon: LayoutDashboard,
     },
     {
+      title: "Listings",
+      url: "/dashboard/my-listings",
+      icon: List,
+    },
+    {
+      title: "Mes Réponses",
+      url: "/dashboard/my-responses",
+      icon: MessageSquare,
+    },
+    {
       title: "Messages",
       url: "/dashboard/messages",
       icon: MessageCircle,
@@ -72,11 +85,6 @@ const data = {
       icon: Star,
     },
     {
-      title: "Listings",
-      url: "/dashboard/my-listings",
-      icon: List,
-    },
-    {
       title: "Vault",
       url: "/dashboard/my-vault",
       icon: Lock,
@@ -90,31 +98,68 @@ const data = {
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { state } = useSidebar();
   return (
     <Sidebar collapsible="icon" {...props}>
-      <SidebarHeader>
-        <Link href="/" className="flex items-center justify-start p-2">
-          {/* Light mode logo */}
-          <Image
-            src="/logo/logo-svg-dark-text.svg"
-            alt="SweatShares Logo"
-            width={150}
-            height={50}
-            priority
-            className="block dark:hidden"
-          />
-          {/* Dark mode logo */}
-          <Image
-            src="/logo/logo-svg-white-text.svg"
-            alt="SweatShares Logo (White)"
-            width={150}
-            height={50}
-            priority
-            className="hidden dark:block"
-          />
+      <SidebarHeader className={cn(
+        "px-3 transition-all duration-200 ease-out",
+        state === "collapsed" ? "py-2" : "py-4"
+      )}>
+        <Link 
+          href="/" 
+          className={cn(
+            "flex items-center transition-all duration-200 ease-out",
+            state === "collapsed" ? "justify-center" : "justify-start"
+          )}
+        >
+          <div className="relative flex items-center">
+            {/* Icon - always present but fades in/out */}
+            <div className={cn(
+              "w-6 h-6 transition-all duration-200 ease-out",
+              state === "collapsed" 
+                ? "opacity-100 scale-100" 
+                : "opacity-0 scale-75 absolute"
+            )}>
+              <Image
+                src="/logo/icon svg file.svg"
+                alt="SweatShares Icon"
+                width={24}
+                height={24}
+                priority
+                className="w-full h-full object-contain"
+              />
+            </div>
+            
+            {/* Full logo - always present but fades in/out */}
+            <div className={cn(
+              "flex items-center transition-all duration-200 ease-out",
+              state === "collapsed" 
+                ? "opacity-0 scale-75 absolute" 
+                : "opacity-100 scale-100"
+            )}>
+              {/* Light mode logo */}
+              <Image
+                src="/logo/logo-svg-dark-text.svg"
+                alt="SweatShares Logo"
+                width={100}
+                height={24}
+                priority
+                className="block dark:hidden h-6 w-auto"
+              />
+              {/* Dark mode logo */}
+              <Image
+                src="/logo/logo-svg-white-text.svg"
+                alt="SweatShares Logo (White)"
+                width={100}
+                height={24}
+                priority
+                className="hidden dark:block h-6 w-auto"
+              />
+            </div>
+          </div>
         </Link>
       </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent className="pt-0">
         <NavMain items={data.navMain} />
       </SidebarContent>
       <SidebarFooter>

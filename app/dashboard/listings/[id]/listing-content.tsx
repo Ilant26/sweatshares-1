@@ -3,12 +3,15 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, MapPin, DollarSign, Building2, Briefcase, ArrowLeft, Clock, Users, Target, Award } from 'lucide-react';
+import { Calendar, MapPin, DollarSign, Building2, Briefcase, ArrowLeft, Clock, Users, Target, Award, MessageSquare, Heart, Share2, Star } from 'lucide-react';
 import Link from 'next/link';
 import { Separator } from '@/components/ui/separator';
 import { DashboardProfileCard } from './profile-card';
 import { motion, Variants } from 'framer-motion';
 import { useSession } from '@/components/providers/session-provider';
+import { ResponseButton } from '@/components/response-button';
+import { useFavorites } from '@/hooks/use-favorites';
+import { useToast } from '@/components/ui/use-toast';
 
 // Function to format listing type values for display
 const formatListingType = (listingType: string): string => {
@@ -82,7 +85,48 @@ interface DashboardListingContentProps {
 
 export function DashboardListingContent({ listing, profile }: DashboardListingContentProps) {
   const { user } = useSession();
+  const { likeListing, unlikeListing, isListingLiked } = useFavorites();
+  const { toast } = useToast();
   const isOwnListing = user?.id === listing.user_id;
+
+  const handleLikeListing = async () => {
+    if (!user) return;
+    
+    if (isListingLiked(listing.id)) {
+      await unlikeListing(listing.id);
+      toast({
+        title: "Retiré des favoris",
+        description: "Cette annonce a été retirée de vos favoris",
+      });
+    } else {
+      await likeListing(listing.id);
+      toast({
+        title: "Ajouté aux favoris",
+        description: "Cette annonce a été ajoutée à vos favoris",
+      });
+    }
+  };
+
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: listing.title,
+          text: listing.description,
+          url: window.location.href,
+        });
+      } catch (error) {
+        console.error('Error sharing:', error);
+      }
+    } else {
+      // Fallback: copy to clipboard
+      navigator.clipboard.writeText(window.location.href);
+      toast({
+        title: "Lien copié",
+        description: "Le lien de l'annonce a été copié dans le presse-papiers",
+      });
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -93,6 +137,16 @@ export function DashboardListingContent({ listing, profile }: DashboardListingCo
         variants={containerVariants}
       >
         <div className="pt-6">
+          {/* Back Button */}
+          <motion.div variants={itemVariants} className="mb-6">
+            <Link href="/dashboard/listings">
+              <Button variant="ghost" className="gap-2">
+                <ArrowLeft className="h-4 w-4" />
+                Retour aux annonces
+              </Button>
+            </Link>
+          </motion.div>
+
           {/* Profile Card */}
           <motion.div variants={itemVariants} className="mb-8">
             <DashboardProfileCard profile={profile} />
@@ -123,7 +177,7 @@ export function DashboardListingContent({ listing, profile }: DashboardListingCo
                   <motion.div variants={itemVariants} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
                     <Calendar className="h-5 w-5 text-primary" />
                     <div>
-                      <p className="text-sm text-muted-foreground">Publication Date</p>
+                      <p className="text-sm text-muted-foreground">Date de publication</p>
                       <p className="font-medium">{listing.created_at ? new Date(listing.created_at).toLocaleDateString() : 'N/A'}</p>
                     </div>
                   </motion.div>
@@ -131,7 +185,7 @@ export function DashboardListingContent({ listing, profile }: DashboardListingCo
                     <motion.div variants={itemVariants} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
                       <DollarSign className="h-5 w-5 text-primary" />
                       <div>
-                        <p className="text-sm text-muted-foreground">Investment Amount</p>
+                        <p className="text-sm text-muted-foreground">Montant d'investissement</p>
                         <p className="font-medium">{listing.amount}</p>
                       </div>
                     </motion.div>
@@ -139,7 +193,7 @@ export function DashboardListingContent({ listing, profile }: DashboardListingCo
                   <motion.div variants={itemVariants} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
                     <MapPin className="h-5 w-5 text-primary" />
                     <div>
-                      <p className="text-sm text-muted-foreground">Location</p>
+                      <p className="text-sm text-muted-foreground">Localisation</p>
                       <p className="font-medium">{listing.location_country} {listing.location_city && `, ${listing.location_city}`}</p>
                     </div>
                   </motion.div>
@@ -147,7 +201,7 @@ export function DashboardListingContent({ listing, profile }: DashboardListingCo
                     <motion.div variants={itemVariants} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
                       <Building2 className="h-5 w-5 text-primary" />
                       <div>
-                        <p className="text-sm text-muted-foreground">Stage</p>
+                        <p className="text-sm text-muted-foreground">Étape</p>
                         <p className="font-medium">{listing.funding_stage}</p>
                       </div>
                     </motion.div>
@@ -179,7 +233,7 @@ export function DashboardListingContent({ listing, profile }: DashboardListingCo
                     <div className="space-y-4">
                       <div className="flex items-center gap-2">
                         <Award className="h-5 w-5 text-primary" />
-                        <h4 className="text-xl font-semibold">Skills</h4>
+                        <h4 className="text-xl font-semibold">Compétences</h4>
                       </div>
                       <div className="flex flex-wrap gap-2">
                         {listing.skills.split(',').map((skill: string, index: number) => (
@@ -211,7 +265,7 @@ export function DashboardListingContent({ listing, profile }: DashboardListingCo
                           <div className="space-y-4">
                             <div className="flex items-center gap-2">
                               <Briefcase className="h-5 w-5 text-primary" />
-                              <h4 className="text-xl font-semibold">Compensation</h4>
+                              <h4 className="text-xl font-semibold">Rémunération</h4>
                             </div>
                             <div className="p-4 rounded-lg bg-muted/50">
                               <p className="font-medium">
@@ -242,6 +296,63 @@ export function DashboardListingContent({ listing, profile }: DashboardListingCo
                     })()}
                   </motion.div>
                 )}
+
+                {/* Action Buttons */}
+                <motion.div variants={itemVariants}>
+                  <Separator className="my-8" />
+                  <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+                    <div className="flex gap-3">
+                      <ResponseButton
+                        listingId={listing.id}
+                        listingTitle={listing.title}
+                        listingOwnerId={listing.user_id}
+                        className="bg-primary hover:bg-primary/90 text-white"
+                      />
+                      
+                      <div className="flex gap-1">
+                        <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-yellow-50 dark:hover:bg-yellow-900/20" 
+                            onClick={handleLikeListing}
+                          >
+                            <Star 
+                              className={`h-4 w-4 ${
+                                isListingLiked(listing.id) 
+                                  ? "fill-yellow-400 text-yellow-500" 
+                                  : "text-gray-400 hover:text-yellow-500"
+                              }`} 
+                              strokeWidth={isListingLiked(listing.id) ? 0 : 1.5} 
+                            />
+                          </Button>
+                        </motion.div>
+                        
+                        <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-900/20" 
+                            onClick={handleShare}
+                          >
+                            <Share2 className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+                          </Button>
+                        </motion.div>
+                      </div>
+                    </div>
+                    
+                    {isOwnListing && (
+                      <div className="flex gap-2">
+                        <Link href={`/dashboard/my-listings/edit/${listing.id}`}>
+                          <Button variant="outline" className="gap-2">
+                            <MessageSquare className="h-4 w-4" />
+                            Gérer les réponses
+                          </Button>
+                        </Link>
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
               </CardContent>
             </Card>
           </motion.div>
