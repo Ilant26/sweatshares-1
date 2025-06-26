@@ -103,7 +103,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader className={cn(
         "px-3 transition-all duration-200 ease-out",
-        state === "collapsed" ? "py-2" : "py-4"
+        state === "collapsed" ? "py-4" : "py-6"
       )}>
         <Link 
           href="/" 
@@ -159,7 +159,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </div>
         </Link>
       </SidebarHeader>
-      <SidebarContent className="pt-0">
+      <SidebarContent className={cn(
+        state === "collapsed" ? "pt-0" : "pt-2"
+      )}>
         <NavMain items={data.navMain} />
       </SidebarContent>
       <SidebarFooter>
