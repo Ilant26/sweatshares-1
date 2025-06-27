@@ -36,6 +36,7 @@ export interface Invoice {
     contact_name: string;
     address: string;
     email: string;
+    phone: string;
   };
 }
 
@@ -125,99 +126,129 @@ export async function editInvoice(invoiceId: string, updates: Partial<Omit<Invoi
 
 export function generateInvoicePDF(invoice: Invoice, senderProfile: any, receiverProfile: any) {
   const doc = new jsPDF();
-  
-  // Debug logging
-  console.log('PDF Generation - Invoice data:', {
-    invoice_number: invoice.invoice_number,
-    vat_enabled: invoice.vat_enabled,
-    vat_rate: invoice.vat_rate,
-    vat_amount: invoice.vat_amount,
-    subtotal: invoice.subtotal,
-    total: invoice.total,
-    items: invoice.items
-  });
-  
-  // Add header
-  doc.setFontSize(20);
-  doc.text('INVOICE', 105, 20, { align: 'center' });
-  
-  // Add invoice details
+
+  // Colors
+  const primaryColor: [number, number, number] = [41, 128, 185];
+  const lightGray: [number, number, number] = [240, 240, 240];
+
+  // Header bar
+  doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+  doc.rect(0, 0, 210, 30, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(22);
+  doc.setFont('helvetica', 'bold');
+  doc.text(senderProfile.company ? String(senderProfile.company) : 'INVOICE', 12, 20);
+  doc.setFontSize(12);
+  doc.setTextColor(255, 255, 255);
+  doc.text(`Invoice #${invoice.invoice_number}`, 200, 20, { align: 'right' });
+
+  // Invoice details box
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(0, 0, 0);
   doc.setFontSize(10);
-  doc.text(`Invoice Number: ${invoice.invoice_number}`, 20, 40);
-  doc.text(`Date: ${new Date(invoice.issue_date).toLocaleDateString()}`, 20, 45);
-  doc.text(`Due Date: ${new Date(invoice.due_date).toLocaleDateString()}`, 20, 50);
-  
-  // Add sender and receiver details
-  doc.text('From:', 20, 70);
-  doc.text(senderProfile.full_name || '', 20, 75);
-  doc.text(senderProfile.address || '', 20, 80);
-  doc.text(senderProfile.email || '', 20, 85);
-  
-  doc.text('To:', 120, 70);
-  // Handle both network and external clients
+  doc.setDrawColor(220, 220, 220);
+  doc.rect(12, 35, 186, 18, 'S');
+  doc.text(`Issue Date: ${new Date(invoice.issue_date).toLocaleDateString()}`, 16, 43);
+  doc.text(`Due Date: ${new Date(invoice.due_date).toLocaleDateString()}`, 16, 50);
+  doc.text(`Status: ${invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}`, 120, 43);
+  doc.text(`Currency: ${invoice.currency}`, 120, 50);
+
+  // Sender/Receiver details
+  doc.setFont('helvetica', 'bold');
+  doc.text('From:', 16, 62);
+  doc.text('To:', 120, 62);
+  doc.setFont('helvetica', 'normal');
+  let fromY = 67;
+  let toY = 67;
+  const safe = (val: any) => val ? String(val) : 'N/A';
+  // Sender
+  doc.text(safe(senderProfile.company), 16, fromY);
+  doc.text(safe(senderProfile.full_name), 16, fromY + 6);
+  doc.text(safe(senderProfile.email), 16, fromY + 12);
+  doc.text(safe(senderProfile.phone_number), 16, fromY + 18);
+  doc.text(safe(senderProfile.address), 16, fromY + 24);
+  // Receiver
   if (invoice.external_client) {
-    doc.text(invoice.external_client.company_name || invoice.external_client.contact_name || '', 120, 75);
-    doc.text(invoice.external_client.address || '', 120, 80);
-    doc.text(invoice.external_client.email || '', 120, 85);
+    doc.text(safe(invoice.external_client.company_name || invoice.external_client.contact_name), 120, toY);
+    doc.text('N/A', 120, toY + 6);
+    doc.text(safe(invoice.external_client.email), 120, toY + 12);
+    doc.text(safe(invoice.external_client.phone), 120, toY + 18);
+    doc.text(safe(invoice.external_client.address), 120, toY + 24);
   } else {
-    doc.text(receiverProfile.full_name || '', 120, 75);
-    doc.text(receiverProfile.address || '', 120, 80);
-    doc.text(receiverProfile.email || '', 120, 85);
+    doc.text(safe(receiverProfile.company), 120, toY);
+    doc.text(safe(receiverProfile.full_name), 120, toY + 6);
+    doc.text(safe(receiverProfile.email), 120, toY + 12);
+    doc.text(safe(receiverProfile.phone_number), 120, toY + 18);
+    doc.text(safe(receiverProfile.address), 120, toY + 24);
   }
-  
-  // Calculate totals if not present
+
+  // Section line
+  doc.setDrawColor(220, 220, 220);
+  doc.line(12, 97, 198, 97);
+
+  // Items table
+  const tableStartY = 102;
   const subtotal = invoice.subtotal || invoice.items.reduce((sum, item) => sum + (item.amount || 0), 0);
   const vatEnabled = invoice.vat_enabled || false;
   const vatRate = invoice.vat_rate || 20;
   const vatAmount = invoice.vat_amount || (vatEnabled ? Number((subtotal * (vatRate / 100)).toFixed(2)) : 0);
   const total = invoice.total || (subtotal + vatAmount);
-  
-  console.log('PDF Generation - Calculated values:', {
-    subtotal,
-    vatEnabled,
-    vatRate,
-    vatAmount,
-    total
-  });
-  
-  // Add items table
+
   const tableData = invoice.items.map(item => [
     item.description,
     item.quantity.toString(),
     `${item.unitPrice.toFixed(2)} ${invoice.currency}`,
     `${item.amount.toFixed(2)} ${invoice.currency}`
   ]);
-  
-  // Prepare footer rows
+
   const footerRows = [
     ['Subtotal', '', '', `${subtotal.toFixed(2)} ${invoice.currency}`]
   ];
-  
   if (vatEnabled) {
     footerRows.push([`VAT (${vatRate}%)`, '', '', `${vatAmount.toFixed(2)} ${invoice.currency}`]);
   }
-  
+  footerRows.push(['', '', '', '']); // Spacer
   footerRows.push(['Total', '', '', `${total.toFixed(2)} ${invoice.currency}`]);
-  
-  console.log('PDF Generation - Footer rows:', footerRows);
-  
+
   autoTable(doc, {
-    startY: 100,
+    startY: tableStartY,
     head: [['Description', 'Quantity', 'Unit Price', 'Amount']],
     body: tableData,
     foot: footerRows,
     theme: 'grid',
-    headStyles: { fillColor: [41, 128, 185] },
-    footStyles: { fillColor: [240, 240, 240] }
+    headStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold' },
+    footStyles: { fillColor: lightGray, textColor: 0, fontStyle: 'bold', fontSize: 12 },
+    styles: { font: 'helvetica', fontSize: 10 },
+    columnStyles: {
+      0: { cellWidth: 80 },
+      1: { cellWidth: 20, halign: 'center' },
+      2: { cellWidth: 40, halign: 'right' },
+      3: { cellWidth: 40, halign: 'right' }
+    },
+    didDrawPage: (data) => {
+      // Highlight the total row
+      const totalRow = data.table.foot[data.table.foot.length - 1];
+      if (totalRow) {
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+      }
+    }
   });
-  
-  // Add notes
+
+  // Notes section
   if (invoice.description) {
-    const finalY = (doc as any).lastAutoTable.finalY || 150;
-    doc.text('Notes:', 20, finalY + 20);
-    doc.text(invoice.description, 20, finalY + 25);
+    const finalY = (doc as any).lastAutoTable.finalY || (tableStartY + 60);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Notes:', 12, finalY + 12);
+    doc.setFont('helvetica', 'normal');
+    doc.text(invoice.description, 12, finalY + 18);
   }
-  
+
+  // Footer
+  doc.setFontSize(9);
+  doc.setTextColor(150, 150, 150);
+  doc.text('Generated by SweatShares', 12, 290);
+
   return doc;
 }
 

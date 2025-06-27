@@ -494,14 +494,15 @@ export default function MyInvoicesPage() {
 
   const handleDownloadPDF = async (invoice: Invoice) => {
     try {
+      // Fetch sender profile
       const { data: senderProfile } = await supabase
-        .from('profiles')
-        .select('*')
+        .from('profile_with_email')
+        .select('id, company, full_name, phone_number, address, email')
         .eq('id', invoice.sender_id)
         .single();
+      const sender = senderProfile;
 
-      let receiverProfile: any = null;
-
+      let receiver = null;
       if (invoice.external_client_id) {
         // Fetch external client
         const { data: externalClient } = await supabase
@@ -509,19 +510,19 @@ export default function MyInvoicesPage() {
           .select('*')
           .eq('id', invoice.external_client_id)
           .single();
-        receiverProfile = externalClient;
+        receiver = externalClient;
       } else {
         // Fetch network client profile
-        const { data } = await supabase
-          .from('profiles')
-          .select('*')
+        const { data: receiverProfile } = await supabase
+          .from('profile_with_email')
+          .select('id, company, full_name, phone_number, address, email')
           .eq('id', invoice.receiver_id)
           .single();
-        receiverProfile = data;
+        receiver = receiverProfile;
       }
 
-      if (senderProfile && receiverProfile) {
-        downloadInvoicePDF(invoice, senderProfile, receiverProfile);
+      if (sender && receiver) {
+        downloadInvoicePDF(invoice, sender, receiver);
       }
     } catch (error) {
       console.error('Error downloading invoice:', error);
