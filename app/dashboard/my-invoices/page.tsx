@@ -234,6 +234,10 @@ export default function MyInvoicesPage() {
   const [newInvoiceDialogOpen, setNewInvoiceDialogOpen] = useState(false);
   const [invoiceDate, setInvoiceDate] = useState<Date | undefined>(undefined);
   const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
+  const [issueDatePopoverOpen, setIssueDatePopoverOpen] = useState(false);
+  const [dueDatePopoverOpen, setDueDatePopoverOpen] = useState(false);
+  const [editIssueDatePopoverOpen, setEditIssueDatePopoverOpen] = useState(false);
+  const [editDueDatePopoverOpen, setEditDueDatePopoverOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('sent');
   const [filterStatus, setFilterStatus] = useState('All');
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -317,6 +321,61 @@ export default function MyInvoicesPage() {
   const indexOfFirstInvoice = indexOfLastInvoice - invoicesPerPage;
   const currentInvoices = filteredInvoices.slice(indexOfFirstInvoice, indexOfLastInvoice);
   const totalPages = Math.ceil(filteredInvoices.length / invoicesPerPage);
+
+  // Date validation functions
+  const isDateValid = (date: Date) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return date >= today;
+  };
+
+  const isDueDateValid = (dueDate: Date, issueDate: Date) => {
+    return dueDate >= issueDate;
+  };
+
+  const handleIssueDateSelect = (date: Date | undefined) => {
+    if (date && isDateValid(date)) {
+      setInvoiceDate(date);
+      setIssueDatePopoverOpen(false);
+      
+      // If due date is before the new issue date, reset it
+      if (dueDate && dueDate < date) {
+        setDueDate(undefined);
+      }
+    }
+  };
+
+  const handleDueDateSelect = (date: Date | undefined) => {
+    if (date && invoiceDate && isDueDateValid(date, invoiceDate)) {
+      setDueDate(date);
+      setDueDatePopoverOpen(false);
+    } else if (date && !invoiceDate && isDateValid(date)) {
+      setDueDate(date);
+      setDueDatePopoverOpen(false);
+    }
+  };
+
+  const handleEditIssueDateSelect = (date: Date | undefined) => {
+    if (date && isDateValid(date)) {
+      setInvoiceDate(date);
+      setEditIssueDatePopoverOpen(false);
+      
+      // If due date is before the new issue date, reset it
+      if (dueDate && dueDate < date) {
+        setDueDate(undefined);
+      }
+    }
+  };
+
+  const handleEditDueDateSelect = (date: Date | undefined) => {
+    if (date && invoiceDate && isDueDateValid(date, invoiceDate)) {
+      setDueDate(date);
+      setEditDueDatePopoverOpen(false);
+    } else if (date && !invoiceDate && isDateValid(date)) {
+      setDueDate(date);
+      setEditDueDatePopoverOpen(false);
+    }
+  };
 
   // Fetch invoices and contacts
   useEffect(() => {
@@ -544,7 +603,9 @@ export default function MyInvoicesPage() {
     });
     setInvoiceDate(undefined);
     setDueDate(undefined);
-    setMessageUserProfile(null); // Clear message user profile
+    setIssueDatePopoverOpen(false);
+    setDueDatePopoverOpen(false);
+    setClientType('network');
   };
 
   const handleAddLineItem = () => {
@@ -667,6 +728,8 @@ export default function MyInvoicesPage() {
     setEditingInvoice(invoice);
     setInvoiceDate(new Date(invoice.issue_date));
     setDueDate(new Date(invoice.due_date));
+    setEditIssueDatePopoverOpen(false);
+    setEditDueDatePopoverOpen(false);
     setEditDialogOpen(true);
   };
 
@@ -1028,7 +1091,7 @@ export default function MyInvoicesPage() {
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="issueDate" className="text-xs sm:text-sm font-medium">Issue Date</Label>
-                        <Popover>
+                        <Popover open={issueDatePopoverOpen} onOpenChange={setIssueDatePopoverOpen}>
                           <PopoverTrigger asChild>
                             <Button
                               variant={"outline"}
@@ -1045,7 +1108,10 @@ export default function MyInvoicesPage() {
                             <Calendar
                               mode="single"
                               selected={invoiceDate}
-                              onSelect={setInvoiceDate}
+                              onSelect={handleIssueDateSelect}
+                              disabled={(date) => {
+                                return !isDateValid(date);
+                              }}
                               initialFocus
                             />
                           </PopoverContent>
@@ -1053,7 +1119,7 @@ export default function MyInvoicesPage() {
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="dueDate" className="text-xs sm:text-sm font-medium">Due Date</Label>
-                        <Popover>
+                        <Popover open={dueDatePopoverOpen} onOpenChange={setDueDatePopoverOpen}>
                           <PopoverTrigger asChild>
                             <Button
                               variant={"outline"}
@@ -1070,7 +1136,12 @@ export default function MyInvoicesPage() {
                             <Calendar
                               mode="single"
                               selected={dueDate}
-                              onSelect={setDueDate}
+                              onSelect={handleDueDateSelect}
+                              disabled={(date) => {
+                                if (!isDateValid(date)) return true;
+                                if (invoiceDate && !isDueDateValid(date, invoiceDate)) return true;
+                                return false;
+                              }}
                               initialFocus
                             />
                           </PopoverContent>
@@ -2007,8 +2078,8 @@ export default function MyInvoicesPage() {
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <TrendingUp className="h-4 w-4" />
               <span>This month</span>
-            </div>
-          </div>
+                </div>
+              </div>
           
           <div className="grid gap-4">
             {/* Main Stats Cards */}
@@ -2018,18 +2089,18 @@ export default function MyInvoicesPage() {
                   <div className="flex items-center justify-between mb-4">
                     <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30 group-hover:scale-110 transition-transform duration-300">
                       <CircleDollarSign className="h-5 w-5 text-green-600 dark:text-green-400" />
-                    </div>
+                </div>
                     <div className="text-right">
                       <p className="text-xs font-medium text-green-600 dark:text-green-400 uppercase tracking-wide">Total Sent</p>
-                    </div>
-                  </div>
+              </div>
+                </div>
                   <div className="space-y-2">
                     <p className="text-2xl font-bold text-green-700 dark:text-green-300">€{financialSummary.totalSent}</p>
                     <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
                       <TrendingUp className="h-3 w-3" />
                       <span>{financialSummary.growthRate > 0 ? '+' : ''}{financialSummary.growthRate}% from last month</span>
-                    </div>
-                  </div>
+              </div>
+                </div>
                 </CardContent>
                 <div className="absolute inset-0 bg-gradient-to-r from-green-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               </Card>
@@ -2039,7 +2110,7 @@ export default function MyInvoicesPage() {
                   <div className="flex items-center justify-between mb-4">
                     <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30 group-hover:scale-110 transition-transform duration-300">
                       <CheckCircle className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                    </div>
+              </div>
                     <div className="text-right">
                       <p className="text-xs font-medium text-blue-600 dark:text-blue-400 uppercase tracking-wide">Paid</p>
                     </div>
@@ -2050,11 +2121,11 @@ export default function MyInvoicesPage() {
                       <CheckCircle className="h-3 w-3" />
                       <span>{financialSummary.collectionRate} collection rate</span>
                     </div>
-                  </div>
-                </CardContent>
+              </div>
+            </CardContent>
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              </Card>
-            </div>
+          </Card>
+        </div>
 
             {/* Secondary Stats */}
             <div className="grid grid-cols-2 gap-4">
@@ -2090,8 +2161,8 @@ export default function MyInvoicesPage() {
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30">
                       <Clock className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-                    </div>
-                    <div>
+                  </div>
+                  <div>
                       <p className="text-sm font-semibold text-purple-700 dark:text-purple-300">Average Time to Pay</p>
                       <p className="text-xs text-purple-600 dark:text-purple-400">Payment efficiency</p>
                     </div>
@@ -2145,37 +2216,37 @@ export default function MyInvoicesPage() {
                         <div className="flex items-start justify-between gap-3 mb-2">
                           <div className="flex-1">
                             <p className="text-sm font-medium text-gray-900 dark:text-gray-100 leading-relaxed">
-                              {activity.action === 'paid' && (
-                                <>
+                      {activity.action === 'paid' && (
+                        <>
                                   <span className="font-semibold text-green-600 dark:text-green-400">{activity.user}</span> paid{' '}
                                   <span className="font-semibold">{activity.document}</span> for{' '}
                                   <span className="font-bold text-green-600 dark:text-green-400">{activity.currency}{activity.amount}</span>
-                                </>
-                              )}
-                              {activity.action === 'created' && (
-                                <>
+                        </>
+                      )}
+                      {activity.action === 'created' && (
+                        <>
                                   <span className="font-semibold text-blue-600 dark:text-blue-400">{activity.user}</span> created{' '}
                                   <span className="font-semibold">{activity.document}</span> for{' '}
                                   <span className="font-semibold">{activity.client}</span> for{' '}
                                   <span className="font-bold text-blue-600 dark:text-blue-400">{activity.currency}{activity.amount}</span>
-                                </>
-                              )}
-                              {activity.action === 'cancelled' && (
-                                <>
+                        </>
+                      )}
+                      {activity.action === 'cancelled' && (
+                        <>
                                   <span className="font-semibold">{activity.document}</span> for{' '}
                                   <span className="font-semibold">{activity.client}</span> has been{' '}
                                   <span className="font-semibold text-red-600 dark:text-red-400">cancelled</span>
-                                </>
-                              )}
-                              {activity.action === 'reminder sent' && (
-                                <>
+                        </>
+                      )}
+                      {activity.action === 'reminder sent' && (
+                        <>
                                   Automatic <span className="font-semibold text-amber-600 dark:text-amber-400">reminder sent</span> for{' '}
                                   <span className="font-semibold">{activity.document}</span> to{' '}
                                   <span className="font-semibold">{activity.client}</span>
-                                </>
-                              )}
-                            </p>
-                          </div>
+                        </>
+                      )}
+                    </p>
+                  </div>
                           <div className="flex-shrink-0">
                             <div className={cn(
                               "px-2 py-1 rounded-full text-xs font-medium transition-all duration-300 group-hover:scale-105",
@@ -2197,8 +2268,8 @@ export default function MyInvoicesPage() {
                     
                     {/* Hover effect */}
                     <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-lg" />
-                  </div>
-                ))}
+                </div>
+              ))}
                 
                 {recentActivities.length === 0 && (
                   <div className="text-center py-8">
@@ -2257,7 +2328,7 @@ export default function MyInvoicesPage() {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="editIssueDate">Issue Date</Label>
-                  <Popover>
+                  <Popover open={editIssueDatePopoverOpen} onOpenChange={setEditIssueDatePopoverOpen}>
                     <PopoverTrigger asChild>
                       <Button
                         variant={"outline"}
@@ -2274,7 +2345,10 @@ export default function MyInvoicesPage() {
                       <Calendar
                         mode="single"
                         selected={invoiceDate}
-                        onSelect={setInvoiceDate}
+                        onSelect={handleEditIssueDateSelect}
+                        disabled={(date) => {
+                          return !isDateValid(date);
+                        }}
                         initialFocus
                       />
                     </PopoverContent>
@@ -2282,7 +2356,7 @@ export default function MyInvoicesPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="editDueDate">Due Date</Label>
-                  <Popover>
+                  <Popover open={editDueDatePopoverOpen} onOpenChange={setEditDueDatePopoverOpen}>
                     <PopoverTrigger asChild>
                       <Button
                         variant={"outline"}
@@ -2299,7 +2373,12 @@ export default function MyInvoicesPage() {
                       <Calendar
                         mode="single"
                         selected={dueDate}
-                        onSelect={setDueDate}
+                        onSelect={handleEditDueDateSelect}
+                        disabled={(date) => {
+                          if (!isDateValid(date)) return true;
+                          if (invoiceDate && !isDueDateValid(date, invoiceDate)) return true;
+                          return false;
+                        }}
                         initialFocus
                       />
                     </PopoverContent>
