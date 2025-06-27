@@ -142,11 +142,6 @@ export function MyListingTable({
               <Button variant="ghost" size="sm" onClick={() => router.push(`/dashboard/listings/${listing.id}`)}>
                 <Eye className="h-3 w-3" />
               </Button>
-              <Link href={`/dashboard/listings/${listing.id}/responses`} passHref legacyBehavior>
-                <Button asChild variant="ghost" size="sm">
-                  <a><span className="sr-only">Manage Responses</span>💬</a>
-                </Button>
-              </Link>
             </div>
           </CardContent>
         </Card>
@@ -231,11 +226,6 @@ export function MyListingTable({
                     <Button variant="ghost" size="icon" onClick={() => router.push(`/dashboard/listings/${listing.id}`)}>
                       <Eye className="h-4 w-4" />
                     </Button>
-                    <Link href={`/dashboard/listings/${listing.id}/responses`} passHref legacyBehavior>
-                      <Button asChild variant="ghost" size="icon">
-                        <a title="Manage Responses">💬</a>
-                      </Button>
-                    </Link>
                   </div>
                 </TableCell>
               </TableRow>

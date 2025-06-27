@@ -19,7 +19,7 @@ import Link from "next/link"
 
 type NotificationType = {
   id: string
-  type: 'message' | 'post_like' | 'comment' | 'comment_like' | 'connection' | 'vault_share' | 'invoice_share' | 'listing_response' | 'response_status'
+  type: 'message' | 'post_like' | 'comment' | 'comment_like' | 'connection' | 'vault_share' | 'invoice_share'
   title: string
   description: string
   timestamp: string
@@ -48,36 +48,26 @@ export function NotificationsDropdown() {
       setNotifications([
         {
           id: '1',
-          type: 'listing_response',
-          title: 'New listing response',
-          description: 'John Doe responded to your "Frontend Developer" listing',
-          timestamp: '5m ago',
-          read: false,
-          avatar: 'https://github.com/shadcn.png',
-          link: '/dashboard/listings/123/responses'
-        },
-        {
-          id: '2',
-          type: 'response_status',
-          title: 'Response accepted',
-          description: 'Your response to "UI/UX Designer" was accepted',
-          timestamp: '10m ago',
-          read: false,
-          avatar: 'https://github.com/shadcn.png',
-          link: '/dashboard/my-responses'
-        },
-        {
-          id: '3',
           type: 'message',
           title: 'New message',
-          description: 'Jane Smith sent you a message',
-          timestamp: '15m ago',
+          description: 'John Doe sent you a message',
+          timestamp: '5m ago',
           read: false,
           avatar: 'https://github.com/shadcn.png',
           link: '/dashboard/messages'
         },
         {
-          id: '4',
+          id: '2',
+          type: 'post_like',
+          title: 'Post liked',
+          description: 'Jane Smith liked your post',
+          timestamp: '10m ago',
+          read: false,
+          avatar: 'https://github.com/shadcn.png',
+          link: '/dashboard/news-feed'
+        },
+        {
+          id: '3',
           type: 'connection',
           title: 'Connection request',
           description: 'Mike Johnson wants to connect',
@@ -145,10 +135,7 @@ export function NotificationsDropdown() {
                 >
                   <Avatar className="h-8 w-8">
                     <AvatarImage src={notification.avatar} />
-                    <AvatarFallback>
-                      {notification.type === 'listing_response' ? '🎯' : 
-                       notification.type === 'response_status' ? '✅' : 'UN'}
-                    </AvatarFallback>
+                    <AvatarFallback>UN</AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col space-y-1">
                     <p className="text-sm font-medium leading-none">{notification.title}</p>

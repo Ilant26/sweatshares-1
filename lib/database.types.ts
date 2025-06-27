@@ -511,6 +511,7 @@ export interface Database {
           created_at?: string
         }
       }
+
     }
     Views: {
       [_ in never]: never
