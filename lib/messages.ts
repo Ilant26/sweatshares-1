@@ -275,4 +275,31 @@ export function handleUserPresence() {
     clearInterval(interval)
     updateUserStatus(false)
   }
+}
+
+// Add a new function for system messages (used by response notifications)
+export async function sendSystemMessage(receiverId: string, content: string, senderId?: string) {
+  // If no senderId provided, use the receiverId as sender (system message)
+  const actualSenderId = senderId || receiverId;
+
+  const { data: message, error: messageError } = await supabase
+    .from('messages')
+    .insert({
+      sender_id: actualSenderId,
+      receiver_id: receiverId,
+      content,
+      read: false
+    })
+    .select(`
+      *,
+      sender:profiles!sender_id (
+        username,
+        full_name,
+        avatar_url
+      )
+    `)
+    .single()
+
+  if (messageError) throw messageError
+  return message as Message
 } 

@@ -11,6 +11,8 @@ import { motion, Variants } from 'framer-motion';
 import { useSession } from '@/components/providers/session-provider';
 import { useFavorites } from '@/hooks/use-favorites';
 import { useToast } from '@/components/ui/use-toast';
+import { useState } from 'react';
+import { ResponseForm, ResponseFormData } from '@/components/listing-responses/response-form';
 
 // Function to format listing type values for display
 const formatListingType = (listingType: string): string => {
@@ -88,6 +90,10 @@ export function DashboardListingContent({ listing, profile }: DashboardListingCo
   const { toast } = useToast();
   const isOwnListing = user?.id === listing.user_id;
 
+  // Response modal state
+  const [isResponseOpen, setIsResponseOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const handleLikeListing = async () => {
     if (!user) return;
     
@@ -126,6 +132,19 @@ export function DashboardListingContent({ listing, profile }: DashboardListingCo
       });
     }
   };
+
+  // Stub for response form submission
+  function handleResponseSubmit(data: ResponseFormData) {
+    setIsSubmitting(true);
+    setTimeout(() => {
+      setIsSubmitting(false);
+      setIsResponseOpen(false);
+      toast({
+        title: 'Offer sent',
+        description: 'Your offer has been submitted to the listing owner.',
+      });
+    }, 1200);
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -344,6 +363,22 @@ export function DashboardListingContent({ listing, profile }: DashboardListingCo
                     )}
                   </div>
                 </motion.div>
+                {/* Send Offer button for non-owners */}
+                {!isOwnListing && user && (
+                  <motion.div variants={itemVariants} className="pt-4">
+                    <Button onClick={() => setIsResponseOpen(true)} className="w-full sm:w-auto">
+                      Send Offer
+                    </Button>
+                  </motion.div>
+                )}
+                <ResponseForm
+                  open={isResponseOpen}
+                  onOpenChange={setIsResponseOpen}
+                  listingType={listing.listing_type}
+                  listingId={listing.id}
+                  onSubmit={handleResponseSubmit}
+                  isLoading={isSubmitting}
+                />
               </CardContent>
             </Card>
           </motion.div>
