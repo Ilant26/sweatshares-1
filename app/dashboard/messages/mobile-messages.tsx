@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { MessageCircle, Send, Paperclip, Search, ArrowLeft, User, FileText, CreditCard, Users, Lock, X, ChevronLeft } from 'lucide-react';
+import { MessageCircle, Send, Paperclip, Search, ArrowLeft, User, FileText, CreditCard, Users, Lock, X, ChevronLeft, Receipt } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { formatDistanceToNow } from 'date-fns';
 import { NewMessageDialog } from '@/components/new-message-dialog';
@@ -56,6 +56,7 @@ export function MobileMessages() {
     const currentUserId = user?.id;
     const searchParams = useSearchParams();
     const userIdFromUrl = searchParams.get('userId');
+    const messageFromUrl = searchParams.get('message');
     const [view, setView] = useState<'conversations' | 'chat'>(userIdFromUrl ? 'chat' : 'conversations');
     const [currentFilter, setCurrentFilter] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
@@ -78,6 +79,17 @@ export function MobileMessages() {
     const [selectedConnection, setSelectedConnection] = useState<any>(null);
     const [newMessage, setNewMessage] = useState('');
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
+    // Set pre-filled message when conversation is selected and message parameter exists
+    React.useEffect(() => {
+        if (selectedUserId && messageFromUrl) {
+            setNewMessage(decodeURIComponent(messageFromUrl));
+            // Clear the message parameter from URL to avoid re-filling on subsequent visits
+            const newUrl = new URL(window.location.href);
+            newUrl.searchParams.delete('message');
+            router.replace(newUrl.pathname + newUrl.search, { scroll: false });
+        }
+    }, [selectedUserId, messageFromUrl, router]);
 
     // Update the useEffect that fetches all messages
     useEffect(() => {
@@ -776,6 +788,9 @@ export function MobileMessages() {
                             <DropdownMenuSeparator />
                             <DropdownMenuItem>
                                 <CreditCard className="mr-2 h-4 w-4" /> Generate payment link
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                                <Receipt className="mr-2 h-4 w-4" /> Send an invoice
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>

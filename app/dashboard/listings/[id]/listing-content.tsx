@@ -1,15 +1,15 @@
-
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, MapPin, DollarSign, Building2, Briefcase, ArrowLeft, Clock, Users, Target, Award, Heart, Share2, Star } from 'lucide-react';
+import { Calendar, MapPin, DollarSign, Building2, Briefcase, ArrowLeft, Clock, Users, Target, Award, Heart, Share2, Star, Mail } from 'lucide-react';
 import Link from 'next/link';
 import { Separator } from '@/components/ui/separator';
 import { DashboardProfileCard } from './profile-card';
 import { motion, Variants } from 'framer-motion';
 import { useSession } from '@/components/providers/session-provider';
+import { useRouter } from 'next/navigation';
 
 import { useFavorites } from '@/hooks/use-favorites';
 import { useToast } from '@/components/ui/use-toast';
@@ -89,6 +89,7 @@ export function DashboardListingContent({ listing, profile }: DashboardListingCo
   const { likeListing, unlikeListing, isListingLiked } = useFavorites();
   const { toast } = useToast();
   const isOwnListing = user?.id === listing.user_id;
+  const router = useRouter();
 
   const handleLikeListing = async () => {
     if (!user) return;
@@ -127,6 +128,19 @@ export function DashboardListingContent({ listing, profile }: DashboardListingCo
         description: "Le lien de l'annonce a été copié dans le presse-papiers",
       });
     }
+  };
+
+  const handleReplyToListing = () => {
+    const messageContent = `Hi ${profile?.full_name || profile?.username || 'there'}! 👋
+
+I'm interested in your listing: "${listing.title}"
+
+I'd love to learn more about this opportunity and discuss how we might work together. Could you tell me more about what you're looking for and how I might be able to help?
+
+Looking forward to hearing from you!`;
+    
+    const encodedMessage = encodeURIComponent(messageContent);
+    router.push(`/dashboard/messages?userId=${profile.id}&message=${encodedMessage}`);
   };
 
   return (
@@ -303,12 +317,15 @@ export function DashboardListingContent({ listing, profile }: DashboardListingCo
                   <Separator className="my-8" />
                   <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
                     <div className="flex gap-3">
-
-
-
-
-
-
+                      {!isOwnListing && (
+                        <Button 
+                          onClick={handleReplyToListing}
+                          className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                        >
+                          <Mail className="h-4 w-4 mr-2" />
+                          Reply to listing
+                        </Button>
+                      )}
 
                       <div className="flex gap-1">
                         <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
@@ -341,17 +358,6 @@ export function DashboardListingContent({ listing, profile }: DashboardListingCo
                         </motion.div>
                       </div>
                     </div>
-
-                    {isOwnListing && (
-                      <div className="flex gap-2">
-                        <Link href={`/dashboard/my-listings/edit/${listing.id}`}>
-                          <Button variant="outline" className="gap-2">
-
-                            Gérer les réponses
-                          </Button>
-                        </Link>
-                      </div>
-                    )}
                   </div>
                 </motion.div>
               </CardContent>

@@ -303,8 +303,17 @@ export default function DashboardListingsPage() {
     }
   };
 
-  const handleMessage = (userId: string) => {
-    router.push(`/dashboard/messages?userId=${userId}`);
+  const handleReplyToListing = (listing: any) => {
+    const messageContent = `Hi ${listing.profiles?.full_name || listing.profiles?.username || 'there'}! 👋
+
+I'm interested in your listing: "${listing.title}"
+
+I'd love to learn more about this opportunity and discuss how we might work together. Could you tell me more about what you're looking for and how I might be able to help?
+
+Looking forward to hearing from you!`;
+    
+    const encodedMessage = encodeURIComponent(messageContent);
+    router.push(`/dashboard/messages?userId=${listing.profiles.id}&message=${encodedMessage}`);
   };
 
   const handleShare = async (listing: any) => {
@@ -539,10 +548,11 @@ export default function DashboardListingsPage() {
                         size="sm"
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleMessage(listing.profiles.id);
+                          handleReplyToListing(listing);
                         }}
                       >
-                        <Mail className="h-4 w-4" />
+                        <Mail className="h-4 w-4 mr-1" />
+                        Reply to listing
                       </Button>
                       <Button
                         variant="outline"

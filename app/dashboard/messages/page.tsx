@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { MessageCircle, Send, Paperclip, Search, Plus, User, FileText, CreditCard, Users, Lock, X } from 'lucide-react';
+import { MessageCircle, Send, Paperclip, Search, Plus, User, FileText, CreditCard, Users, Lock, X, Receipt } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { formatDistanceToNow } from 'date-fns';
 import { NewMessageDialog } from '@/components/new-message-dialog'
@@ -59,6 +59,7 @@ export default function MessagesPage() {
     const currentUserId = user?.id;
     const searchParams = useSearchParams();
     const userIdFromUrl = searchParams.get('userId');
+    const messageFromUrl = searchParams.get('message');
     const [selectedConversation, setSelectedConversation] = React.useState<string | null>(userIdFromUrl);
     const [searchQuery, setSearchQuery] = React.useState('');
     const isMobile = useIsMobile();
@@ -86,6 +87,17 @@ export default function MessagesPage() {
         error,
         userStatus
     } = useMessages({ userId: selectedConversation || undefined });
+
+    // Set pre-filled message when conversation is selected and message parameter exists
+    React.useEffect(() => {
+        if (selectedConversation && messageFromUrl) {
+            setMessageInput(decodeURIComponent(messageFromUrl));
+            // Clear the message parameter from URL to avoid re-filling on subsequent visits
+            const newUrl = new URL(window.location.href);
+            newUrl.searchParams.delete('message');
+            router.replace(newUrl.pathname + newUrl.search, { scroll: false });
+        }
+    }, [selectedConversation, messageFromUrl, router]);
 
     // Add subscription for all messages
     useEffect(() => {
@@ -891,6 +903,9 @@ export default function MessagesPage() {
                                             <DropdownMenuSeparator />
                                             <DropdownMenuItem>
                                                 <CreditCard className="mr-2 h-4 w-4" /> Generate payment link
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem>
+                                                <Receipt className="mr-2 h-4 w-4" /> Send an invoice
                                             </DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
