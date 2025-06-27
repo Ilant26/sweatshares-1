@@ -60,11 +60,6 @@ const data = {
       icon: List,
     },
     {
-      title: "Mes Réponses",
-      url: "/dashboard/my-responses",
-      icon: MessageSquare,
-    },
-    {
       title: "Messages",
       url: "/dashboard/messages",
       icon: MessageCircle,

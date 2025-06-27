@@ -3,13 +3,12 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, MapPin, DollarSign, Building2, Briefcase, ArrowLeft, Clock, Users, Target, Award, MessageSquare, Heart, Share2, Star } from 'lucide-react';
+import { Calendar, MapPin, DollarSign, Building2, Briefcase, ArrowLeft, Clock, Users, Target, Award, Heart, Share2, Star } from 'lucide-react';
 import Link from 'next/link';
 import { Separator } from '@/components/ui/separator';
 import { DashboardProfileCard } from './profile-card';
 import { motion, Variants } from 'framer-motion';
 import { useSession } from '@/components/providers/session-provider';
-import { ResponseButton } from '@/components/response-button';
 import { useFavorites } from '@/hooks/use-favorites';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -302,13 +301,6 @@ export function DashboardListingContent({ listing, profile }: DashboardListingCo
                   <Separator className="my-8" />
                   <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
                     <div className="flex gap-3">
-                      <ResponseButton
-                        listingId={listing.id}
-                        listingTitle={listing.title}
-                        listingOwnerId={listing.user_id}
-                        className="bg-primary hover:bg-primary/90 text-white"
-                      />
-                      
                       <div className="flex gap-1">
                         <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
                           <Button 
@@ -345,7 +337,6 @@ export function DashboardListingContent({ listing, profile }: DashboardListingCo
                       <div className="flex gap-2">
                         <Link href={`/dashboard/my-listings/edit/${listing.id}`}>
                           <Button variant="outline" className="gap-2">
-                            <MessageSquare className="h-4 w-4" />
                             Gérer les réponses
                           </Button>
                         </Link>
