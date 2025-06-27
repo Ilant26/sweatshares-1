@@ -170,12 +170,47 @@ export default function MyInvoicesPage() {
 
   const filteredInvoices = invoices.filter(invoice => {
     const matchesTab = activeTab === 'sent' ? invoice.sender_id === user?.id : invoice.receiver_id === user?.id;
-    const matchesSearch = searchTerm === '' ||
-      invoice.invoice_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      networkContacts.find(contact => contact.id === invoice.receiver_id)?.name.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // For search, we need to look at different fields based on the tab
+    let matchesSearch = searchTerm === '';
+    if (searchTerm !== '') {
+      const searchLower = searchTerm.toLowerCase();
+      matchesSearch = invoice.invoice_number.toLowerCase().includes(searchLower);
+      
+      if (activeTab === 'sent') {
+        // For sent invoices, search in receiver names
+        matchesSearch = matchesSearch || 
+          networkContacts.find(contact => contact.id === invoice.receiver_id)?.name.toLowerCase().includes(searchLower) ||
+          externalClients.find(client => client.id === invoice.external_client_id)?.name.toLowerCase().includes(searchLower);
+      } else {
+        // For received invoices, search in sender names
+        matchesSearch = matchesSearch || 
+          networkContacts.find(contact => contact.id === invoice.sender_id)?.name.toLowerCase().includes(searchLower);
+      }
+    }
+    
     const matchesStatus = filterStatus === 'All' || invoice.status === filterStatus;
     return matchesTab && matchesSearch && matchesStatus;
   });
+
+  // Calculate counts for each tab
+  const sentInvoicesCount = invoices.filter(invoice => invoice.sender_id === user?.id).length;
+  const receivedInvoicesCount = invoices.filter(invoice => invoice.receiver_id === user?.id).length;
+
+  // Helper function to get the correct client name based on active tab
+  const getClientName = (invoice: Invoice) => {
+    if (activeTab === 'sent') {
+      // For sent invoices, show receiver name
+      if (invoice.external_client_id) {
+        return externalClients.find(client => client.id === invoice.external_client_id)?.name || 'Unknown';
+      } else {
+        return networkContacts.find(contact => contact.id === invoice.receiver_id)?.name || 'Unknown';
+      }
+    } else {
+      // For received invoices, show sender name
+      return networkContacts.find(contact => contact.id === invoice.sender_id)?.name || 'Unknown';
+    }
+  };
 
   // Pagination logic
   const indexOfLastInvoice = currentPage * invoicesPerPage;
@@ -1068,8 +1103,8 @@ export default function MyInvoicesPage() {
 
       <Tabs defaultValue="sent" onValueChange={setActiveTab} className="space-y-4 w-full">
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="sent" className="text-xs sm:text-sm">My Invoices ({invoices.length})</TabsTrigger>
-          <TabsTrigger value="received" className="text-xs sm:text-sm">Received Invoices ({invoices.length})</TabsTrigger>
+          <TabsTrigger value="sent" className="text-xs sm:text-sm">My Invoices ({sentInvoicesCount})</TabsTrigger>
+          <TabsTrigger value="received" className="text-xs sm:text-sm">Received Invoices ({receivedInvoicesCount})</TabsTrigger>
         </TabsList>
         <TabsContent value="sent" className="space-y-4">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-2">
@@ -1142,27 +1177,19 @@ export default function MyInvoicesPage() {
                         {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
                       </Badge>
                     </div>
-                    
                     <div className="grid grid-cols-2 gap-2 text-sm">
                       <div>
-                        <span className="text-muted-foreground">Client:</span>
-                        <p className="font-medium">
-                          {invoice.external_client_id
-                            ? externalClients.find(client => client.id === invoice.external_client_id)?.name || 'Unknown'
-                            : networkContacts.find(contact => contact.id === invoice.receiver_id)?.name || 'Unknown'}
-                        </p>
+                        <span className="text-muted-foreground">From:</span>
+                        <p className="font-medium">{getClientName(invoice)}</p>
                       </div>
                       <div>
                         <span className="text-muted-foreground">Amount:</span>
                         <p className="font-medium">€{invoice.total?.toFixed(2) || invoice.amount.toFixed(2)}</p>
                         {invoice.vat_enabled && (
-                          <p className="text-xs text-muted-foreground">
-                            incl. VAT ({invoice.vat_rate}%)
-                          </p>
+                          <p className="text-xs text-muted-foreground">incl. VAT ({invoice.vat_rate}%)</p>
                         )}
                       </div>
                     </div>
-                    
                     <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
                       <div>
                         <span>Issue: {format(new Date(invoice.issue_date), 'MMM dd, yyyy')}</span>
@@ -1171,30 +1198,25 @@ export default function MyInvoicesPage() {
                         <span>Due: {format(new Date(invoice.due_date), 'MMM dd, yyyy')}</span>
                       </div>
                     </div>
-                    
                     <div className="flex items-center justify-end gap-2 pt-2 border-t">
                       <Button variant="ghost" size="sm" onClick={() => handleDownloadPDF(invoice)}>
                         <Download className="h-4 w-4" />
                       </Button>
                       <Button variant="ghost" size="sm" onClick={() => handleStartEdit(invoice)}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleStatusChange(invoice.id, 'cancelled')}>
-                        <Trash2 className="h-4 w-4" />
+                        <Eye className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>
                 </Card>
               ))}
             </div>
-            
             {/* Desktop table */}
             <div className="hidden sm:block">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-[180px]">INVOICE NUMBER</TableHead>
-                    <TableHead>CLIENT</TableHead>
+                    <TableHead>FROM</TableHead>
                     <TableHead>ISSUE DATE</TableHead>
                     <TableHead>DUE DATE</TableHead>
                     <TableHead>AMOUNT</TableHead>
@@ -1210,9 +1232,7 @@ export default function MyInvoicesPage() {
                         {invoice.invoice_number}
                       </TableCell>
                       <TableCell>
-                        {invoice.external_client_id
-                          ? externalClients.find(client => client.id === invoice.external_client_id)?.name || 'Unknown'
-                          : networkContacts.find(contact => contact.id === invoice.receiver_id)?.name || 'Unknown'}
+                        {getClientName(invoice)}
                       </TableCell>
                       <TableCell>{format(new Date(invoice.issue_date), 'MMM dd, yyyy')}</TableCell>
                       <TableCell>{format(new Date(invoice.due_date), 'MMM dd, yyyy')}</TableCell>
@@ -1393,131 +1413,179 @@ export default function MyInvoicesPage() {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[180px]">INVOICE NUMBER</TableHead>
-                  <TableHead>CLIENT</TableHead>
-                  <TableHead>ISSUE DATE</TableHead>
-                  <TableHead>DUE DATE</TableHead>
-                  <TableHead>AMOUNT</TableHead>
-                  <TableHead>STATUS</TableHead>
-                  <TableHead className="text-right">ACTIONS</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {currentInvoices.map((invoice) => (
-                  <TableRow key={invoice.id}>
-                    <TableCell className="font-medium flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-muted-foreground" />
-                      {invoice.invoice_number}
-                    </TableCell>
-                    <TableCell>
-                      {invoice.external_client_id
-                        ? externalClients.find(client => client.id === invoice.external_client_id)?.name || 'Unknown'
-                        : networkContacts.find(contact => contact.id === invoice.receiver_id)?.name || 'Unknown'}
-                    </TableCell>
-                    <TableCell>{format(new Date(invoice.issue_date), 'MMM dd, yyyy')}</TableCell>
-                    <TableCell>{format(new Date(invoice.due_date), 'MMM dd, yyyy')}</TableCell>
-                    <TableCell className="font-medium">
-                      €{invoice.total?.toFixed(2) || invoice.amount.toFixed(2)}
-                      {invoice.vat_enabled && (
-                        <div className="text-xs text-muted-foreground">
-                          incl. VAT ({invoice.vat_rate}%)
-                        </div>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={getStatusBadgeVariant(invoice.status)}>
+          <div className="rounded-md border overflow-x-auto">
+            {/* Mobile card layout */}
+            <div className="space-y-4 sm:hidden">
+              {currentInvoices.map((invoice) => (
+                <Card key={invoice.id} className="p-4">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-medium text-sm">{invoice.invoice_number}</span>
+                      </div>
+                      <Badge variant={getStatusBadgeVariant(invoice.status)} className="text-xs">
                         {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
                       </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {/* Desktop view: Icons + Dropdown */}
-                      <div className="hidden md:flex items-center justify-end gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleStartEdit(invoice);
-                          }}
-                        >
-                          <Eye className="h-4 w-4" />
-                          <span className="sr-only">View Details</span>
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDownloadPDF(invoice);
-                          }}
-                        >
-                          <Download className="h-4 w-4" />
-                          <span className="sr-only">Download PDF</span>
-                        </Button>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0" onClick={(e) => e.stopPropagation()}>
-                              <span className="sr-only">Open menu</span>
-                              <EllipsisVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                            <DropdownMenuItem onClick={() => handleStartEdit(invoice)}>
-                              <Pencil className="mr-2 h-4 w-4" />
-                              <span>Edit</span>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              className="text-red-500"
-                              onClick={() => handleStatusChange(invoice.id, 'cancelled')}
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              <span>Cancel</span>
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div>
+                        <span className="text-muted-foreground">From:</span>
+                        <p className="font-medium">{getClientName(invoice)}</p>
                       </div>
-
-                      {/* Mobile view: Dropdown only */}
-                      <div className="md:hidden">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0" onClick={(e) => e.stopPropagation()}>
-                              <span className="sr-only">Open menu</span>
-                              <EllipsisVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                            <DropdownMenuItem onClick={() => handleStartEdit(invoice)}>
-                              <Eye className="mr-2 h-4 w-4" />
-                              <span>View</span>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleDownloadPDF(invoice)}>
-                              <Download className="mr-2 h-4 w-4" />
-                              <span>Download PDF</span>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleStartEdit(invoice)}>
-                              <Pencil className="mr-2 h-4 w-4" />
-                              <span>Edit</span>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              className="text-red-500"
-                              onClick={() => handleStatusChange(invoice.id, 'cancelled')}
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              <span>Cancel</span>
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                      <div>
+                        <span className="text-muted-foreground">Amount:</span>
+                        <p className="font-medium">€{invoice.total?.toFixed(2) || invoice.amount.toFixed(2)}</p>
+                        {invoice.vat_enabled && (
+                          <p className="text-xs text-muted-foreground">incl. VAT ({invoice.vat_rate}%)</p>
+                        )}
                       </div>
-                    </TableCell>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                      <div>
+                        <span>Issue: {format(new Date(invoice.issue_date), 'MMM dd, yyyy')}</span>
+                      </div>
+                      <div>
+                        <span>Due: {format(new Date(invoice.due_date), 'MMM dd, yyyy')}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-end gap-2 pt-2 border-t">
+                      <Button variant="ghost" size="sm" onClick={() => handleDownloadPDF(invoice)}>
+                        <Download className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => handleStartEdit(invoice)}>
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+            {/* Desktop table */}
+            <div className="hidden sm:block">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[180px]">INVOICE NUMBER</TableHead>
+                    <TableHead>FROM</TableHead>
+                    <TableHead>ISSUE DATE</TableHead>
+                    <TableHead>DUE DATE</TableHead>
+                    <TableHead>AMOUNT</TableHead>
+                    <TableHead>STATUS</TableHead>
+                    <TableHead className="text-right">ACTIONS</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {currentInvoices.map((invoice) => (
+                    <TableRow key={invoice.id}>
+                      <TableCell className="font-medium flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-muted-foreground" />
+                        {invoice.invoice_number}
+                      </TableCell>
+                      <TableCell>
+                        {getClientName(invoice)}
+                      </TableCell>
+                      <TableCell>{format(new Date(invoice.issue_date), 'MMM dd, yyyy')}</TableCell>
+                      <TableCell>{format(new Date(invoice.due_date), 'MMM dd, yyyy')}</TableCell>
+                      <TableCell className="font-medium">
+                        €{invoice.total?.toFixed(2) || invoice.amount.toFixed(2)}
+                        {invoice.vat_enabled && (
+                          <div className="text-xs text-muted-foreground">
+                            incl. VAT ({invoice.vat_rate}%)
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={getStatusBadgeVariant(invoice.status)}>
+                          {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {/* Desktop view: Icons + Dropdown */}
+                        <div className="hidden md:flex items-center justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleStartEdit(invoice);
+                            }}
+                          >
+                            <Eye className="h-4 w-4" />
+                            <span className="sr-only">View Details</span>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDownloadPDF(invoice);
+                            }}
+                          >
+                            <Download className="h-4 w-4" />
+                            <span className="sr-only">Download PDF</span>
+                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" className="h-8 w-8 p-0" onClick={(e) => e.stopPropagation()}>
+                                <span className="sr-only">Open menu</span>
+                                <EllipsisVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                              <DropdownMenuItem onClick={() => handleStartEdit(invoice)}>
+                                <Pencil className="mr-2 h-4 w-4" />
+                                <span>Edit</span>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="text-red-500"
+                                onClick={() => handleStatusChange(invoice.id, 'cancelled')}
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                <span>Cancel</span>
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+
+                        {/* Mobile view: Dropdown only */}
+                        <div className="md:hidden">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" className="h-8 w-8 p-0" onClick={(e) => e.stopPropagation()}>
+                                <span className="sr-only">Open menu</span>
+                                <EllipsisVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                              <DropdownMenuItem onClick={() => handleStartEdit(invoice)}>
+                                <Eye className="mr-2 h-4 w-4" />
+                                <span>View</span>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleDownloadPDF(invoice)}>
+                                <Download className="mr-2 h-4 w-4" />
+                                <span>Download PDF</span>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleStartEdit(invoice)}>
+                                <Pencil className="mr-2 h-4 w-4" />
+                                <span>Edit</span>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="text-red-500"
+                                onClick={() => handleStatusChange(invoice.id, 'cancelled')}
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                <span>Cancel</span>
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </div>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-0">
             <p className="text-xs sm:text-sm text-muted-foreground text-center sm:text-left">

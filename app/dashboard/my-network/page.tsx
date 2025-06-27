@@ -8,10 +8,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Users, UserPlus, Mail, Send, Settings2, Filter, ArrowUpDown, MessageCircle, UserX, Trash2, ChevronDown, Check, X } from 'lucide-react';
+import { Search, Users, UserPlus, Mail, Send, Settings2, Filter, ArrowUpDown, MessageCircle, UserX, Trash2, ChevronDown, Check, X, Globe2, MapPin, Briefcase } from 'lucide-react';
 import Link from "next/link";
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { Badge } from '@/components/ui/badge';
 
 interface Profile {
     id: string;
@@ -19,7 +20,11 @@ interface Profile {
     full_name: string | null;
     avatar_url: string | null;
     professional_role: string | null;
-    company: string | null;
+    company?: string | null;
+    bio: string | null;
+    country: string | null;
+    is_online: boolean;
+    last_seen: string | null;
 }
 
 interface Connection {
@@ -32,15 +37,21 @@ interface Connection {
     receiver?: Profile;
 }
 
+interface ConnectionStatus {
+    [key: string]: 'none' | 'pending' | 'accepted' | 'rejected';
+}
+
 export default function MyNetworkPage() {
-    const router = useRouter();
-    const [activeTab, setActiveTab] = useState('connections');
-    const [searchQuery, setSearchQuery] = useState('');
+    const [currentUser, setCurrentUser] = useState<string | null>(null);
     const [connections, setConnections] = useState<Connection[]>([]);
     const [receivedInvitations, setReceivedInvitations] = useState<Connection[]>([]);
     const [sentInvitations, setSentInvitations] = useState<Connection[]>([]);
-    const [currentUser, setCurrentUser] = useState<string | null>(null);
+    const [allProfiles, setAllProfiles] = useState<Profile[]>([]);
+    const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>({});
     const [loading, setLoading] = useState(true);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [activeTab, setActiveTab] = useState('all-users');
+    const router = useRouter();
 
     useEffect(() => {
         const fetchCurrentUser = async () => {
@@ -52,9 +63,22 @@ export default function MyNetworkPage() {
             return null;
         };
 
-        const fetchConnections = async (userId: string) => {
+        const fetchAllData = async (userId: string) => {
             setLoading(true);
             try {
+                // Fetch all profiles (excluding current user)
+                const { data: profiles, error: profilesError } = await supabase
+                    .from('profiles')
+                    .select('id, username, full_name, avatar_url, professional_role, bio, country, is_online, last_seen')
+                    .neq('id', userId);
+
+                if (profilesError) {
+                    console.error('Error fetching profiles:', JSON.stringify(profilesError, null, 2));
+                    return;
+                }
+
+                setAllProfiles(profiles || []);
+
                 // Fetch accepted connections
                 const { data: acceptedConnections, error: connectionsError } = await supabase
                     .from('connections')
@@ -104,8 +128,29 @@ export default function MyNetworkPage() {
                 setConnections(acceptedConnections || []);
                 setReceivedInvitations(received || []);
                 setSentInvitations(sent || []);
+
+                // Build connection status map
+                const statusMap: ConnectionStatus = {};
+                
+                // Add accepted connections
+                acceptedConnections?.forEach(conn => {
+                    const otherUserId = conn.sender_id === userId ? conn.receiver_id : conn.sender_id;
+                    statusMap[otherUserId] = 'accepted';
+                });
+
+                // Add pending connections (both sent and received)
+                received?.forEach(conn => {
+                    statusMap[conn.sender_id] = 'pending';
+                });
+
+                sent?.forEach(conn => {
+                    statusMap[conn.receiver_id] = 'pending';
+                });
+
+                setConnectionStatus(statusMap);
+
             } catch (error) {
-                console.error('Error in fetchConnections:', error);
+                console.error('Error in fetchAllData:', error);
             } finally {
                 setLoading(false);
             }
@@ -113,7 +158,7 @@ export default function MyNetworkPage() {
 
         fetchCurrentUser().then(userId => {
             if (userId) {
-                fetchConnections(userId);
+                fetchAllData(userId);
             }
         });
     }, []);
@@ -143,6 +188,10 @@ export default function MyNetworkPage() {
             if (connection) {
                 setConnections(prev => [...prev, connection]);
                 setReceivedInvitations(prev => prev.filter(inv => inv.id !== connectionId));
+                setConnectionStatus(prev => ({
+                    ...prev,
+                    [connection.sender_id]: 'accepted'
+                }));
             }
         }
     };
@@ -175,6 +224,42 @@ export default function MyNetworkPage() {
         setConnections(prev => prev.filter(conn => conn.id !== connectionId));
     };
 
+    const handleConnect = async (profileId: string) => {
+        if (!currentUser) return;
+
+        const { data, error } = await supabase
+            .from('connections')
+            .insert({
+                sender_id: currentUser,
+                receiver_id: profileId,
+                status: 'pending'
+            })
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Error sending connection request:', error);
+            return;
+        }
+
+        // Update local state
+        setConnectionStatus(prev => ({
+            ...prev,
+            [profileId]: 'pending'
+        }));
+
+        // Create notification for the receiver
+        await supabase
+            .from('notifications')
+            .insert({
+                user_id: profileId,
+                type: 'connection_request',
+                content: 'sent you a connection request',
+                sender_id: currentUser,
+                read: false
+            });
+    };
+
     const handleMessage = (userId: string) => {
         router.push(`/dashboard/messages?userId=${userId}`);
     };
@@ -188,6 +273,107 @@ export default function MyNetworkPage() {
         return connection.sender_id === currentUser ? connection.receiver : connection.sender;
     };
 
+    const getConnectionButton = (profile: Profile) => {
+        const status = connectionStatus[profile.id] || 'none';
+
+        if (status === 'pending') {
+            return (
+                <Button variant="outline" size="sm" disabled>
+                    <UserPlus className="h-4 w-4 mr-1" />
+                    Connection sent
+                </Button>
+            );
+        }
+        if (status === 'accepted') {
+            return (
+                <Button variant="ghost" size="sm" disabled>
+                    <Check className="h-4 w-4 mr-1" />
+                    Connected
+                </Button>
+            );
+        }
+        if (status === 'rejected') {
+            return null;
+        }
+        return (
+            <Button variant="outline" size="sm" onClick={() => handleConnect(profile.id)}>
+                <UserPlus className="h-4 w-4 mr-1" />
+                Connect
+            </Button>
+        );
+    };
+
+    const filteredProfiles = allProfiles.filter(profile => {
+        if (!searchQuery) return true;
+        const query = searchQuery.toLowerCase();
+        return (
+            profile.full_name?.toLowerCase().includes(query) ||
+            profile.username.toLowerCase().includes(query) ||
+            profile.professional_role?.toLowerCase().includes(query) ||
+            profile.bio?.toLowerCase().includes(query) ||
+            profile.country?.toLowerCase().includes(query)
+        );
+    });
+
+    const renderAllUsersCards = () => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            {filteredProfiles.map(profile => (
+                <Card key={profile.id}>
+                    <CardHeader className="flex flex-row items-center gap-3 sm:gap-4 space-y-0 pb-2">
+                        <div className="relative">
+                            <Avatar className="h-12 w-12 sm:h-16 sm:w-16">
+                                <AvatarImage src={profile.avatar_url || undefined} />
+                                <AvatarFallback>{profile.full_name?.charAt(0) || profile.username.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                            {profile.is_online && (
+                                <span className="absolute bottom-0 right-0 block h-3 w-3 rounded-full bg-green-500 ring-2 ring-white" />
+                            )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <CardTitle 
+                                className="text-base sm:text-lg cursor-pointer hover:text-primary transition-colors truncate"
+                                onClick={() => handleProfileClick(profile.id)}
+                            >
+                                {profile.full_name || profile.username}
+                            </CardTitle>
+                            <CardDescription className="truncate">{profile.professional_role || 'No role specified'}</CardDescription>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="space-y-3 p-4 sm:p-6">
+                        <div className="space-y-2">
+                            {profile.bio && (
+                                <p className="text-sm text-muted-foreground line-clamp-2">{profile.bio}</p>
+                            )}
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                <span>@{profile.username}</span>
+                                {profile.professional_role && (
+                                    <>
+                                        <span>•</span>
+                                        <Briefcase className="h-3 w-3" />
+                                        <span>{profile.professional_role}</span>
+                                    </>
+                                )}
+                                {profile.country && (
+                                    <>
+                                        <span>•</span>
+                                        <Globe2 className="h-3 w-3" />
+                                        <span>{profile.country}</span>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                        <div className="flex flex-col sm:flex-row gap-2 sm:justify-end">
+                            <Button variant="outline" size="sm" onClick={() => handleMessage(profile.id)} className="w-full sm:w-auto">
+                                <MessageCircle className="h-4 w-4 mr-2" /> Message
+                            </Button>
+                            {getConnectionButton(profile)}
+                        </div>
+                    </CardContent>
+                </Card>
+            ))}
+        </div>
+    );
+
     const renderConnectionCards = (data: Connection[]) => (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {data.map(connection => {
@@ -197,10 +383,15 @@ export default function MyNetworkPage() {
                 return (
                     <Card key={connection.id}>
                         <CardHeader className="flex flex-row items-center gap-3 sm:gap-4 space-y-0 pb-2">
-                            <Avatar className="h-12 w-12 sm:h-16 sm:w-16">
-                                <AvatarImage src={otherUser.avatar_url || undefined} />
-                                <AvatarFallback>{otherUser.full_name?.charAt(0) || otherUser.username.charAt(0)}</AvatarFallback>
-                            </Avatar>
+                            <div className="relative">
+                                <Avatar className="h-12 w-12 sm:h-16 sm:w-16">
+                                    <AvatarImage src={otherUser.avatar_url || undefined} />
+                                    <AvatarFallback>{otherUser.full_name?.charAt(0) || otherUser.username.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                {otherUser.is_online && (
+                                    <span className="absolute bottom-0 right-0 block h-3 w-3 rounded-full bg-green-500 ring-2 ring-white" />
+                                )}
+                            </div>
                             <div className="flex-1 min-w-0">
                                 <CardTitle 
                                     className="text-base sm:text-lg cursor-pointer hover:text-primary transition-colors truncate"
@@ -237,10 +428,15 @@ export default function MyNetworkPage() {
                 return (
                     <Card key={invitation.id}>
                         <CardHeader className="flex flex-row items-center gap-3 sm:gap-4 space-y-0 pb-2">
-                            <Avatar className="h-12 w-12 sm:h-16 sm:w-16">
-                                <AvatarImage src={user.avatar_url || undefined} />
-                                <AvatarFallback>{user.full_name?.charAt(0) || user.username.charAt(0)}</AvatarFallback>
-                            </Avatar>
+                            <div className="relative">
+                                <Avatar className="h-12 w-12 sm:h-16 sm:w-16">
+                                    <AvatarImage src={user.avatar_url || undefined} />
+                                    <AvatarFallback>{user.full_name?.charAt(0) || user.username.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                {user.is_online && (
+                                    <span className="absolute bottom-0 right-0 block h-3 w-3 rounded-full bg-green-500 ring-2 ring-white" />
+                                )}
+                            </div>
                             <div className="flex-1 min-w-0">
                                 <CardTitle 
                                     className="text-base sm:text-lg cursor-pointer hover:text-primary transition-colors truncate"
@@ -253,18 +449,24 @@ export default function MyNetworkPage() {
                         </CardHeader>
                         <CardContent className="space-y-3 p-4 sm:p-6">
                             <p className="text-xs text-muted-foreground">
-                                {type === 'received' ? 'Received' : 'Sent'} on {new Date(invitation.created_at).toLocaleDateString()}
+                                {type === 'received' ? 'Sent you a connection request' : 'Connection request sent'}
                             </p>
-                            {type === 'received' && (
-                                <div className="flex flex-col sm:flex-row gap-2 sm:justify-end">
-                                    <Button variant="outline" size="sm" onClick={() => handleAcceptInvitation(invitation.id)} className="w-full sm:w-auto">
-                                        <Check className="h-4 w-4 mr-2" /> Accept
+                            <div className="flex flex-col sm:flex-row gap-2 sm:justify-end">
+                                {type === 'received' ? (
+                                    <>
+                                        <Button variant="outline" size="sm" onClick={() => handleAcceptInvitation(invitation.id)} className="w-full sm:w-auto">
+                                            <Check className="h-4 w-4 mr-2" /> Accept
+                                        </Button>
+                                        <Button variant="ghost" size="sm" onClick={() => handleRejectInvitation(invitation.id)} className="w-full sm:w-auto">
+                                            <X className="h-4 w-4" />
+                                        </Button>
+                                    </>
+                                ) : (
+                                    <Button variant="outline" size="sm" disabled className="w-full sm:w-auto">
+                                        <UserPlus className="h-4 w-4 mr-2" /> Pending
                                     </Button>
-                                    <Button variant="ghost" size="sm" onClick={() => handleRejectInvitation(invitation.id)} className="w-full sm:w-auto">
-                                        <X className="h-4 w-4 mr-2" /> Decline
-                                    </Button>
-                                </div>
-                            )}
+                                )}
+                            </div>
                         </CardContent>
                     </Card>
                 );
@@ -273,56 +475,37 @@ export default function MyNetworkPage() {
     );
 
     return (
-        <div className="flex-1 space-y-6 p-4 sm:p-8 pt-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-2">
-                <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Manage your professional network</h2>
-                <Link href="/dashboard/my-network/invite-contacts">
-                    <Button className="w-full sm:w-auto">
-                        <UserPlus className="mr-2 h-4 w-4" /> Invite contacts
-                    </Button>
-                </Link>
-            </div>
-            <p className="text-sm sm:text-base text-muted-foreground">Connect with professionals to grow your entrepreneurial ecosystem</p>
-
-            <div className="flex flex-col lg:flex-row items-center justify-between space-y-4 lg:space-y-0 lg:space-x-4">
-                <div className="relative w-full lg:w-1/3">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input 
-                        placeholder="Search your network..." 
-                        className="pl-8 w-full"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                    />
+        <div className="flex flex-col flex-1 h-full bg-background p-8 pt-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+                <div>
+                    <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">My Network</h2>
+                    <p className="text-muted-foreground">Connect with professionals and grow your network</p>
                 </div>
-                <div className="flex flex-wrap items-center gap-2 w-full lg:w-2/3 justify-end">
-                    <Select>
-                        <SelectTrigger className="w-full sm:w-[150px]">
-                            <Settings2 className="mr-2 h-4 w-4" />
-                            <SelectValue placeholder="Filters" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="type">Type</SelectItem>
-                            <SelectItem value="location">Location</SelectItem>
-                        </SelectContent>
-                    </Select>
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="outline" className="w-full sm:w-auto">
-                                <ArrowUpDown className="mr-2 h-4 w-4" /> Sort by <ChevronDown className="ml-2 h-4 w-4" />
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Sort by</DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem>Date Connected</DropdownMenuItem>
-                            <DropdownMenuItem>Name</DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                <div className="flex items-center gap-2">
+                    <Link href="/dashboard/connect" passHref legacyBehavior>
+                        <a className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
+                            <UserPlus className="mr-2 h-4 w-4" />
+                            Find People
+                        </a>
+                    </Link>
                 </div>
             </div>
 
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 w-full">
-                <TabsList className="w-full grid grid-cols-3">
+            <div className="relative w-full mt-4">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                    placeholder="Search by name, username, role, or bio..."
+                    className="pl-8 w-full"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                />
+            </div>
+
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 w-full mt-6">
+                <TabsList className="w-full grid grid-cols-4">
+                    <TabsTrigger value="all-users" className="text-xs sm:text-sm">
+                        All Users <span className="ml-2 text-xs font-semibold text-primary">{filteredProfiles.length}</span>
+                    </TabsTrigger>
                     <TabsTrigger value="connections" className="text-xs sm:text-sm">
                         My Connections <span className="ml-2 text-xs font-semibold text-primary">{connections.length}</span>
                     </TabsTrigger>
@@ -333,6 +516,25 @@ export default function MyNetworkPage() {
                         Sent Invitations <span className="ml-2 text-xs font-semibold text-primary">{sentInvitations.length}</span>
                     </TabsTrigger>
                 </TabsList>
+
+                <TabsContent value="all-users">
+                    {loading ? (
+                        <div className="text-center py-8">
+                            <p className="text-muted-foreground">Loading users...</p>
+                        </div>
+                    ) : filteredProfiles.length === 0 ? (
+                        <div className="text-center py-8">
+                            <p className="text-muted-foreground">No users found.</p>
+                            {searchQuery && (
+                                <p className="text-sm text-muted-foreground mt-1">
+                                    Try adjusting your search terms
+                                </p>
+                            )}
+                        </div>
+                    ) : (
+                        renderAllUsersCards()
+                    )}
+                </TabsContent>
 
                 <TabsContent value="connections">
                     {loading ? (
@@ -350,6 +552,7 @@ export default function MyNetworkPage() {
                         renderConnectionCards(connections)
                     )}
                 </TabsContent>
+                
                 <TabsContent value="received-invitations">
                     {loading ? (
                         <div className="text-center py-8">
@@ -357,20 +560,21 @@ export default function MyNetworkPage() {
                         </div>
                     ) : receivedInvitations.length === 0 ? (
                         <div className="text-center py-8">
-                            <p className="text-muted-foreground">No new invitations.</p>
+                            <p className="text-muted-foreground">No received invitations.</p>
                         </div>
                     ) : (
                         renderInvitationCards(receivedInvitations, 'received')
                     )}
                 </TabsContent>
+
                 <TabsContent value="sent-invitations">
                     {loading ? (
                         <div className="text-center py-8">
-                            <p className="text-muted-foreground">Loading sent invitations...</p>
+                            <p className="text-muted-foreground">Loading invitations...</p>
                         </div>
                     ) : sentInvitations.length === 0 ? (
                         <div className="text-center py-8">
-                            <p className="text-muted-foreground">No pending sent invitations.</p>
+                            <p className="text-muted-foreground">No sent invitations.</p>
                         </div>
                     ) : (
                         renderInvitationCards(sentInvitations, 'sent')

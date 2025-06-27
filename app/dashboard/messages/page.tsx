@@ -79,6 +79,7 @@ export default function MessagesPage() {
     const supabase = createClientComponentClient();
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const [userProfileCache, setUserProfileCache] = useState<Record<string, any>>({});
 
     const {
         messages,
@@ -214,20 +215,48 @@ export default function MessagesPage() {
         fetchVaultDocs();
     }, [user]);
 
-    // Modify conversations to use allMessages instead of messages
+    // Helper to fetch and cache a profile by userId
+    async function fetchAndCacheProfile(userId: string) {
+        if (!userId || userProfileCache[userId]) return;
+        const { data } = await supabase
+            .from('profiles')
+            .select('id, username, full_name, avatar_url')
+            .eq('id', userId)
+            .single();
+        if (data) {
+            setUserProfileCache(prev => ({ ...prev, [userId]: data }));
+        }
+    }
+
+    // Whenever allMessages change, ensure all user profiles are cached
+    useEffect(() => {
+        const userIds = new Set<string>();
+        allMessages.forEach(msg => {
+            userIds.add(msg.sender_id);
+            userIds.add(msg.receiver_id);
+        });
+        userIds.forEach(id => {
+            if (id && !userProfileCache[id]) fetchAndCacheProfile(id);
+        });
+        // eslint-disable-next-line
+    }, [allMessages]);
+
+    // Helper to get a user's profile (from allConnections, userProfileCache, or fallback)
+    function getUserProfile(userId: string) {
+        return (
+            allConnections.find(conn => conn.id === userId) ||
+            userProfileCache[userId] ||
+            null
+        );
+    }
+
+    // Update conversations logic to use getUserProfile
     const conversations = React.useMemo(() => {
         if (!currentUserId) return [];
-        
         const conversationMap = allMessages.reduce((acc, message) => {
-            // Determine the other user's info
             const isCurrentUserSender = message.sender_id === currentUserId;
             const otherUserId = isCurrentUserSender ? message.receiver_id : message.sender_id;
-            
-            // Get the other user's profile from the message
-            const otherUser = isCurrentUserSender 
-                ? allConnections.find(conn => conn.id === otherUserId)
-                : message.sender;
-            
+            const otherUser = getUserProfile(otherUserId);
             if (!acc[otherUserId]) {
                 acc[otherUserId] = {
                     id: otherUserId,
@@ -236,25 +265,20 @@ export default function MessagesPage() {
                     lastMessage: message.content,
                     time: message.created_at,
                     unread: 0,
-                    online: false // Will be updated by userStatus
+                    online: false
                 };
             }
-            // Update last message if this one is newer
             if (new Date(message.created_at) > new Date(acc[otherUserId].time)) {
                 acc[otherUserId].lastMessage = message.content;
                 acc[otherUserId].time = message.created_at;
             }
-            // Count unread messages (only those not sent by the current user)
             if (!message.read && message.sender_id === otherUserId) {
                 acc[otherUserId].unread = (acc[otherUserId].unread || 0) + 1;
             }
             return acc;
         }, {} as Record<string, Conversation>);
-        
-        return Object.values(conversationMap).sort((a, b) => 
-            new Date(b.time).getTime() - new Date(a.time).getTime()
-        );
-    }, [allMessages, currentUserId, allConnections]);
+        return Object.values(conversationMap).sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+    }, [allMessages, currentUserId, allConnections, userProfileCache]);
 
     // Filtering logic for tabs
     const filteredConversations = React.useMemo(() => {
@@ -276,22 +300,32 @@ export default function MessagesPage() {
     const totalUnreadMessages = conversations.reduce((sum, conv) => sum + (conv.unread || 0), 0);
     const activeConversation = React.useMemo(() => {
         if (!selectedConversation) return undefined;
-        // Try to find an existing conversation
         const found = conversations.find(conv => conv.id === selectedConversation);
-        // If not found, create a placeholder for new conversation
-        if (!found) {
+        if (found) return found;
+        const profile = getUserProfile(selectedConversation);
+        if (profile) {
             return {
                 id: selectedConversation,
-                name: 'New Conversation',
+                name: profile.full_name || profile.username || 'Unknown User',
+                avatar: profile.avatar_url,
                 lastMessage: '',
-                time: new Date().toISOString(),
-                avatar: '',
+                time: '',
                 unread: 0,
-                online: false
+                online: false,
+                isPlaceholder: true,
             };
         }
-        return found;
-    }, [conversations, selectedConversation]);
+        return {
+            id: selectedConversation,
+            name: 'Unknown User',
+            avatar: '',
+            lastMessage: '',
+            time: '',
+            unread: 0,
+            online: false,
+            isPlaceholder: true,
+        };
+    }, [conversations, selectedConversation, userProfileCache, allConnections]);
 
     // Filter messages for the active conversation
     const filteredMessages = React.useMemo(() => {
