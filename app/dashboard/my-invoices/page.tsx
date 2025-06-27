@@ -31,7 +31,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 import { downloadInvoicePDF, createInvoice, getInvoices, updateInvoiceStatus, editInvoice, type Invoice, type InvoiceItem } from '@/lib/invoices';
 import { useUser } from '@/lib/auth';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
@@ -78,17 +78,40 @@ function getFinancialSummary(invoices: Invoice[], userId: string | undefined) {
   const paid = sent.filter(inv => inv.status === 'paid').reduce((sum, inv) => sum + (Number(inv.total ?? inv.amount) || 0), 0);
   const pending = sent.filter(inv => inv.status === 'pending').reduce((sum, inv) => sum + (Number(inv.total ?? inv.amount) || 0), 0);
   const cancelled = sent.filter(inv => inv.status === 'cancelled').reduce((sum, inv) => sum + (Number(inv.total ?? inv.amount) || 0), 0);
+  
+  // Calculate collection rate
+  const collectionRate = totalSent > 0 ? Math.round((paid / totalSent) * 100) : 0;
+  
   // Average time to pay (in days)
   const paidInvoices = sent.filter(inv => inv.status === 'paid' && inv.updated_at && inv.issue_date);
   const avgTime = paidInvoices.length > 0
     ? Math.round(paidInvoices.reduce((sum, inv) => sum + ((new Date(inv.updated_at).getTime() - new Date(inv.issue_date).getTime()) / (1000 * 60 * 60 * 24)), 0) / paidInvoices.length)
     : null;
+  
+  // Calculate month-over-month growth (simplified)
+  const currentMonth = new Date().getMonth();
+  const lastMonth = new Date().getMonth() - 1;
+  const currentMonthInvoices = sent.filter(inv => new Date(inv.created_at).getMonth() === currentMonth);
+  const lastMonthInvoices = sent.filter(inv => new Date(inv.created_at).getMonth() === lastMonth);
+  const currentMonthTotal = currentMonthInvoices.reduce((sum, inv) => sum + (Number(inv.total ?? inv.amount) || 0), 0);
+  const lastMonthTotal = lastMonthInvoices.reduce((sum, inv) => sum + (Number(inv.total ?? inv.amount) || 0), 0);
+  const growthRate = lastMonthTotal > 0 ? Math.round(((currentMonthTotal - lastMonthTotal) / lastMonthTotal) * 100) : 0;
+  
+  // Performance indicator for average time
+  const performanceIndicator = avgTime !== null ? (avgTime <= 30 ? 85 : avgTime <= 60 ? 65 : 45) : 0;
+  
   return {
     totalSent: totalSent.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
     paid: paid.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
     pending: pending.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
     cancelled: cancelled.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
     averageTime: avgTime !== null ? `${avgTime} days` : 'N/A',
+    collectionRate: `${collectionRate}%`,
+    growthRate: growthRate,
+    performanceIndicator: performanceIndicator,
+    totalInvoices: sent.length,
+    paidInvoices: sent.filter(inv => inv.status === 'paid').length,
+    pendingInvoices: sent.filter(inv => inv.status === 'pending').length,
   };
 }
 
@@ -1976,84 +1999,217 @@ export default function MyInvoicesPage() {
         </TabsContent>
       </Tabs>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <div>
-          <h3 className="text-lg sm:text-xl font-semibold mb-4">Financial Summary</h3>
-          <Card>
-            <CardContent className="grid grid-cols-2 gap-3 sm:gap-4 pt-4 sm:pt-6">
-              <div className="flex flex-col items-start justify-between p-3 sm:p-4 border rounded-lg">
-                <div>
-                  <p className="text-xs sm:text-sm text-muted-foreground">Total Sent</p>
-                  <p className="text-lg sm:text-2xl text-green-500">€{financialSummary.totalSent}</p>
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Enhanced Financial Summary */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xl font-semibold">Financial Summary</h3>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <TrendingUp className="h-4 w-4" />
+              <span>This month</span>
+            </div>
+          </div>
+          
+          <div className="grid gap-4">
+            {/* Main Stats Cards */}
+            <div className="grid grid-cols-2 gap-4">
+              <Card className="relative overflow-hidden border-0 shadow-lg bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 hover:shadow-xl transition-all duration-300 group animate-in slide-in-from-bottom-2">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30 group-hover:scale-110 transition-transform duration-300">
+                      <CircleDollarSign className="h-5 w-5 text-green-600 dark:text-green-400" />
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs font-medium text-green-600 dark:text-green-400 uppercase tracking-wide">Total Sent</p>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-2xl font-bold text-green-700 dark:text-green-300">€{financialSummary.totalSent}</p>
+                    <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
+                      <TrendingUp className="h-3 w-3" />
+                      <span>{financialSummary.growthRate > 0 ? '+' : ''}{financialSummary.growthRate}% from last month</span>
+                    </div>
+                  </div>
+                </CardContent>
+                <div className="absolute inset-0 bg-gradient-to-r from-green-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              </Card>
+
+              <Card className="relative overflow-hidden border-0 shadow-lg bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/20 dark:to-cyan-950/20 hover:shadow-xl transition-all duration-300 group animate-in slide-in-from-bottom-2 delay-100">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30 group-hover:scale-110 transition-transform duration-300">
+                      <CheckCircle className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs font-medium text-blue-600 dark:text-blue-400 uppercase tracking-wide">Paid</p>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">€{financialSummary.paid}</p>
+                    <div className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400">
+                      <CheckCircle className="h-3 w-3" />
+                      <span>{financialSummary.collectionRate} collection rate</span>
+                    </div>
+                  </div>
+                </CardContent>
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              </Card>
+            </div>
+
+            {/* Secondary Stats */}
+            <div className="grid grid-cols-2 gap-4">
+              <Card className="relative overflow-hidden border-0 shadow-md bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 hover:shadow-lg transition-all duration-300 group animate-in slide-in-from-bottom-2 delay-200">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="p-1.5 rounded-lg bg-amber-100 dark:bg-amber-900/30 group-hover:scale-110 transition-transform duration-300">
+                      <Hourglass className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                    </div>
+                    <p className="text-xs font-medium text-amber-600 dark:text-amber-400 uppercase tracking-wide">Pending</p>
+                  </div>
+                  <p className="text-lg font-bold text-amber-700 dark:text-amber-300">€{financialSummary.pending}</p>
+                </CardContent>
+              </Card>
+
+              <Card className="relative overflow-hidden border-0 shadow-md bg-gradient-to-br from-red-50 to-pink-50 dark:from-red-950/20 dark:to-pink-950/20 hover:shadow-lg transition-all duration-300 group animate-in slide-in-from-bottom-2 delay-300">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="p-1.5 rounded-lg bg-red-100 dark:bg-red-900/30 group-hover:scale-110 transition-transform duration-300">
+                      <XCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
+                    </div>
+                    <p className="text-xs font-medium text-red-600 dark:text-red-400 uppercase tracking-wide">Cancelled</p>
+                  </div>
+                  <p className="text-lg font-bold text-red-700 dark:text-red-300">€{financialSummary.cancelled}</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Performance Metrics */}
+            <Card className="relative overflow-hidden border-0 shadow-lg bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-950/20 dark:to-indigo-950/20 animate-in slide-in-from-bottom-2 delay-400">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30">
+                      <Clock className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-purple-700 dark:text-purple-300">Average Time to Pay</p>
+                      <p className="text-xs text-purple-600 dark:text-purple-400">Payment efficiency</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">{financialSummary.averageTime}</p>
+                    <div className="flex items-center gap-1 text-xs text-purple-600 dark:text-purple-400">
+                      <TrendingUp className="h-3 w-3" />
+                      <span>{financialSummary.performanceIndicator >= 80 ? 'Excellent' : financialSummary.performanceIndicator >= 60 ? 'Good' : 'Needs improvement'}</span>
+                    </div>
+                  </div>
                 </div>
-                <CircleDollarSign className="h-6 w-6 sm:h-8 sm:w-8 text-green-500 mt-2" />
-              </div>
-              <div className="flex flex-col items-start justify-between p-3 sm:p-4 border rounded-lg">
-                <div>
-                  <p className="text-xs sm:text-sm text-muted-foreground">Paid</p>
-                  <p className="text-lg sm:text-2xl text-green-500">€{financialSummary.paid}</p>
+                <div className="w-full bg-purple-200 dark:bg-purple-800 rounded-full h-2">
+                  <div className="bg-purple-500 h-2 rounded-full transition-all duration-500" style={{ width: `${financialSummary.performanceIndicator}%` }} />
                 </div>
-                <CheckCircle className="h-6 w-6 sm:h-8 sm:w-8 text-green-500 mt-2" />
-              </div>
-              <div className="flex flex-col items-start justify-between p-3 sm:p-4 border rounded-lg">
-                <div>
-                  <p className="text-xs sm:text-sm text-muted-foreground">Pending</p>
-                  <p className="text-lg sm:text-2xl text-yellow-500">€{financialSummary.pending}</p>
-                </div>
-                <Hourglass className="h-6 w-6 sm:h-8 sm:w-8 text-yellow-500 mt-2" />
-              </div>
-              <div className="flex flex-col items-start justify-between p-3 sm:p-4 border rounded-lg">
-                <div>
-                  <p className="text-xs sm:text-sm text-muted-foreground">Cancelled</p>
-                  <p className="text-lg sm:text-2xl text-red-500">€{financialSummary.cancelled}</p>
-                </div>
-                <XCircle className="h-6 w-6 sm:h-8 sm:w-8 text-red-500 mt-2" />
-              </div>
-              <div className="col-span-2 text-center p-3 sm:p-4 border rounded-lg">
-                <p className="text-xs sm:text-sm text-muted-foreground">Average Time to Pay</p>
-                <p className="text-lg sm:text-2xl">{financialSummary.averageTime}</p>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
         </div>
-        <div>
-          <h3 className="text-lg sm:text-xl font-semibold mb-4">Recent Activity</h3>
-          <Card>
-            <CardContent className="space-y-3 sm:space-y-4 pt-4 sm:pt-6">
-              {recentActivities.map((activity) => (
-                <div key={activity.id} className="flex items-start gap-3 sm:gap-4 p-3 sm:p-4 border rounded-lg">
-                  <div className="rounded-full bg-muted p-1.5 sm:p-2">
-                    <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
+
+        {/* Enhanced Recent Activity */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xl font-semibold">Recent Activity</h3>
+            <Button variant="ghost" size="sm" className="text-xs text-muted-foreground hover:text-primary">
+              View all
+            </Button>
+          </div>
+          
+          <Card className="border-0 shadow-lg bg-gradient-to-br from-slate-50 to-gray-50 dark:from-slate-950/20 dark:to-gray-950/20">
+            <CardContent className="p-6">
+              <div className="space-y-4">
+                {recentActivities.map((activity, index) => (
+                  <div key={activity.id} className="group relative animate-in slide-in-from-left-2" style={{ animationDelay: `${index * 100}ms` }}>
+                    {/* Activity Timeline */}
+                    <div className="flex items-start gap-4">
+                      <div className="relative flex-shrink-0">
+                        <div className={cn(
+                          "w-3 h-3 rounded-full border-2 border-white dark:border-gray-800 shadow-sm transition-all duration-300 group-hover:scale-125",
+                          activity.action === 'paid' && "bg-green-500",
+                          activity.action === 'created' && "bg-blue-500", 
+                          activity.action === 'cancelled' && "bg-red-500",
+                          activity.action === 'reminder sent' && "bg-amber-500"
+                        )} />
+                        {index < recentActivities.length - 1 && (
+                          <div className="absolute top-3 left-1.5 w-px h-12 bg-gradient-to-b from-gray-300 to-transparent dark:from-gray-600" />
+                        )}
+                      </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-3 mb-2">
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100 leading-relaxed">
+                              {activity.action === 'paid' && (
+                                <>
+                                  <span className="font-semibold text-green-600 dark:text-green-400">{activity.user}</span> paid{' '}
+                                  <span className="font-semibold">{activity.document}</span> for{' '}
+                                  <span className="font-bold text-green-600 dark:text-green-400">{activity.currency}{activity.amount}</span>
+                                </>
+                              )}
+                              {activity.action === 'created' && (
+                                <>
+                                  <span className="font-semibold text-blue-600 dark:text-blue-400">{activity.user}</span> created{' '}
+                                  <span className="font-semibold">{activity.document}</span> for{' '}
+                                  <span className="font-semibold">{activity.client}</span> for{' '}
+                                  <span className="font-bold text-blue-600 dark:text-blue-400">{activity.currency}{activity.amount}</span>
+                                </>
+                              )}
+                              {activity.action === 'cancelled' && (
+                                <>
+                                  <span className="font-semibold">{activity.document}</span> for{' '}
+                                  <span className="font-semibold">{activity.client}</span> has been{' '}
+                                  <span className="font-semibold text-red-600 dark:text-red-400">cancelled</span>
+                                </>
+                              )}
+                              {activity.action === 'reminder sent' && (
+                                <>
+                                  Automatic <span className="font-semibold text-amber-600 dark:text-amber-400">reminder sent</span> for{' '}
+                                  <span className="font-semibold">{activity.document}</span> to{' '}
+                                  <span className="font-semibold">{activity.client}</span>
+                                </>
+                              )}
+                            </p>
+                          </div>
+                          <div className="flex-shrink-0">
+                            <div className={cn(
+                              "px-2 py-1 rounded-full text-xs font-medium transition-all duration-300 group-hover:scale-105",
+                              activity.action === 'paid' && "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
+                              activity.action === 'created' && "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
+                              activity.action === 'cancelled' && "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
+                              activity.action === 'reminder sent' && "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
+                            )}>
+                              {activity.action}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                          <Clock className="h-3 w-3" />
+                          <span>{formatDistanceToNow(new Date(activity.time), { addSuffix: true })}</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Hover effect */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-lg" />
                   </div>
-                  <div>
-                    <p className="text-sm sm:text-base text-foreground">
-                      {activity.action === 'paid' && (
-                        <>
-                          <span className="font-semibold">{activity.user}</span> paid <span className="font-semibold">{activity.document}</span> for an amount of <span className="font-semibold">{activity.currency}{activity.amount}</span>
-                        </>
-                      )}
-                      {activity.action === 'created' && (
-                        <>
-                          <span className="font-semibold">{activity.user}</span> {activity.action} <span className="font-semibold">{activity.document}</span> for <span className="font-semibold">{activity.client}</span> for an amount of <span className="font-semibold">{activity.currency}{activity.amount}</span>
-                        </>
-                      )}
-                      {activity.action === 'cancelled' && (
-                        <>
-                          <span className="font-semibold">{activity.document}</span> for <span className="font-semibold">{activity.client}</span> has been {activity.action}
-                        </>
-                      )}
-                      {activity.action === 'reminder sent' && (
-                        <>
-                          Automatic {activity.action} for <span className="font-semibold">{activity.document}</span> to <span className="font-semibold">{activity.client}</span>
-                        </>
-                      )}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {activity.time}
-                    </p>
+                ))}
+                
+                {recentActivities.length === 0 && (
+                  <div className="text-center py-8">
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                      <FileText className="h-8 w-8 text-gray-400" />
+                    </div>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm">No recent activity</p>
+                    <p className="text-gray-400 dark:text-gray-500 text-xs mt-1">Your invoice activity will appear here</p>
                   </div>
-                </div>
-              ))}
+                )}
+              </div>
             </CardContent>
           </Card>
         </div>
