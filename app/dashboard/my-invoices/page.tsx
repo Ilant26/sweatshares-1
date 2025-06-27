@@ -39,6 +39,8 @@ import { Database } from '@/lib/database.types';
 import { ExternalClientDialog } from '@/components/external-client-dialog';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useToast } from '@/components/ui/use-toast';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { sendMessage } from '@/lib/messages';
 
 import {
   Search,
@@ -108,6 +110,8 @@ export default function MyInvoicesPage() {
   const [isLoadingUserProfile, setIsLoadingUserProfile] = useState(false);
   const [messageUserProfile, setMessageUserProfile] = useState<{ id: string; name: string } | null>(null);
   const { toast } = useToast();
+  const [senderProfileCache, setSenderProfileCache] = useState<Record<string, { full_name: string; avatar_url: string | null; username: string }>>({});
+  const [recipientProfileCache, setRecipientProfileCache] = useState<Record<string, { full_name: string; avatar_url: string | null; username: string }>>({});
 
   const financialSummary = {
     totalSent: '15,800.00',
@@ -387,24 +391,39 @@ export default function MyInvoicesPage() {
       setInvoices(prev => [createdInvoice, ...prev]);
       setNewInvoiceDialogOpen(false);
       resetNewInvoiceForm();
-      
+
+      // Send a system message to the receiver if it's a network contact
+      if (invoiceData.receiver_id) {
+        const invoiceMsg = {
+          type: 'invoice',
+          invoice_number: createdInvoice.invoice_number,
+          amount: createdInvoice.total,
+          currency: createdInvoice.currency,
+          due_date: createdInvoice.due_date,
+          status: createdInvoice.status,
+          description: createdInvoice.description,
+          invoice_id: createdInvoice.id
+        };
+        await sendMessage(invoiceData.receiver_id, JSON.stringify(invoiceMsg));
+      }
+
       // Show success message based on payment method
       const successMessages = {
         standard: 'Invoice created successfully!',
         payment_link: 'Invoice with payment link created successfully!',
         escrow: 'Escrow invoice created successfully!'
       };
-      
+
       toast({
-        title: "Success",
+        title: 'Success',
         description: successMessages[newInvoice.paymentMethod],
       });
     } catch (error) {
       console.error('Error creating invoice:', error);
       toast({
-        title: "Error",
-        description: "Failed to create invoice. Please try again.",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to create invoice. Please try again.',
+        variant: 'destructive',
       });
     }
   };
@@ -601,6 +620,98 @@ export default function MyInvoicesPage() {
       };
     });
   };
+
+  // Helper to fetch and cache sender profile
+  async function fetchAndCacheSenderProfile(userId: string) {
+    if (!userId || senderProfileCache[userId]) return;
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, full_name, avatar_url, username')
+      .eq('id', userId)
+      .single();
+    if (data) {
+      setSenderProfileCache(prev => ({ ...prev, [userId]: { full_name: data.full_name, avatar_url: data.avatar_url, username: data.username } }));
+    }
+  }
+
+  // Helper to fetch and cache recipient profile
+  async function fetchAndCacheRecipientProfile(userId: string) {
+    if (!userId || recipientProfileCache[userId]) return;
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, full_name, avatar_url, username')
+      .eq('id', userId)
+      .single();
+    if (data) {
+      setRecipientProfileCache(prev => ({ ...prev, [userId]: { full_name: data.full_name, avatar_url: data.avatar_url, username: data.username } }));
+    }
+  }
+
+  // Whenever invoices change, ensure all sender profiles for received invoices are cached
+  useEffect(() => {
+    const senderIds = new Set<string>();
+    invoices.forEach(inv => {
+      if (inv.receiver_id === user?.id && inv.sender_id) senderIds.add(inv.sender_id);
+    });
+    senderIds.forEach(id => {
+      if (id && !senderProfileCache[id]) fetchAndCacheSenderProfile(id);
+    });
+    // eslint-disable-next-line
+  }, [invoices, user]);
+
+  // Whenever invoices change, ensure all recipient profiles for sent invoices are cached
+  useEffect(() => {
+    const recipientIds = new Set<string>();
+    invoices.forEach(inv => {
+      if (inv.sender_id === user?.id && inv.receiver_id) recipientIds.add(inv.receiver_id);
+    });
+    recipientIds.forEach(id => {
+      if (id && !recipientProfileCache[id]) fetchAndCacheRecipientProfile(id);
+    });
+    // eslint-disable-next-line
+  }, [invoices, user]);
+
+  // Helper to get sender profile for received invoices
+  function getSenderProfile(invoice: Invoice) {
+    if (invoice.sender_id && senderProfileCache[invoice.sender_id]) {
+      return senderProfileCache[invoice.sender_id];
+    }
+    return null;
+  }
+
+  // Helper to get recipient profile for sent invoices
+  function getRecipientProfile(invoice: Invoice) {
+    if (invoice.receiver_id && recipientProfileCache[invoice.receiver_id]) {
+      return recipientProfileCache[invoice.receiver_id];
+    }
+    return null;
+  }
+
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    const invoiceIdParam = searchParams.get('invoiceId');
+    if (tabParam === 'received') setActiveTab('received');
+    if (invoiceIdParam) {
+      // Optionally scroll to or highlight the invoice
+      setTimeout(() => {
+        const el = document.getElementById(`invoice-row-${invoiceIdParam}`);
+        if (el) {
+          el.classList.add(
+            'ring-2', 'ring-green-500', 'bg-green-50',
+            'dark:ring-green-400', 'dark:bg-green-900/40'
+          );
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          setTimeout(() => {
+            el.classList.remove(
+              'ring-2', 'ring-green-500', 'bg-green-50',
+              'dark:ring-green-400', 'dark:bg-green-900/40'
+            );
+          }, 2000);
+        }
+      }, 500);
+    }
+    // eslint-disable-next-line
+  }, []);
 
   if (loading) {
     return <div className="flex items-center justify-center h-full">Loading...</div>;
@@ -1101,7 +1212,7 @@ export default function MyInvoicesPage() {
 
       <div className="text-muted-foreground text-xs sm:text-sm">View, manage and track all your invoices</div>
 
-      <Tabs defaultValue="sent" onValueChange={setActiveTab} className="space-y-4 w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="sent" className="text-xs sm:text-sm">My Invoices ({sentInvoicesCount})</TabsTrigger>
           <TabsTrigger value="received" className="text-xs sm:text-sm">Received Invoices ({receivedInvoicesCount})</TabsTrigger>
@@ -1179,8 +1290,26 @@ export default function MyInvoicesPage() {
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-sm">
                       <div>
-                        <span className="text-muted-foreground">From:</span>
-                        <p className="font-medium">{getClientName(invoice)}</p>
+                        <span className="text-muted-foreground">To:</span>
+                        {(() => {
+                          if (invoice.external_client_id) {
+                            // External client
+                            const client = externalClients.find(c => c.id === invoice.external_client_id);
+                            return <span>{client?.name || 'External Client'}</span>;
+                          }
+                          const recipient = getRecipientProfile(invoice);
+                          return recipient ? (
+                            <div className="flex items-center gap-2">
+                              <Avatar className="h-8 w-8">
+                                <AvatarImage src={recipient.avatar_url || undefined} />
+                                <AvatarFallback>{(recipient.full_name || recipient.username || '?')[0]}</AvatarFallback>
+                              </Avatar>
+                              <span>{recipient.full_name || recipient.username}</span>
+                            </div>
+                          ) : (
+                            getClientName(invoice)
+                          );
+                        })()}
                       </div>
                       <div>
                         <span className="text-muted-foreground">Amount:</span>
@@ -1216,7 +1345,7 @@ export default function MyInvoicesPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-[180px]">INVOICE NUMBER</TableHead>
-                    <TableHead>FROM</TableHead>
+                    <TableHead>TO</TableHead>
                     <TableHead>ISSUE DATE</TableHead>
                     <TableHead>DUE DATE</TableHead>
                     <TableHead>AMOUNT</TableHead>
@@ -1232,7 +1361,25 @@ export default function MyInvoicesPage() {
                         {invoice.invoice_number}
                       </TableCell>
                       <TableCell>
-                        {getClientName(invoice)}
+                        {(() => {
+                          if (invoice.external_client_id) {
+                            // External client
+                            const client = externalClients.find(c => c.id === invoice.external_client_id);
+                            return <span>{client?.name || 'External Client'}</span>;
+                          }
+                          const recipient = getRecipientProfile(invoice);
+                          return recipient ? (
+                            <div className="flex items-center gap-2">
+                              <Avatar className="h-8 w-8">
+                                <AvatarImage src={recipient.avatar_url || undefined} />
+                                <AvatarFallback>{(recipient.full_name || recipient.username || '?')[0]}</AvatarFallback>
+                              </Avatar>
+                              <span>{recipient.full_name || recipient.username}</span>
+                            </div>
+                          ) : (
+                            getClientName(invoice)
+                          );
+                        })()}
                       </TableCell>
                       <TableCell>{format(new Date(invoice.issue_date), 'MMM dd, yyyy')}</TableCell>
                       <TableCell>{format(new Date(invoice.due_date), 'MMM dd, yyyy')}</TableCell>
@@ -1431,7 +1578,20 @@ export default function MyInvoicesPage() {
                     <div className="grid grid-cols-2 gap-2 text-sm">
                       <div>
                         <span className="text-muted-foreground">From:</span>
-                        <p className="font-medium">{getClientName(invoice)}</p>
+                        {(() => {
+                          const sender = getSenderProfile(invoice);
+                          return sender ? (
+                            <div className="flex items-center gap-2 mt-1">
+                              <Avatar className="h-8 w-8">
+                                <AvatarImage src={sender.avatar_url || undefined} />
+                                <AvatarFallback>{(sender.full_name || sender.username || '?')[0]}</AvatarFallback>
+                              </Avatar>
+                              <span className="font-medium">{sender.full_name || sender.username}</span>
+                            </div>
+                          ) : (
+                            <p className="font-medium">{getClientName(invoice)}</p>
+                          );
+                        })()}
                       </div>
                       <div>
                         <span className="text-muted-foreground">Amount:</span>
@@ -1477,13 +1637,26 @@ export default function MyInvoicesPage() {
                 </TableHeader>
                 <TableBody>
                   {currentInvoices.map((invoice) => (
-                    <TableRow key={invoice.id}>
+                    <TableRow key={invoice.id} id={`invoice-row-${invoice.id}`}>
                       <TableCell className="font-medium flex items-center gap-2">
                         <FileText className="h-4 w-4 text-muted-foreground" />
                         {invoice.invoice_number}
                       </TableCell>
                       <TableCell>
-                        {getClientName(invoice)}
+                        {(() => {
+                          const sender = getSenderProfile(invoice);
+                          return sender ? (
+                            <div className="flex items-center gap-2">
+                              <Avatar className="h-8 w-8">
+                                <AvatarImage src={sender.avatar_url || undefined} />
+                                <AvatarFallback>{(sender.full_name || sender.username || '?')[0]}</AvatarFallback>
+                              </Avatar>
+                              <span>{sender.full_name || sender.username}</span>
+                            </div>
+                          ) : (
+                            getClientName(invoice)
+                          );
+                        })()}
                       </TableCell>
                       <TableCell>{format(new Date(invoice.issue_date), 'MMM dd, yyyy')}</TableCell>
                       <TableCell>{format(new Date(invoice.due_date), 'MMM dd, yyyy')}</TableCell>

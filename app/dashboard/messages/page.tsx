@@ -54,6 +54,15 @@ function dedupeMessages(messages: Message[]): Message[] {
     return Array.from(map.values());
 }
 
+// Add a helper to parse invoice messages
+function parseInvoiceMessage(content: string) {
+    try {
+        const obj = JSON.parse(content);
+        if (obj && obj.type === 'invoice') return obj;
+    } catch {}
+    return null;
+}
+
 export default function MessagesPage() {
     const { user } = useUser();
     const currentUserId = user?.id;
@@ -844,7 +853,48 @@ export default function MessagesPage() {
                                             const isSent = message.sender_id === currentUserId;
                                             const senderName = message.sender?.full_name || message.sender?.username || 'Unknown User';
                                             const senderAvatar = message.sender?.avatar_url || undefined;
-                                            
+                                            const invoiceMsg = parseInvoiceMessage(message.content);
+                                            if (invoiceMsg) {
+                                                // Render invoice chat bubble
+                                                return (
+                                                    <div key={message.id} className={`flex ${isSent ? 'justify-end' : 'justify-start'} w-full`}>
+                                                        <div className="flex items-end gap-2 max-w-[80%]">
+                                                            {!isSent && (
+                                                                <Avatar>
+                                                                    <AvatarImage src={senderAvatar} alt={senderName} />
+                                                                    <AvatarFallback>{senderName.charAt(0)}</AvatarFallback>
+                                                                </Avatar>
+                                                            )}
+                                                            <div className="rounded-lg border-2 border-green-500 bg-green-50 dark:bg-green-900/20 p-4 shadow-md flex flex-col w-full">
+                                                                <div className="flex items-center gap-2 mb-2">
+                                                                    <Receipt className="h-5 w-5 text-green-600" />
+                                                                    <span className="font-semibold text-green-700 dark:text-green-300">Invoice Sent</span>
+                                                                </div>
+                                                                <div className="text-sm mb-1">
+                                                                    <span className="font-medium">Invoice #{invoiceMsg.invoice_number}</span>
+                                                                </div>
+                                                                <div className="text-sm mb-1">
+                                                                    <span className="font-medium">Amount:</span> €{invoiceMsg.amount?.toFixed(2)} {invoiceMsg.currency}
+                                                                </div>
+                                                                <div className="text-sm mb-1">
+                                                                    <span className="font-medium">Due Date:</span> {invoiceMsg.due_date ? new Date(invoiceMsg.due_date).toLocaleDateString() : '-'}
+                                                                </div>
+                                                                {invoiceMsg.description && (
+                                                                    <div className="text-xs text-muted-foreground mb-2">{invoiceMsg.description}</div>
+                                                                )}
+                                                                <a
+                                                                    href={`/dashboard/my-invoices?tab=received&invoiceId=${invoiceMsg.invoice_id}`}
+                                                                    className="inline-block mt-2 px-4 py-2 rounded bg-green-600 text-white text-xs font-semibold hover:bg-green-700 transition"
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                >
+                                                                    View Invoice
+                                                                </a>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            }
                                             return (
                                                 <div
                                                     key={message.id}
