@@ -699,12 +699,12 @@ export default function MessagesPage() {
     }
 
     return (
-        <div className="flex flex-col h-screen bg-background">
-            <div className="flex flex-1 min-h-0 gap-3 p-3">
+        <div className="flex flex-col h-[90vh] bg-background">
+            <div className="flex flex-1 min-h-0 gap-4 p-4">
                 <Card className="w-1/3 flex flex-col flex-1 min-h-0 h-full">
-                    <CardHeader className="flex-none pb-2">
+                    <CardHeader className="flex-none">
                         <div className="flex justify-between items-center">
-                            <div className="relative w-full flex-1 mr-3">
+                            <div className="relative w-full flex-1 mr-4">
                                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                                 <Input 
                                     placeholder="Search your messages..." 
@@ -720,7 +720,7 @@ export default function MessagesPage() {
                                 New Message
                             </Button>
                         </div>
-                        <div className="flex justify-between items-center mt-3">
+                        <div className="flex justify-between items-center mt-4">
                             <h3 className="font-semibold">All Messages</h3>
                             <span className="text-sm text-primary">{totalUnreadMessages} unread messages</span>
                         </div>
@@ -749,7 +749,7 @@ export default function MessagesPage() {
                         </div>
                     </CardHeader>
                     <CardContent className="flex-1 min-h-0 p-0 overflow-hidden">
-                        <ScrollArea className="h-full pr-3">
+                        <ScrollArea className="h-full pr-4">
                             {isLoadingAllMessages ? (
                                 <div className="flex items-center justify-center h-32">
                                     <span className="text-muted-foreground">Loading conversations...</span>
@@ -761,7 +761,7 @@ export default function MessagesPage() {
                             ) : filteredConversations.map((conversation) => (
                                 <div
                                     key={conversation.id}
-                                    className={`flex items-center gap-3 p-3 hover:bg-muted cursor-pointer ${
+                                    className={`flex items-center gap-4 p-4 hover:bg-muted cursor-pointer ${
                                         conversation.id === selectedConversation ? 'bg-muted' : ''
                                     }`}
                                     onClick={() => setSelectedConversation(conversation.id)}
@@ -810,9 +810,9 @@ export default function MessagesPage() {
                 <Card className="flex-1 flex flex-col min-h-0 h-full">
                     {selectedConversation && activeConversation ? (
                         <>
-                            <CardHeader className="flex-none pb-2">
+                            <CardHeader className="flex-none">
                                 <div className="flex items-center justify-between space-x-4">
-                                    <div className="flex items-center space-x-3">
+                                    <div className="flex items-center space-x-4">
                                         <Avatar>
                                             <AvatarImage src={activeConversation.avatar || undefined} alt={activeConversation.name} />
                                             <AvatarFallback>{(activeConversation.name || '?')[0]}</AvatarFallback>
@@ -846,9 +846,9 @@ export default function MessagesPage() {
                                     </div>
                                 </div>
                             </CardHeader>
-                            <CardContent className="flex-1 min-h-0 p-0 overflow-hidden">
-                                <ScrollArea className="h-full px-3">
-                                    <div className="flex flex-col gap-3 pr-3 py-3">
+                            <CardContent className="flex-1 min-h-0 p-4 overflow-hidden">
+                                <ScrollArea className="h-full">
+                                    <div className="flex flex-col gap-4 pr-4">
                                         {filteredMessages.length === 0 ? (
                                             <div className="text-center text-muted-foreground py-8">
                                                 No messages yet. Say hello!
@@ -869,45 +869,31 @@ export default function MessagesPage() {
                                                                     <AvatarFallback>{senderName.charAt(0)}</AvatarFallback>
                                                                 </Avatar>
                                                             )}
-                                                            <div className="flex flex-col items-end">
-                                                                <div className="rounded-lg border-2 border-green-500 bg-green-50 dark:bg-green-900/20 p-4 shadow-md flex flex-col w-full">
-                                                                    <div className="flex items-center gap-2 mb-2">
-                                                                        <Receipt className="h-5 w-5 text-green-600" />
-                                                                        <span className="font-semibold text-green-700 dark:text-green-300">Invoice Sent</span>
-                                                                    </div>
-                                                                    <div className="text-sm mb-1">
-                                                                        <span className="font-medium">Invoice #{invoiceMsg.invoice_number}</span>
-                                                                    </div>
-                                                                    <div className="text-sm mb-1">
-                                                                        <span className="font-medium">Amount:</span> €{invoiceMsg.amount?.toFixed(2)} {invoiceMsg.currency}
-                                                                    </div>
-                                                                    <div className="text-sm mb-1">
-                                                                        <span className="font-medium">Due Date:</span> {invoiceMsg.due_date ? new Date(invoiceMsg.due_date).toLocaleDateString() : '-'}
-                                                                    </div>
-                                                                    {invoiceMsg.description && (
-                                                                        <div className="text-xs text-muted-foreground mb-2">{invoiceMsg.description}</div>
-                                                                    )}
-                                                                    <a
-                                                                        href={`/dashboard/my-invoices?tab=${isSent ? 'sent' : 'received'}&invoiceId=${invoiceMsg.invoice_id}`}
-                                                                        className="inline-block mt-2 px-4 py-2 rounded bg-green-600 text-white text-xs font-semibold hover:bg-green-700 transition"
-                                                                        target="_blank"
-                                                                        rel="noopener noreferrer"
-                                                                    >
-                                                                        View Invoice
-                                                                    </a>
+                                                            <div className="rounded-lg border-2 border-green-500 bg-green-50 dark:bg-green-900/20 p-4 shadow-md flex flex-col w-full">
+                                                                <div className="flex items-center gap-2 mb-2">
+                                                                    <Receipt className="h-5 w-5 text-green-600" />
+                                                                    <span className="font-semibold text-green-700 dark:text-green-300">Invoice Sent</span>
                                                                 </div>
-                                                                <div className={`flex items-center gap-1 mt-1 px-1 ${
-                                                                    isSent ? 'justify-end' : 'justify-start'
-                                                                }`}>
-                                                                    <span className="text-xs text-muted-foreground font-medium">
-                                                                        {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
-                                                                    </span>
-                                                                    {isSent && (
-                                                                        <div className="flex items-center">
-                                                                            <div className="w-1 h-1 rounded-full bg-muted-foreground/40"></div>
-                                                                        </div>
-                                                                    )}
+                                                                <div className="text-sm mb-1">
+                                                                    <span className="font-medium">Invoice #{invoiceMsg.invoice_number}</span>
                                                                 </div>
+                                                                <div className="text-sm mb-1">
+                                                                    <span className="font-medium">Amount:</span> €{invoiceMsg.amount?.toFixed(2)} {invoiceMsg.currency}
+                                                                </div>
+                                                                <div className="text-sm mb-1">
+                                                                    <span className="font-medium">Due Date:</span> {invoiceMsg.due_date ? new Date(invoiceMsg.due_date).toLocaleDateString() : '-'}
+                                                                </div>
+                                                                {invoiceMsg.description && (
+                                                                    <div className="text-xs text-muted-foreground mb-2">{invoiceMsg.description}</div>
+                                                                )}
+                                                                <a
+                                                                    href={`/dashboard/my-invoices?tab=${isSent ? 'sent' : 'received'}&invoiceId=${invoiceMsg.invoice_id}`}
+                                                                    className="inline-block mt-2 px-4 py-2 rounded bg-green-600 text-white text-xs font-semibold hover:bg-green-700 transition"
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                >
+                                                                    View Invoice
+                                                                </a>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -924,35 +910,24 @@ export default function MessagesPage() {
                                                             <AvatarFallback>{senderName.charAt(0)}</AvatarFallback>
                                                         </Avatar>
                                                     )}
-                                                    <div className="flex flex-col items-end">
-                                                        <div
-                                                            className={`max-w-[70%] rounded-lg p-3 break-all whitespace-pre-line overflow-x-auto ${
-                                                                isSent ? 'bg-blue-500 text-white' : 'bg-muted'
-                                                            }`}
-                                                        >
-                                                            <p className="text-sm">{message.content}</p>
-                                                            {message.attachments && message.attachments.length > 0 && (
-                                                                <div className="mt-2 space-y-2">
-                                                                    {message.attachments.map((attachment) => (
-                                                                        <div key={attachment.id} className="relative">
-                                                                            <FilePreview attachment={attachment} onAttachmentLoad={scrollToBottom} />
-                                                                        </div>
-                                                                    ))}
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                        <div className={`flex items-center gap-1 mt-1 px-1 ${
-                                                            isSent ? 'justify-end' : 'justify-start'
-                                                        }`}>
-                                                            <span className="text-xs text-muted-foreground font-medium">
-                                                                {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
-                                                            </span>
-                                                            {isSent && (
-                                                                <div className="flex items-center">
-                                                                    <div className="w-1 h-1 rounded-full bg-muted-foreground/40"></div>
-                                                                </div>
-                                                            )}
-                                                        </div>
+                                                    <div
+                                                        className={`max-w-[70%] rounded-lg p-3 break-all whitespace-pre-line overflow-x-auto ${
+                                                            isSent ? 'bg-blue-500 text-white' : 'bg-muted'
+                                                        }`}
+                                                    >
+                                                        <p className="text-sm">{message.content}</p>
+                                                        {message.attachments && message.attachments.length > 0 && (
+                                                            <div className="mt-2 space-y-2">
+                                                                {message.attachments.map((attachment) => (
+                                                                    <div key={attachment.id} className="relative">
+                                                                        <FilePreview attachment={attachment} onAttachmentLoad={scrollToBottom} />
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                        <p className="text-xs text-gray-300 dark:text-gray-400 font-medium text-right mt-1">
+                                                            {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
+                                                        </p>
                                                     </div>
                                                     {isSent && (
                                                         <Avatar>
@@ -967,7 +942,7 @@ export default function MessagesPage() {
                                     </div>
                                 </ScrollArea>
                             </CardContent>
-                            <div className="p-3 border-t flex-none">
+                            <div className="p-4 border-t flex-none">
                                 {selectedFiles.length > 0 && (
                                     <div className="flex flex-wrap gap-2 mb-2">
                                         {selectedFiles.map((file, index) => (
