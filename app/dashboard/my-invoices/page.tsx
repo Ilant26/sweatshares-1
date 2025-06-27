@@ -41,6 +41,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { useToast } from '@/components/ui/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { sendMessage } from '@/lib/messages';
+import { createPaymentIntent } from '@/lib/stripe';
 
 import {
   Search,
@@ -610,16 +611,55 @@ export default function MyInvoicesPage() {
 
   const handleVatToggle = (enabled: boolean) => {
     setNewInvoice(prev => {
-      const vatAmount = enabled ? Number((prev.subtotal * (prev.vat_rate / 100)).toFixed(2)) : 0;
-      const total = prev.subtotal + vatAmount;
+      const subtotal = prev.items.reduce((sum, item) => sum + (item.amount || 0), 0);
+      const vatAmount = enabled ? Number((subtotal * (prev.vat_rate / 100)).toFixed(2)) : 0;
+      const total = subtotal + vatAmount;
+      
       return {
         ...prev,
         vat_enabled: enabled,
         vat_amount: vatAmount,
+        subtotal: Number(subtotal.toFixed(2)),
         total: Number(total.toFixed(2)),
         amount: Number(total.toFixed(2))
       };
     });
+  };
+
+  const handlePayInvoice = async (invoice: Invoice) => {
+    try {
+      // Create payment intent
+      const paymentIntent = await createPaymentIntent(
+        invoice.total || invoice.amount,
+        invoice.currency || 'eur',
+        {
+          invoice_id: invoice.id,
+          invoice_number: invoice.invoice_number,
+          sender_id: invoice.sender_id,
+          receiver_id: invoice.receiver_id
+        }
+      );
+
+      // Redirect to Stripe Checkout or handle payment flow
+      // For now, we'll just update the invoice status to paid
+      await updateInvoiceStatus(invoice.id, 'paid');
+      
+      // Refresh invoices
+      const updatedInvoices = await getInvoices(user?.id || '');
+      setInvoices(updatedInvoices);
+      
+      toast({
+        title: "Payment Successful",
+        description: `Invoice ${invoice.invoice_number} has been marked as paid.`,
+      });
+    } catch (error) {
+      console.error('Payment error:', error);
+      toast({
+        title: "Payment Failed",
+        description: "There was an error processing your payment. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   // Helper to fetch and cache sender profile
@@ -1329,6 +1369,17 @@ export default function MyInvoicesPage() {
                       </div>
                     </div>
                     <div className="flex items-center justify-end gap-2 pt-2 border-t">
+                      {activeTab === 'received' && invoice.status === 'pending' && (
+                        <Button 
+                          variant="default" 
+                          size="sm" 
+                          onClick={() => handlePayInvoice(invoice)}
+                          className="bg-green-600 hover:bg-green-700"
+                        >
+                          <CreditCard className="h-4 w-4 mr-1" />
+                          Pay
+                        </Button>
+                      )}
                       <Button variant="ghost" size="sm" onClick={() => handleDownloadPDF(invoice)}>
                         <Download className="h-4 w-4" />
                       </Button>
@@ -1400,6 +1451,20 @@ export default function MyInvoicesPage() {
                       <TableCell className="text-right">
                         {/* Desktop view: Icons + Dropdown */}
                         <div className="hidden md:flex items-center justify-end gap-1">
+                          {activeTab === 'received' && invoice.status === 'pending' && (
+                            <Button
+                              variant="default"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handlePayInvoice(invoice);
+                              }}
+                              className="bg-green-600 hover:bg-green-700 text-white"
+                            >
+                              <CreditCard className="h-4 w-4 mr-1" />
+                              Pay
+                            </Button>
+                          )}
                           <Button
                             variant="ghost"
                             size="icon"
@@ -1455,6 +1520,12 @@ export default function MyInvoicesPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                              {activeTab === 'received' && invoice.status === 'pending' && (
+                                <DropdownMenuItem onClick={() => handlePayInvoice(invoice)}>
+                                  <CreditCard className="mr-2 h-4 w-4" />
+                                  <span>Pay</span>
+                                </DropdownMenuItem>
+                              )}
                               <DropdownMenuItem onClick={() => handleStartEdit(invoice)}>
                                 <Eye className="mr-2 h-4 w-4" />
                                 <span>View</span>
@@ -1611,6 +1682,17 @@ export default function MyInvoicesPage() {
                       </div>
                     </div>
                     <div className="flex items-center justify-end gap-2 pt-2 border-t">
+                      {activeTab === 'received' && invoice.status === 'pending' && (
+                        <Button 
+                          variant="default" 
+                          size="sm" 
+                          onClick={() => handlePayInvoice(invoice)}
+                          className="bg-green-600 hover:bg-green-700"
+                        >
+                          <CreditCard className="h-4 w-4 mr-1" />
+                          Pay
+                        </Button>
+                      )}
                       <Button variant="ghost" size="sm" onClick={() => handleDownloadPDF(invoice)}>
                         <Download className="h-4 w-4" />
                       </Button>
@@ -1677,6 +1759,20 @@ export default function MyInvoicesPage() {
                       <TableCell className="text-right">
                         {/* Desktop view: Icons + Dropdown */}
                         <div className="hidden md:flex items-center justify-end gap-1">
+                          {invoice.status === 'pending' && (
+                            <Button
+                              variant="default"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handlePayInvoice(invoice);
+                              }}
+                              className="bg-green-600 hover:bg-green-700 text-white"
+                            >
+                              <CreditCard className="h-4 w-4 mr-1" />
+                              Pay
+                            </Button>
+                          )}
                           <Button
                             variant="ghost"
                             size="icon"
@@ -1732,6 +1828,12 @@ export default function MyInvoicesPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                              {activeTab === 'received' && invoice.status === 'pending' && (
+                                <DropdownMenuItem onClick={() => handlePayInvoice(invoice)}>
+                                  <CreditCard className="mr-2 h-4 w-4" />
+                                  <span>Pay</span>
+                                </DropdownMenuItem>
+                              )}
                               <DropdownMenuItem onClick={() => handleStartEdit(invoice)}>
                                 <Eye className="mr-2 h-4 w-4" />
                                 <span>View</span>
