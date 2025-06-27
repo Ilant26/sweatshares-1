@@ -778,7 +778,11 @@ export default function MessagesPage() {
                                     <div className="flex-1">
                                         <p className="font-medium">{conversation.name}</p>
                                         <p className="text-sm text-muted-foreground truncate max-w-[120px]">
-                                            {conversation.lastMessage}
+                                            {(() => {
+                                                const invoice = parseInvoiceMessage(conversation.lastMessage);
+                                                if (invoice) return 'Invoice Sent';
+                                                return conversation.lastMessage;
+                                            })()}
                                         </p>
                                     </div>
                                     <div className="flex flex-col items-end">
