@@ -28,6 +28,7 @@ export interface Invoice {
   vat_amount: number;
   subtotal: number;
   total: number;
+  payment_method?: 'standard' | 'payment_link' | 'escrow';
   created_at: string;
   updated_at: string;
   external_client?: {
@@ -40,9 +41,16 @@ export interface Invoice {
 
 export async function createInvoice(invoice: Omit<Invoice, 'id' | 'created_at' | 'updated_at'>) {
   const supabase = createClientComponentClient<Database>();
+  
+  // Prepare the invoice data for insertion
+  const invoiceData = {
+    ...invoice,
+    payment_method: invoice.payment_method || 'standard' // Default to standard if not specified
+  };
+  
   const { data, error } = await supabase
     .from('invoices')
-    .insert(invoice)
+    .insert(invoiceData)
     .select()
     .single();
 
@@ -67,7 +75,8 @@ function ensureVatFields(invoice: any): Invoice {
     vat_enabled: vatEnabled,
     vat_rate: vatRate,
     vat_amount: vatAmount,
-    total: Number(total.toFixed(2))
+    total: Number(total.toFixed(2)),
+    payment_method: invoice.payment_method || 'standard'
   };
 }
 

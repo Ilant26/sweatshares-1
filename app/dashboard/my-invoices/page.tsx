@@ -37,6 +37,8 @@ import { useUser } from '@/lib/auth';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { Database } from '@/lib/database.types';
 import { ExternalClientDialog } from '@/components/external-client-dialog';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { useToast } from '@/components/ui/use-toast';
 
 import {
   Search,
@@ -62,11 +64,15 @@ import {
   Pencil,
   User,
   Building2,
+  CreditCard,
+  Shield,
 } from 'lucide-react';
 
 export default function MyInvoicesPage() {
   const { user } = useUser();
   const supabase = createClientComponentClient<Database>();
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const invoicesPerPage = 5;
@@ -94,10 +100,14 @@ export default function MyInvoicesPage() {
     vat_rate: 20,
     vat_amount: 0,
     subtotal: 0,
-    total: 0
+    total: 0,
+    paymentMethod: 'standard' as 'standard' | 'payment_link' | 'escrow'
   });
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [isLoadingUserProfile, setIsLoadingUserProfile] = useState(false);
+  const [messageUserProfile, setMessageUserProfile] = useState<{ id: string; name: string } | null>(null);
+  const { toast } = useToast();
 
   const financialSummary = {
     totalSent: '15,800.00',
@@ -219,6 +229,101 @@ export default function MyInvoicesPage() {
     fetchData();
   }, [user]);
 
+  // Handle URL parameters for creating invoice from messages
+  useEffect(() => {
+    const createParam = searchParams.get('create');
+    const userIdParam = searchParams.get('userId');
+    
+    if (createParam === 'true' && userIdParam) {
+      setIsLoadingUserProfile(true);
+      setClientType('network'); // Default to network contact
+      
+      // Fetch the user's profile and add to network contacts if not already there
+      const fetchUserProfile = async () => {
+        try {
+          const { data: userProfile, error } = await supabase
+            .from('profiles')
+            .select('id, full_name, username')
+            .eq('id', userIdParam)
+            .single();
+          
+          if (userProfile && !error) {
+            const userName = userProfile.full_name || userProfile.username;
+            
+            // Store the user profile for display
+            setMessageUserProfile({
+              id: userProfile.id,
+              name: userName
+            });
+            
+            // Check if user is already in network contacts
+            const existingContact = networkContacts.find(contact => contact.id === userIdParam);
+            
+            if (!existingContact) {
+              // Add the user to network contacts and wait for state update
+              setNetworkContacts(prev => {
+                const updatedContacts = [...prev, {
+                  id: userProfile.id,
+                  name: userName
+                }];
+                
+                // Set the client after contacts are updated
+                setTimeout(() => {
+                  setNewInvoice(prev => ({ ...prev, client: userIdParam }));
+                  setNewInvoiceDialogOpen(true);
+                  setIsLoadingUserProfile(false);
+                  
+                  // Show success message
+                  toast({
+                    title: "User loaded",
+                    description: `Invoice will be created for ${userName}`,
+                  });
+                }, 50);
+                
+                return updatedContacts;
+              });
+            } else {
+              // User already exists in contacts, set client immediately
+              setNewInvoice(prev => ({ ...prev, client: userIdParam }));
+              setNewInvoiceDialogOpen(true);
+              setIsLoadingUserProfile(false);
+              
+              // Show success message
+              toast({
+                title: "User loaded",
+                description: `Invoice will be created for ${userName}`,
+              });
+            }
+          } else {
+            console.error('Error fetching user profile:', error);
+            setIsLoadingUserProfile(false);
+            toast({
+              title: "Error",
+              description: "Failed to load user information. Please try again.",
+              variant: "destructive",
+            });
+          }
+        } catch (error) {
+          console.error('Error fetching user profile:', error);
+          setIsLoadingUserProfile(false);
+          toast({
+            title: "Error",
+            description: "Failed to load user information. Please try again.",
+            variant: "destructive",
+          });
+        }
+      };
+      
+      fetchUserProfile();
+      
+      // Clear the URL parameters after processing
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete('create');
+      newUrl.searchParams.delete('userId');
+      router.replace(newUrl.pathname + newUrl.search, { scroll: false });
+    }
+  }, [searchParams, router, supabase, networkContacts, toast]);
+
   const handleCreateInvoice = async () => {
     if (!user || !invoiceDate || !dueDate) return;
 
@@ -239,15 +344,33 @@ export default function MyInvoicesPage() {
         vat_rate: newInvoice.vat_rate,
         vat_amount: newInvoice.vat_amount,
         subtotal: newInvoice.subtotal,
-        total: newInvoice.total
+        total: newInvoice.total,
+        payment_method: newInvoice.paymentMethod
       };
 
       const createdInvoice = await createInvoice(invoiceData);
       setInvoices(prev => [createdInvoice, ...prev]);
       setNewInvoiceDialogOpen(false);
       resetNewInvoiceForm();
+      
+      // Show success message based on payment method
+      const successMessages = {
+        standard: 'Invoice created successfully!',
+        payment_link: 'Invoice with payment link created successfully!',
+        escrow: 'Escrow invoice created successfully!'
+      };
+      
+      toast({
+        title: "Success",
+        description: successMessages[newInvoice.paymentMethod],
+      });
     } catch (error) {
       console.error('Error creating invoice:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create invoice. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -266,10 +389,12 @@ export default function MyInvoicesPage() {
       vat_rate: 20,
       vat_amount: 0,
       subtotal: 0,
-      total: 0
+      total: 0,
+      paymentMethod: 'standard'
     });
     setInvoiceDate(undefined);
     setDueDate(undefined);
+    setMessageUserProfile(null); // Clear message user profile
   };
 
   const handleAddLineItem = () => {
@@ -451,7 +576,12 @@ export default function MyInvoicesPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-2">
         <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Invoice Management</h2>
         <div className="flex items-center gap-2">
-          <Dialog open={newInvoiceDialogOpen} onOpenChange={setNewInvoiceDialogOpen}>
+          <Dialog open={newInvoiceDialogOpen} onOpenChange={(open) => {
+            setNewInvoiceDialogOpen(open);
+            if (!open) {
+              setMessageUserProfile(null); // Clear message user profile when dialog closes
+            }
+          }}>
             <DialogTrigger asChild>
               <Button className="w-full sm:w-auto">
                 <Plus className="mr-2 h-4 w-4" /> New Invoice
@@ -463,6 +593,14 @@ export default function MyInvoicesPage() {
                 <DialogDescription className="text-sm sm:text-base">
                   Fill in the details below to create a new invoice for your client.
                 </DialogDescription>
+                {isLoadingUserProfile && (
+                  <div className="flex items-center gap-2 p-2 bg-blue-50 dark:bg-blue-950/20 rounded-md border border-blue-200 dark:border-blue-800">
+                    <User className="h-4 w-4 text-blue-600" />
+                    <span className="text-sm text-blue-700 dark:text-blue-300">
+                      Creating invoice from conversation...
+                    </span>
+                  </div>
+                )}
               </DialogHeader>
               <div className="grid gap-4 sm:gap-6 py-4">
                 {/* Client Selection Section */}
@@ -500,21 +638,43 @@ export default function MyInvoicesPage() {
                         <Label htmlFor="client" className="text-xs sm:text-sm font-medium">Select Client</Label>
                         {clientType === 'network' ? (
                           <div className="w-full">
-                            <Select
-                              value={newInvoice.client}
-                              onValueChange={(value) => setNewInvoice(prev => ({ ...prev, client: value }))}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select a network contact" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {networkContacts.map((contact) => (
-                                  <SelectItem key={contact.id} value={contact.id}>
-                                    {contact.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                            {isLoadingUserProfile ? (
+                              <div className="flex items-center gap-2 p-3 border rounded-md bg-muted/50">
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                                <span className="text-sm text-muted-foreground">Loading user information...</span>
+                              </div>
+                            ) : (
+                              <Select
+                                value={newInvoice.client}
+                                onValueChange={(value) => setNewInvoice(prev => ({ ...prev, client: value }))}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select a network contact">
+                                    {newInvoice.client && (() => {
+                                      // First try to find in network contacts
+                                      const selectedContact = networkContacts.find(contact => contact.id === newInvoice.client);
+                                      if (selectedContact) {
+                                        return selectedContact.name;
+                                      }
+                                      
+                                      // Fallback to message user profile
+                                      if (messageUserProfile && messageUserProfile.id === newInvoice.client) {
+                                        return messageUserProfile.name;
+                                      }
+                                      
+                                      return 'Loading...';
+                                    })()}
+                                  </SelectValue>
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {networkContacts.map((contact) => (
+                                    <SelectItem key={contact.id} value={contact.id}>
+                                      {contact.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            )}
                           </div>
                         ) : (
                           <div className="flex flex-col sm:flex-row gap-2">
@@ -800,12 +960,103 @@ export default function MyInvoicesPage() {
                     </div>
                   </div>
                 </Card>
+
+                {/* Payment Options Section */}
+                <Card className="p-3 sm:p-4">
+                  <div className="space-y-3 sm:space-y-4">
+                    <h3 className="text-base sm:text-lg font-semibold">Payment Options</h3>
+                    <div className="space-y-3">
+                      <div className={`flex items-center space-x-2 p-3 rounded-lg border-2 transition-colors ${
+                        newInvoice.paymentMethod === 'standard' 
+                          ? 'border-primary bg-primary/5' 
+                          : 'border-muted hover:border-muted-foreground/50'
+                      }`}>
+                        <input
+                          type="radio"
+                          id="payment-standard"
+                          name="paymentMethod"
+                          value="standard"
+                          checked={newInvoice.paymentMethod === 'standard'}
+                          onChange={(e) => setNewInvoice(prev => ({ ...prev, paymentMethod: e.target.value as 'standard' | 'payment_link' | 'escrow' }))}
+                          className="h-4 w-4 text-primary border-gray-300 focus:ring-primary"
+                        />
+                        <Label htmlFor="payment-standard" className="text-sm font-medium cursor-pointer flex-1">
+                          <div className="flex items-center gap-2">
+                            <FileText className="h-4 w-4 text-muted-foreground" />
+                            Standard Invoice
+                          </div>
+                          <p className="text-xs text-muted-foreground font-normal mt-1">
+                            Send a traditional invoice for manual payment processing
+                          </p>
+                        </Label>
+                      </div>
+                      
+                      <div className={`flex items-center space-x-2 p-3 rounded-lg border-2 transition-colors ${
+                        newInvoice.paymentMethod === 'payment_link' 
+                          ? 'border-primary bg-primary/5' 
+                          : 'border-muted hover:border-muted-foreground/50'
+                      }`}>
+                        <input
+                          type="radio"
+                          id="payment-link"
+                          name="paymentMethod"
+                          value="payment_link"
+                          checked={newInvoice.paymentMethod === 'payment_link'}
+                          onChange={(e) => setNewInvoice(prev => ({ ...prev, paymentMethod: e.target.value as 'standard' | 'payment_link' | 'escrow' }))}
+                          className="h-4 w-4 text-primary border-gray-300 focus:ring-primary"
+                        />
+                        <Label htmlFor="payment-link" className="text-sm font-medium cursor-pointer flex-1">
+                          <div className="flex items-center gap-2">
+                            <CreditCard className="h-4 w-4 text-muted-foreground" />
+                            Payment Link
+                          </div>
+                          <p className="text-xs text-muted-foreground font-normal mt-1">
+                            Generate a secure payment link for instant online payment
+                          </p>
+                        </Label>
+                      </div>
+                      
+                      <div className={`flex items-center space-x-2 p-3 rounded-lg border-2 transition-colors ${
+                        newInvoice.paymentMethod === 'escrow' 
+                          ? 'border-primary bg-primary/5' 
+                          : 'border-muted hover:border-muted-foreground/50'
+                      }`}>
+                        <input
+                          type="radio"
+                          id="payment-escrow"
+                          name="paymentMethod"
+                          value="escrow"
+                          checked={newInvoice.paymentMethod === 'escrow'}
+                          onChange={(e) => setNewInvoice(prev => ({ ...prev, paymentMethod: e.target.value as 'standard' | 'payment_link' | 'escrow' }))}
+                          className="h-4 w-4 text-primary border-gray-300 focus:ring-primary"
+                        />
+                        <Label htmlFor="payment-escrow" className="text-sm font-medium cursor-pointer flex-1">
+                          <div className="flex items-center gap-2">
+                            <Shield className="h-4 w-4 text-muted-foreground" />
+                            Escrow Payment
+                          </div>
+                          <p className="text-xs text-muted-foreground font-normal mt-1">
+                            Secure payment held in escrow until work is completed and approved
+                          </p>
+                        </Label>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
               </div>
               <DialogFooter className="gap-2 sm:gap-0">
                 <Button variant="outline" onClick={() => setNewInvoiceDialogOpen(false)}>Cancel</Button>
                 <Button type="submit" onClick={handleCreateInvoice} className="gap-2">
-                  <FileText className="h-4 w-4" />
-                  Create Invoice
+                  {newInvoice.paymentMethod === 'payment_link' ? (
+                    <CreditCard className="h-4 w-4" />
+                  ) : newInvoice.paymentMethod === 'escrow' ? (
+                    <Shield className="h-4 w-4" />
+                  ) : (
+                    <FileText className="h-4 w-4" />
+                  )}
+                  {newInvoice.paymentMethod === 'payment_link' ? 'Create Payment Link' : 
+                   newInvoice.paymentMethod === 'escrow' ? 'Create Escrow Invoice' : 
+                   'Create Invoice'}
                 </Button>
               </DialogFooter>
             </DialogContent>

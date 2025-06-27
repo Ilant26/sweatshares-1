@@ -645,6 +645,12 @@ export default function MessagesPage() {
         );
     };
 
+    const handleSendInvoice = () => {
+        if (selectedConversation) {
+            router.push(`/dashboard/my-invoices?create=true&userId=${selectedConversation}`);
+        }
+    };
+
     if (isMobile) {
         return <MobileMessages />;
     }
@@ -904,7 +910,7 @@ export default function MessagesPage() {
                                             <DropdownMenuItem>
                                                 <CreditCard className="mr-2 h-4 w-4" /> Generate payment link
                                             </DropdownMenuItem>
-                                            <DropdownMenuItem>
+                                            <DropdownMenuItem onClick={handleSendInvoice} disabled={!selectedConversation}>
                                                 <Receipt className="mr-2 h-4 w-4" /> Send an invoice
                                             </DropdownMenuItem>
                                         </DropdownMenuContent>

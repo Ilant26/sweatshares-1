@@ -637,6 +637,12 @@ export function MobileMessages() {
         }
     };
 
+    const handleSendInvoice = () => {
+        if (selectedUserId) {
+            router.push(`/dashboard/my-invoices?create=true&userId=${selectedUserId}`);
+        }
+    };
+
     if (view === 'chat' && selectedUserId && activeConversation) {
         return (
             <div className="flex flex-col h-full bg-background">
@@ -789,7 +795,7 @@ export function MobileMessages() {
                             <DropdownMenuItem>
                                 <CreditCard className="mr-2 h-4 w-4" /> Generate payment link
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={handleSendInvoice} disabled={!selectedUserId}>
                                 <Receipt className="mr-2 h-4 w-4" /> Send an invoice
                             </DropdownMenuItem>
                         </DropdownMenuContent>
