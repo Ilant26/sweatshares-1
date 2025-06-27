@@ -205,6 +205,22 @@ const suggestions = [
   },
 ];
 
+function renderMessageContent(content: string) {
+  try {
+    const obj = JSON.parse(content);
+    if (obj && obj.type === 'invoice') {
+      return (
+        <span>
+          Invoice <b>{obj.invoice_number}</b>: €{obj.amount} {obj.currency} due {obj.due_date} <span className="italic">({obj.status})</span>{obj.description ? ` - ${obj.description}` : ''}
+        </span>
+      );
+    }
+  } catch {
+    // Not JSON, fall through
+  }
+  return <span>{content}</span>;
+}
+
 export default function Page() {
   const { user, loading: userLoading } = useUser();
   const { savedProfiles, likedListings, loading: favoritesLoading } = useFavorites();
@@ -635,7 +651,7 @@ export default function Page() {
                     <p className="text-xs text-muted-foreground">{new Date(message.created_at).toLocaleString()}</p>
                   </div>
                   <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                    {message.content}
+                    {renderMessageContent(message.content)}
                   </p>
                 </div>
               </div>

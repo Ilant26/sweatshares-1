@@ -71,6 +71,135 @@ import {
   Shield,
 } from 'lucide-react';
 
+// Add dynamic helpers before the return statement in MyInvoicesPage
+function getFinancialSummary(invoices: Invoice[], userId: string | undefined) {
+  const sent = invoices.filter(inv => inv.sender_id === userId);
+  const totalSent = sent.reduce((sum, inv) => sum + (Number(inv.total ?? inv.amount) || 0), 0);
+  const paid = sent.filter(inv => inv.status === 'paid').reduce((sum, inv) => sum + (Number(inv.total ?? inv.amount) || 0), 0);
+  const pending = sent.filter(inv => inv.status === 'pending').reduce((sum, inv) => sum + (Number(inv.total ?? inv.amount) || 0), 0);
+  const cancelled = sent.filter(inv => inv.status === 'cancelled').reduce((sum, inv) => sum + (Number(inv.total ?? inv.amount) || 0), 0);
+  // Average time to pay (in days)
+  const paidInvoices = sent.filter(inv => inv.status === 'paid' && inv.updated_at && inv.issue_date);
+  const avgTime = paidInvoices.length > 0
+    ? Math.round(paidInvoices.reduce((sum, inv) => sum + ((new Date(inv.updated_at).getTime() - new Date(inv.issue_date).getTime()) / (1000 * 60 * 60 * 24)), 0) / paidInvoices.length)
+    : null;
+  return {
+    totalSent: totalSent.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+    paid: paid.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+    pending: pending.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+    cancelled: cancelled.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+    averageTime: avgTime !== null ? `${avgTime} days` : 'N/A',
+  };
+}
+
+function getRecentActivities(
+  invoices: Invoice[],
+  userId: string | undefined,
+  getClientName: (inv: Invoice) => string,
+  userFullName: string,
+  senderProfileCache: Record<string, { full_name: string; avatar_url: string | null; username: string }>,
+  recipientProfileCache: Record<string, { full_name: string; avatar_url: string | null; username: string }>,
+  externalClients: any[],
+  networkContacts: any[]
+) {
+  // Sort by updated_at or created_at descending
+  const sorted = [...invoices].sort((a, b) => {
+    const aDate = new Date(a.updated_at || a.created_at).getTime();
+    const bDate = new Date(b.updated_at || b.created_at).getTime();
+    return bDate - aDate;
+  });
+  
+  return sorted.slice(0, 6).map(inv => {
+    // Helper function to get proper full name
+    const getProperFullName = (invoice: Invoice, isReceiver: boolean) => {
+      if (isReceiver) {
+        // For sent invoices, get receiver name
+        if (invoice.external_client_id) {
+          const externalClient = externalClients.find((client: any) => client.id === invoice.external_client_id);
+          if (externalClient) {
+            return externalClient.name;
+          }
+        } else if (invoice.receiver_id) {
+          // Check recipient profile cache first
+          if (recipientProfileCache[invoice.receiver_id]) {
+            const profile = recipientProfileCache[invoice.receiver_id];
+            return profile.full_name || profile.username || 'Unknown User';
+          }
+          // Fallback to network contacts
+          const networkContact = networkContacts.find((contact: any) => contact.id === invoice.receiver_id);
+          if (networkContact) {
+            return networkContact.name;
+          }
+        }
+      } else {
+        // For received invoices, get sender name
+        if (invoice.sender_id) {
+          // Check sender profile cache first
+          if (senderProfileCache[invoice.sender_id]) {
+            const profile = senderProfileCache[invoice.sender_id];
+            return profile.full_name || profile.username || 'Unknown User';
+          }
+          // Fallback to network contacts
+          const networkContact = networkContacts.find((contact: any) => contact.id === invoice.sender_id);
+          if (networkContact) {
+            return networkContact.name;
+          }
+        }
+      }
+      // Final fallback to original function
+      const fallbackName = getClientName(invoice);
+      console.log('Recent Activity Debug:', {
+        invoiceId: invoice.id,
+        isReceiver,
+        receiverId: invoice.receiver_id,
+        senderId: invoice.sender_id,
+        externalClientId: invoice.external_client_id,
+        recipientCache: recipientProfileCache[invoice.receiver_id || ''],
+        senderCache: senderProfileCache[invoice.sender_id || ''],
+        networkContactsCount: networkContacts.length,
+        externalClientsCount: externalClients.length,
+        fallbackName
+      });
+      return fallbackName;
+    };
+
+    if (inv.status === 'paid' && inv.updated_at) {
+      return {
+        id: inv.id + '-paid',
+        action: 'paid',
+        user: inv.receiver_id === userId ? userFullName : getProperFullName(inv, true),
+        document: `invoice ${inv.invoice_number}`,
+        amount: (inv.total ?? inv.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+        currency: '€',
+        time: inv.updated_at,
+      };
+    }
+    if (inv.status === 'cancelled') {
+      return {
+        id: inv.id + '-cancelled',
+        action: 'cancelled',
+        document: `Invoice ${inv.invoice_number}`,
+        client: getProperFullName(inv, inv.sender_id === userId),
+        time: inv.updated_at || inv.created_at,
+      };
+    }
+    if (inv.status === 'pending' && inv.created_at) {
+      return {
+        id: inv.id + '-created',
+        action: 'created',
+        user: userFullName, // Always use current user's full name
+        document: `new invoice ${inv.invoice_number}`,
+        client: getProperFullName(inv, true),
+        amount: (inv.total ?? inv.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+        currency: '€',
+        time: inv.created_at,
+      };
+    }
+    // Add more activity types as needed
+    return null;
+  }).filter((a): a is NonNullable<typeof a> => Boolean(a));
+}
+
 export default function MyInvoicesPage() {
   const { user } = useUser();
   const supabase = createClientComponentClient<Database>();
@@ -114,64 +243,22 @@ export default function MyInvoicesPage() {
   const [senderProfileCache, setSenderProfileCache] = useState<Record<string, { full_name: string; avatar_url: string | null; username: string }>>({});
   const [recipientProfileCache, setRecipientProfileCache] = useState<Record<string, { full_name: string; avatar_url: string | null; username: string }>>({});
 
-  const financialSummary = {
-    totalSent: '15,800.00',
-    paid: '7,000.00',
-    pending: '2,750.00',
-    cancelled: '6,050.00',
-    averageTime: '18 days',
-  };
-
-  const recentActivities = [
-    {
-      id: 'ra1',
-      action: 'paid',
-      user: 'Antoine Dubois',
-      document: 'invoice FACT-2025-042',
-      amount: '3,500.00',
-      currency: '€',
-      time: '2 days ago',
-    },
-    {
-      id: 'ra2',
-      action: 'created',
-      user: 'You',
-      document: 'new invoice FACT-2025-041',
-      client: 'Sophie Martin',
-      amount: '2,750.00',
-      currency: '€',
-      time: '3 days ago',
-    },
-    {
-      id: 'ra3',
-      action: 'cancelled',
-      document: 'Invoice FACT-2025-040',
-      client: 'Lucas Bernard',
-      time: '5 days ago',
-    },
-    {
-      id: 'ra4',
-      action: 'reminder sent',
-      document: 'invoice FACT-2025-039',
-      client: 'Emma Petit',
-      time: '1 week ago',
-    },
-  ];
-
-  const getStatusBadgeVariant = (status: string) => {
-    switch (status) {
-      case 'paid':
-        return 'success';
-      case 'pending':
-        return 'warning';
-      case 'overdue':
-        return 'destructive';
-      case 'cancelled':
-        return 'destructive';
-      default:
-        return 'outline';
+  const financialSummary = getFinancialSummary(invoices, user?.id);
+  const userFullName = user?.full_name || user?.username || user?.email || 'You';
+  const getClientName = (invoice: Invoice) => {
+    if (activeTab === 'sent') {
+      // For sent invoices, show receiver name
+      if (invoice.external_client_id) {
+        return externalClients.find(client => client.id === invoice.external_client_id)?.name || 'Unknown';
+      } else {
+        return networkContacts.find(contact => contact.id === invoice.receiver_id)?.name || 'Unknown';
+      }
+    } else {
+      // For received invoices, show sender name
+      return networkContacts.find(contact => contact.id === invoice.sender_id)?.name || 'Unknown';
     }
   };
+  const recentActivities = getRecentActivities(invoices, user?.id, getClientName, userFullName, senderProfileCache, recipientProfileCache, externalClients, networkContacts);
 
   const filteredInvoices = invoices.filter(invoice => {
     const matchesTab = activeTab === 'sent' ? invoice.sender_id === user?.id : invoice.receiver_id === user?.id;
@@ -201,21 +288,6 @@ export default function MyInvoicesPage() {
   // Calculate counts for each tab
   const sentInvoicesCount = invoices.filter(invoice => invoice.sender_id === user?.id).length;
   const receivedInvoicesCount = invoices.filter(invoice => invoice.receiver_id === user?.id).length;
-
-  // Helper function to get the correct client name based on active tab
-  const getClientName = (invoice: Invoice) => {
-    if (activeTab === 'sent') {
-      // For sent invoices, show receiver name
-      if (invoice.external_client_id) {
-        return externalClients.find(client => client.id === invoice.external_client_id)?.name || 'Unknown';
-      } else {
-        return networkContacts.find(contact => contact.id === invoice.receiver_id)?.name || 'Unknown';
-      }
-    } else {
-      // For received invoices, show sender name
-      return networkContacts.find(contact => contact.id === invoice.sender_id)?.name || 'Unknown';
-    }
-  };
 
   // Pagination logic
   const indexOfLastInvoice = currentPage * invoicesPerPage;
@@ -753,6 +825,22 @@ export default function MyInvoicesPage() {
     }
     // eslint-disable-next-line
   }, []);
+
+  // Move getStatusBadgeVariant to the top, after other helpers
+  const getStatusBadgeVariant = (status: string) => {
+    switch (status) {
+      case 'paid':
+        return 'success';
+      case 'pending':
+        return 'warning';
+      case 'overdue':
+        return 'destructive';
+      case 'cancelled':
+        return 'destructive';
+      default:
+        return 'outline';
+    }
+  };
 
   if (loading) {
     return <div className="flex items-center justify-center h-full">Loading...</div>;

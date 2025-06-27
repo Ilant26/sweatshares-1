@@ -766,7 +766,7 @@ export function MobileMessages() {
                                                     <div className="text-xs text-muted-foreground mb-2">{invoiceMsg.description}</div>
                                                 )}
                                                 <a
-                                                    href={`/dashboard/my-invoices?tab=received&invoiceId=${invoiceMsg.invoice_id}`}
+                                                    href={`/dashboard/my-invoices?tab=${isSent ? 'sent' : 'received'}&invoiceId=${invoiceMsg.invoice_id}`}
                                                     className="inline-block mt-2 px-4 py-2 rounded bg-green-600 text-white text-xs font-semibold hover:bg-green-700 transition"
                                                     target="_blank"
                                                     rel="noopener noreferrer"
