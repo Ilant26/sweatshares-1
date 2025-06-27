@@ -528,7 +528,7 @@ export default function Page() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Alerts</CardTitle>
+            <CardTitle className="text-sm font-bold">Active Alerts</CardTitle>
             <BellRing className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -705,7 +705,7 @@ export default function Page() {
         {/* Active Alerts Card - Full width on small/medium, 3/7 on large */}
         <Card className="col-span-full md:col-span-1 lg:col-span-3">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Alerts</CardTitle>
+            <CardTitle className="text-sm font-bold">Active Alerts</CardTitle>
             <Link href="/dashboard/my-alerts" passHref legacyBehavior>
               <a className="px-0 pt-0 justify-start inline-flex items-center text-sm font-medium text-primary hover:underline" style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
                 Manage
@@ -731,7 +731,7 @@ export default function Page() {
         {/* Suggestions for You Card - Full width on small/medium, 4/7 on large */}
         <Card className="col-span-full md:col-span-1 lg:col-span-4">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Suggestions for You</CardTitle>
+            <CardTitle className="text-sm font-bold">Suggestions for You</CardTitle>
             <Button variant="link" className="px-0 pt-0 justify-start">
               Explore <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
@@ -757,7 +757,7 @@ export default function Page() {
         {/* Account Settings Card - Full width on small/medium, 3/7 on large */}
         <Card className="col-span-full md:col-span-1 lg:col-span-3">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Account Settings</CardTitle>
+            <CardTitle className="text-sm font-bold">Account Settings</CardTitle>
             <Link href="/dashboard/profile-settings" passHref legacyBehavior>
               <a className="px-0 pt-0 justify-start inline-flex items-center text-sm font-medium text-primary hover:underline" style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
                 View all

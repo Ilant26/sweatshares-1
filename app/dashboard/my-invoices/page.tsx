@@ -42,6 +42,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { sendMessage } from '@/lib/messages';
 import { createPaymentIntent } from '@/lib/stripe';
+import Link from 'next/link';
 
 import {
   Search,
@@ -978,7 +979,7 @@ export default function MyInvoicesPage() {
                           className="flex items-center gap-2 flex-1 sm:flex-none"
                         >
                           <User className="h-4 w-4" />
-                          <span className="hidden sm:inline">Network Contact</span>
+                          <span className="hidden sm:inline">Sweatshares Contact</span>
                           <span className="sm:hidden">Network</span>
                         </Button>
                         <Button
@@ -1522,13 +1523,13 @@ export default function MyInvoicesPage() {
                           }
                           const recipient = getRecipientProfile(invoice);
                           return recipient ? (
-                            <div className="flex items-center gap-2">
+                            <Link href={`/dashboard/profile/${invoice.receiver_id}`} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
                               <Avatar className="h-8 w-8">
                                 <AvatarImage src={recipient.avatar_url || undefined} />
                                 <AvatarFallback>{(recipient.full_name || recipient.username || '?')[0]}</AvatarFallback>
                               </Avatar>
-                              <span>{recipient.full_name || recipient.username}</span>
-                            </div>
+                              <span className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium">{recipient.full_name || recipient.username}</span>
+                            </Link>
                           ) : (
                             getClientName(invoice)
                           );
@@ -1603,13 +1604,13 @@ export default function MyInvoicesPage() {
                           }
                           const recipient = getRecipientProfile(invoice);
                           return recipient ? (
-                            <div className="flex items-center gap-2">
+                            <Link href={`/dashboard/profile/${invoice.receiver_id}`} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
                               <Avatar className="h-8 w-8">
                                 <AvatarImage src={recipient.avatar_url || undefined} />
                                 <AvatarFallback>{(recipient.full_name || recipient.username || '?')[0]}</AvatarFallback>
                               </Avatar>
-                              <span>{recipient.full_name || recipient.username}</span>
-                            </div>
+                              <span className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium">{recipient.full_name || recipient.username}</span>
+                            </Link>
                           ) : (
                             getClientName(invoice)
                           );
@@ -1835,13 +1836,13 @@ export default function MyInvoicesPage() {
                         {(() => {
                           const sender = getSenderProfile(invoice);
                           return sender ? (
-                            <div className="flex items-center gap-2 mt-1">
+                            <Link href={`/dashboard/profile/${invoice.sender_id}`} className="flex items-center gap-2 mt-1 hover:opacity-80 transition-opacity">
                               <Avatar className="h-8 w-8">
                                 <AvatarImage src={sender.avatar_url || undefined} />
                                 <AvatarFallback>{(sender.full_name || sender.username || '?')[0]}</AvatarFallback>
                               </Avatar>
-                              <span className="font-medium">{sender.full_name || sender.username}</span>
-                            </div>
+                              <span className="font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">{sender.full_name || sender.username}</span>
+                            </Link>
                           ) : (
                             <p className="font-medium">{getClientName(invoice)}</p>
                           );
@@ -1911,13 +1912,13 @@ export default function MyInvoicesPage() {
                         {(() => {
                           const sender = getSenderProfile(invoice);
                           return sender ? (
-                            <div className="flex items-center gap-2">
+                            <Link href={`/dashboard/profile/${invoice.sender_id}`} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
                               <Avatar className="h-8 w-8">
                                 <AvatarImage src={sender.avatar_url || undefined} />
                                 <AvatarFallback>{(sender.full_name || sender.username || '?')[0]}</AvatarFallback>
                               </Avatar>
-                              <span>{sender.full_name || sender.username}</span>
-                            </div>
+                              <span className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium">{sender.full_name || sender.username}</span>
+                            </Link>
                           ) : (
                             getClientName(invoice)
                           );
@@ -1941,7 +1942,7 @@ export default function MyInvoicesPage() {
                       <TableCell className="text-right">
                         {/* Desktop view: Icons + Dropdown */}
                         <div className="hidden md:flex items-center justify-end gap-1">
-                          {invoice.status === 'pending' && (
+                          {activeTab === 'received' && invoice.status === 'pending' && (
                             <Button
                               variant="default"
                               size="sm"
@@ -2084,46 +2085,46 @@ export default function MyInvoicesPage() {
           <div className="grid gap-4">
             {/* Main Stats Cards */}
             <div className="grid grid-cols-2 gap-4">
-              <Card className="relative overflow-hidden border-0 shadow-lg bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 hover:shadow-xl transition-all duration-300 group animate-in slide-in-from-bottom-2">
+              <Card className="relative overflow-hidden border-0 shadow-lg bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/20 dark:to-cyan-950/20 hover:shadow-xl transition-all duration-300 group animate-in slide-in-from-bottom-2">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-4">
-                    <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30 group-hover:scale-110 transition-transform duration-300">
-                      <CircleDollarSign className="h-5 w-5 text-green-600 dark:text-green-400" />
+                    <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30 group-hover:scale-110 transition-transform duration-300">
+                      <CircleDollarSign className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                 </div>
                     <div className="text-right">
-                      <p className="text-xs font-medium text-green-600 dark:text-green-400 uppercase tracking-wide">Total Sent</p>
+                      <p className="text-xs font-medium text-blue-600 dark:text-blue-400 uppercase tracking-wide">Total Sent</p>
               </div>
                 </div>
                   <div className="space-y-2">
-                    <p className="text-2xl font-bold text-green-700 dark:text-green-300">€{financialSummary.totalSent}</p>
-                    <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
+                    <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">€{financialSummary.totalSent}</p>
+                    <div className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400">
                       <TrendingUp className="h-3 w-3" />
                       <span>{financialSummary.growthRate > 0 ? '+' : ''}{financialSummary.growthRate}% from last month</span>
               </div>
                 </div>
                 </CardContent>
-                <div className="absolute inset-0 bg-gradient-to-r from-green-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               </Card>
 
-              <Card className="relative overflow-hidden border-0 shadow-lg bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/20 dark:to-cyan-950/20 hover:shadow-xl transition-all duration-300 group animate-in slide-in-from-bottom-2 delay-100">
+              <Card className="relative overflow-hidden border-2 border-green-200 dark:border-green-800 shadow-lg bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 hover:shadow-xl transition-all duration-300 group animate-in slide-in-from-bottom-2 delay-100">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-4">
-                    <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30 group-hover:scale-110 transition-transform duration-300">
-                      <CheckCircle className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                    <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30 group-hover:scale-110 transition-transform duration-300">
+                      <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
               </div>
                     <div className="text-right">
-                      <p className="text-xs font-medium text-blue-600 dark:text-blue-400 uppercase tracking-wide">Paid</p>
+                      <p className="text-xs font-medium text-green-600 dark:text-green-400 uppercase tracking-wide">Paid</p>
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">€{financialSummary.paid}</p>
-                    <div className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400">
+                    <p className="text-2xl font-bold text-green-700 dark:text-green-300">€{financialSummary.paid}</p>
+                    <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
                       <CheckCircle className="h-3 w-3" />
                       <span>{financialSummary.collectionRate} collection rate</span>
                     </div>
               </div>
             </CardContent>
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="absolute inset-0 bg-gradient-to-r from-green-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           </Card>
         </div>
 
@@ -2192,7 +2193,7 @@ export default function MyInvoicesPage() {
             </Button>
           </div>
           
-          <Card className="border-0 shadow-lg bg-gradient-to-br from-slate-50 to-gray-50 dark:from-slate-950/20 dark:to-gray-950/20">
+          <Card>
             <CardContent className="p-6">
               <div className="space-y-4">
                 {recentActivities.map((activity, index) => (
@@ -2216,37 +2217,37 @@ export default function MyInvoicesPage() {
                         <div className="flex items-start justify-between gap-3 mb-2">
                           <div className="flex-1">
                             <p className="text-sm font-medium text-gray-900 dark:text-gray-100 leading-relaxed">
-                      {activity.action === 'paid' && (
-                        <>
+                              {activity.action === 'paid' && (
+                                <>
                                   <span className="font-semibold text-green-600 dark:text-green-400">{activity.user}</span> paid{' '}
                                   <span className="font-semibold">{activity.document}</span> for{' '}
                                   <span className="font-bold text-green-600 dark:text-green-400">{activity.currency}{activity.amount}</span>
-                        </>
-                      )}
-                      {activity.action === 'created' && (
-                        <>
+                                </>
+                              )}
+                              {activity.action === 'created' && (
+                                <>
                                   <span className="font-semibold text-blue-600 dark:text-blue-400">{activity.user}</span> created{' '}
                                   <span className="font-semibold">{activity.document}</span> for{' '}
                                   <span className="font-semibold">{activity.client}</span> for{' '}
                                   <span className="font-bold text-blue-600 dark:text-blue-400">{activity.currency}{activity.amount}</span>
-                        </>
-                      )}
-                      {activity.action === 'cancelled' && (
-                        <>
+                                </>
+                              )}
+                              {activity.action === 'cancelled' && (
+                                <>
                                   <span className="font-semibold">{activity.document}</span> for{' '}
                                   <span className="font-semibold">{activity.client}</span> has been{' '}
                                   <span className="font-semibold text-red-600 dark:text-red-400">cancelled</span>
-                        </>
-                      )}
-                      {activity.action === 'reminder sent' && (
-                        <>
+                                </>
+                              )}
+                              {activity.action === 'reminder sent' && (
+                                <>
                                   Automatic <span className="font-semibold text-amber-600 dark:text-amber-400">reminder sent</span> for{' '}
                                   <span className="font-semibold">{activity.document}</span> to{' '}
                                   <span className="font-semibold">{activity.client}</span>
-                        </>
-                      )}
-                    </p>
-                  </div>
+                                </>
+                              )}
+                            </p>
+                          </div>
                           <div className="flex-shrink-0">
                             <div className={cn(
                               "px-2 py-1 rounded-full text-xs font-medium transition-all duration-300 group-hover:scale-105",
@@ -2268,8 +2269,8 @@ export default function MyInvoicesPage() {
                     
                     {/* Hover effect */}
                     <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-lg" />
-                </div>
-              ))}
+                  </div>
+                ))}
                 
                 {recentActivities.length === 0 && (
                   <div className="text-center py-8">

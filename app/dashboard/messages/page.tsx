@@ -306,13 +306,6 @@ export default function MessagesPage() {
         return filtered;
     }, [conversations, currentFilter, searchQuery]);
 
-    // Auto-select first conversation on desktop when no conversation is selected
-    React.useEffect(() => {
-        if (!isMobile && !selectedConversation && filteredConversations.length > 0 && !isLoadingAllMessages) {
-            setSelectedConversation(filteredConversations[0].id);
-        }
-    }, [isMobile, selectedConversation, filteredConversations, isLoadingAllMessages]);
-
     const totalUnreadMessages = conversations.reduce((sum, conv) => sum + (conv.unread || 0), 0);
     const activeConversation = React.useMemo(() => {
         if (!selectedConversation) return undefined;
