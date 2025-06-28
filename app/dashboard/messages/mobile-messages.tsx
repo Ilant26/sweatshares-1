@@ -804,7 +804,7 @@ export function MobileMessages() {
                                                 ))}
                                             </div>
                                         )}
-                                        <p className="text-xs text-gray-300 dark:text-gray-400 font-medium text-right mt-1">
+                                        <p className="text-xs text-muted-foreground text-right mt-1">
                                             {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
                                         </p>
                                     </div>
@@ -1000,7 +1000,7 @@ export function MobileMessages() {
                             </p>
                         </div>
                         <div className="flex flex-col items-end">
-                            <span className="text-xs text-gray-300 dark:text-gray-400 font-medium text-right mt-1">
+                            <span className="text-xs text-muted-foreground">
                                 {conversation.time ? formatDistanceToNow(new Date(conversation.time), { addSuffix: true }) : '-'}
                             </span>
                             {conversation.unread > 0 && (

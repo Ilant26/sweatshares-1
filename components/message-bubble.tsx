@@ -107,8 +107,10 @@ export function MessageBubble({ message, currentUserId, onAttachmentLoad }: Mess
           </div>
         )}
         <span className={cn(
-          "text-xs text-gray-300 dark:text-gray-400 block mt-1 font-medium",
-          isSent ? "text-right" : "text-left"
+          "text-[11px] opacity-70 block mt-1.5 font-medium",
+          isSent 
+            ? "text-right text-blue-100 dark:text-blue-200" 
+            : "text-left text-gray-600 dark:text-gray-400"
         )}>
           {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
         </span>

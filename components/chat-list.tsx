@@ -289,7 +289,7 @@ export function ChatList({ onStartChat, onStateChange, isOpen: controlledIsOpen 
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between">
                             <span className="font-medium truncate">{chat.username}</span>
-                            <span className="text-xs text-gray-300 dark:text-gray-400 font-medium whitespace-nowrap ml-2">
+                            <span className="text-xs font-medium text-gray-600 dark:text-gray-400 whitespace-nowrap ml-2">
                               {formatDistanceToNow(new Date(chat.timestamp), { addSuffix: true, locale: enUS })}
                             </span>
                           </div>

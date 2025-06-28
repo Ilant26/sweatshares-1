@@ -925,7 +925,7 @@ export default function MessagesPage() {
                                                                 ))}
                                                             </div>
                                                         )}
-                                                        <p className="text-xs text-gray-300 dark:text-gray-400 font-medium text-right mt-1">
+                                                        <p className="text-xs text-muted-foreground text-right mt-1">
                                                             {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
                                                         </p>
                                                     </div>
