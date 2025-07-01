@@ -71,9 +71,9 @@ export async function POST(request: NextRequest) {
     // Convert base64 signature to image
     const signatureImage = await createSignatureImage(signatureData)
     
-    // Add signature to the first page
-    const targetPage = pages[0]
-    const { width, height } = targetPage.getSize()
+    // Get the first page to determine page size
+    const firstPage = pages[0]
+    const { width, height } = firstPage.getSize()
     
     // Embed the signature image with error handling
     let signaturePdfImage
@@ -84,11 +84,14 @@ export async function POST(request: NextRequest) {
       throw new Error('Failed to process signature image')
     }
     
+    // Add a new page for the signature
+    const signaturePage = pdfDoc.addPage([width, height])
+    
     // Calculate signature position and size
     // Use a more flexible approach that preserves aspect ratio
-    const maxSignatureWidth = 200
-    const maxSignatureHeight = 80
-    const margin = 50
+    const maxSignatureWidth = 300
+    const maxSignatureHeight = 120
+    const margin = 80
     
     // Calculate aspect ratio of the signature image
     const signatureAspectRatio = signaturePdfImage.width / signaturePdfImage.height
@@ -103,34 +106,41 @@ export async function POST(request: NextRequest) {
       signatureWidth = signatureHeight * signatureAspectRatio
     }
     
-    // Position signature in bottom right corner with bounds checking
-    let x = width - signatureWidth - margin
-    let y = margin + signatureHeight
+    // Center the signature on the new page
+    const x = (width - signatureWidth) / 2
+    const y = height - margin - signatureHeight
     
-    // Ensure signature doesn't go off the page
-    if (x < margin) {
-      x = margin
-    }
-    if (y > height - margin) {
-      y = height - margin - signatureHeight
-    }
-    if (y < margin) {
-      y = margin
-    }
-    
-    // Add a subtle background rectangle for the signature area
-    targetPage.drawRectangle({
-      x: x - 5,
-      y: y - 5,
-      width: signatureWidth + 10,
-      height: signatureHeight + 10,
-      borderWidth: 1,
-      borderColor: rgb(0.8, 0.8, 0.8),
-      color: rgb(1, 1, 1), // White background
+    // Add a title to the signature page
+    const titleFontSize = 16
+    const titleY = height - 50
+    signaturePage.drawText('DOCUMENT SIGNATURE PAGE', {
+      x: (width - 300) / 2, // Center the title
+      y: titleY,
+      size: titleFontSize,
+      color: rgb(0, 0, 0),
     })
     
-    // Add signature to the page with proper scaling
-    targetPage.drawImage(signaturePdfImage, {
+    // Add a separator line below the title
+    signaturePage.drawLine({
+      start: { x: 50, y: titleY - 20 },
+      end: { x: width - 50, y: titleY - 20 },
+      thickness: 1,
+      color: rgb(0.7, 0.7, 0.7),
+    })
+    
+    // Add a subtle background rectangle for the signature area
+    signaturePage.drawRectangle({
+      x: x - 10,
+      y: y - 10,
+      width: signatureWidth + 20,
+      height: signatureHeight + 20,
+      borderWidth: 2,
+      borderColor: rgb(0.7, 0.7, 0.7),
+      color: rgb(0.98, 0.98, 0.98), // Light gray background
+    })
+    
+    // Add signature to the new page with proper scaling
+    signaturePage.drawImage(signaturePdfImage, {
       x,
       y,
       width: signatureWidth,
@@ -138,12 +148,12 @@ export async function POST(request: NextRequest) {
     })
 
     // Add signature metadata text
-    const fontSize = 10
-    const textY = y - 25 // Increased spacing to avoid overlap
+    const fontSize = 12
+    const textY = y - 40 // Increased spacing to avoid overlap
     
     // Add signer name
     if ((signatureRequest as any).receiver?.full_name) {
-      targetPage.drawText(`Signed by: ${(signatureRequest as any).receiver.full_name}`, {
+      signaturePage.drawText(`Signed by: ${(signatureRequest as any).receiver.full_name}`, {
         x: x,
         y: textY,
         size: fontSize,
@@ -160,19 +170,47 @@ export async function POST(request: NextRequest) {
       minute: '2-digit'
     })
     
-    targetPage.drawText(`Date: ${signatureDate}`, {
+    signaturePage.drawText(`Date: ${signatureDate}`, {
       x: x,
-      y: textY - 15,
+      y: textY - 20,
       size: fontSize,
       color: rgb(0, 0, 0),
     })
 
     // Add signature request ID for verification
-    targetPage.drawText(`Request ID: ${(signatureRequest as any).id}`, {
+    signaturePage.drawText(`Request ID: ${(signatureRequest as any).id}`, {
       x: x,
-      y: textY - 30,
+      y: textY - 40,
       size: fontSize - 2,
       color: rgb(0.5, 0.5, 0.5),
+    })
+    
+    // Add document information
+    if ((signatureRequest as any).document?.filename) {
+      signaturePage.drawText(`Document: ${(signatureRequest as any).document.filename}`, {
+        x: x,
+        y: textY - 60,
+        size: fontSize - 2,
+        color: rgb(0.3, 0.3, 0.3),
+      })
+    }
+    
+    // Add a footer note
+    const footerY = 50
+    signaturePage.drawText('This page contains the digital signature for the above document.', {
+      x: (width - 400) / 2, // Center the footer
+      y: footerY,
+      size: fontSize - 2,
+      color: rgb(0.5, 0.5, 0.5),
+    })
+    
+    // Add page number indicator
+    const totalPages = pdfDoc.getPageCount()
+    signaturePage.drawText(`Page ${totalPages} of ${totalPages} - Signature Page`, {
+      x: width - 150,
+      y: 30,
+      size: fontSize - 3,
+      color: rgb(0.4, 0.4, 0.4),
     })
 
     // Serialize the PDF

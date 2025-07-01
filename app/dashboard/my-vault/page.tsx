@@ -273,10 +273,29 @@ export default function MyVaultPage() {
   // Upload document
   const handleUpload = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!form.file || !form.name || !user) {
-      toast.error('Please fill all required fields');
+    
+    // Validate required fields
+    console.log('Form state:', form); // Debug log
+    if (!form.file) {
+      toast.error('Please select a file to upload');
       return;
     }
+    if (!form.name.trim()) {
+      toast.error('Please enter a document name');
+      return;
+    }
+    if (!user) {
+      toast.error('User not authenticated');
+      return;
+    }
+    
+    // Validate file size (10MB limit)
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (form.file.size > maxSize) {
+      toast.error('File size must be less than 10MB');
+      return;
+    }
+    
     setUploading(true);
     
     try {
@@ -326,6 +345,7 @@ export default function MyVaultPage() {
       toast.success('Document uploaded!');
       setAddDocumentDialogOpen(false);
       setForm({ name: '', type: '', description: '', tags: '', file: null });
+      setFileInput(null);
       if (fileRef.current) fileRef.current.value = '';
 
       // Refresh list
@@ -337,7 +357,10 @@ export default function MyVaultPage() {
       
       setPersonalDocuments(newDocs || []);
     } catch (error) {
+      console.error('Upload error:', error);
       toast.error('An unexpected error occurred during upload');
+      setFileInput(null);
+      setForm({ name: '', type: '', description: '', tags: '', file: null });
     } finally {
       setUploading(false);
     }
@@ -532,8 +555,9 @@ export default function MyVaultPage() {
                     onDrop={(e) => {
                       e.preventDefault();
                       if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-                        setFileInput(e.dataTransfer.files[0]);
-                        setForm({ ...form, name: e.dataTransfer.files[0].name });
+                        const file = e.dataTransfer.files[0];
+                        setFileInput(file);
+                        setForm({ ...form, name: file.name, file: file });
                       }
                     }}
                   >
@@ -548,8 +572,9 @@ export default function MyVaultPage() {
                       className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                       onChange={(e) => {
                         if (e.target.files && e.target.files[0]) {
-                          setFileInput(e.target.files[0]);
-                          setForm({ ...form, name: e.target.files[0].name });
+                          const file = e.target.files[0];
+                          setFileInput(file);
+                          setForm({ ...form, name: file.name, file: file });
                         }
                       }}
                     />
@@ -607,7 +632,11 @@ export default function MyVaultPage() {
                   </div>
                 </div>
                 <DialogFooter className="mt-6">
-                    <Button type="button" variant="outline" onClick={() => setAddDocumentDialogOpen(false)}>
+                    <Button type="button" variant="outline" onClick={() => {
+                      setAddDocumentDialogOpen(false);
+                      setFileInput(null);
+                      setForm({ name: '', type: '', description: '', tags: '', file: null });
+                    }}>
                       Cancel
                     </Button>
                     <Button type="submit" disabled={uploading} className="gap-2">

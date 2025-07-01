@@ -411,6 +411,20 @@ export default function SignaturePage() {
                     <span className="font-medium">{request.sender?.full_name || 'Unknown User'}</span>
                   </div>
                 </div>
+                {/* Receiver info */}
+                <div className="flex items-center space-x-2">
+                  <User className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">To:</span>
+                  <div className="flex items-center space-x-2">
+                    <Avatar className="w-6 h-6">
+                      <AvatarImage src={request.receiver?.avatar_url || undefined} />
+                      <AvatarFallback className="text-xs">
+                        {request.receiver?.full_name?.charAt(0) || 'U'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="font-medium">{request.receiver?.full_name || 'Unknown User'}</span>
+                  </div>
+                </div>
                 
                 <div className="flex items-center space-x-2">
                   <Calendar className="w-4 h-4 text-muted-foreground" />

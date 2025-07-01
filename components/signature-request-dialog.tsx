@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -28,7 +28,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { toast } from 'sonner'
-import { Send, Users, Calendar, MessageSquare, FileText } from 'lucide-react'
+import { Send, Users, Calendar, MessageSquare, FileText, Search } from 'lucide-react'
 import type { Database } from '@/lib/database.types'
 import { CreateSignatureRequestData } from '@/lib/signatures'
 
@@ -72,6 +72,9 @@ export function SignatureRequestDialog({ document, onRequestCreated, open: contr
   const [expiresIn, setExpiresIn] = useState('7')
   const [loading, setLoading] = useState(false)
   const [user, setUser] = useState<any>(null)
+  const [recipientSearch, setRecipientSearch] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const maxMessageLength = 300
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -114,12 +117,27 @@ export function SignatureRequestDialog({ document, onRequestCreated, open: contr
     return connection.sender
   }
 
+  // Filtered connections for search
+  const filteredConnections = useMemo(() => {
+    if (!recipientSearch) return connections
+    return connections.filter((connection) => {
+      const otherUser = getOtherUser(connection)
+      return otherUser?.full_name?.toLowerCase().includes(recipientSearch.toLowerCase())
+    })
+  }, [connections, recipientSearch])
+
   const handleCreateRequest = async () => {
     if (selectedConnections.length === 0) {
+      setError('Please select at least one recipient')
       toast.error('Please select at least one recipient')
       return
     }
-
+    if (message.length > maxMessageLength) {
+      setError('Message is too long')
+      toast.error('Message is too long')
+      return
+    }
+    setError(null)
     setLoading(true)
 
     try {
@@ -208,87 +226,106 @@ export function SignatureRequestDialog({ document, onRequestCreated, open: contr
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
-        <DialogHeader>
-          <DialogTitle>Request Signature</DialogTitle>
-          <DialogDescription>
-            Send a signature request for "{document.filename}" to people in your network.
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className="max-w-lg w-full max-h-[95vh] flex flex-col p-0">
+        {/* Header */}
+        <div className="flex items-center gap-3 px-6 pt-6 pb-2 border-b">
+          <Send className="w-6 h-6 text-primary" />
+          <div>
+            <DialogTitle className="text-lg">Request Signature</DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
+              Send a signature request for <span className="font-semibold">{document.filename}</span> to people in your network.
+            </DialogDescription>
+          </div>
+        </div>
 
-        <ScrollArea className="flex-1 pr-4">
-          <div className="space-y-6">
-            {/* Document Info */}
-            <div className="flex items-center space-x-3 p-3 bg-muted rounded-lg">
+        {/* Main Content Scrollable */}
+        <ScrollArea className="flex-1 min-h-0 px-6 py-4">
+          <div className="space-y-5 pb-10">
+            {/* Document Preview */}
+            <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
               <FileText className="w-8 h-8 text-muted-foreground" />
               <div>
-                <p className="font-medium">{document.filename}</p>
+                <p className="font-medium truncate max-w-xs">{document.filename}</p>
                 {document.description && (
-                  <p className="text-sm text-muted-foreground">{document.description}</p>
+                  <p className="text-xs text-muted-foreground truncate max-w-xs">{document.description}</p>
                 )}
               </div>
             </div>
 
             {/* Recipients */}
-            <div className="space-y-3">
+            <div className="space-y-2">
               <Label>Recipients</Label>
-              <ScrollArea className="h-48 border rounded-md p-3">
-                {connections.length === 0 ? (
+              <div className="relative mb-2">
+                <Search className="absolute left-2 top-2.5 w-4 h-4 text-muted-foreground" />
+                <Input
+                  aria-label="Search recipients"
+                  className="pl-8"
+                  placeholder="Search by name..."
+                  value={recipientSearch}
+                  onChange={e => setRecipientSearch(e.target.value)}
+                />
+              </div>
+              <ScrollArea className="h-40 border rounded-md p-2 bg-background">
+                {filteredConnections.length === 0 ? (
                   <div className="text-center text-muted-foreground py-8">
                     <Users className="w-8 h-8 mx-auto mb-2" />
                     <p>No connections found</p>
-                    <p className="text-sm">Connect with people to send signature requests</p>
                   </div>
                 ) : (
-                  <div className="space-y-2">
-                    {connections.map((connection) => {
+                  <div className="space-y-1">
+                    {filteredConnections.map((connection) => {
                       const otherUser = getOtherUser(connection)
                       if (!otherUser) return null
-
                       return (
                         <div
                           key={connection.id}
-                          className="flex items-center space-x-3 p-2 rounded-md hover:bg-muted cursor-pointer"
+                          className={`flex items-center gap-2 p-2 rounded-md hover:bg-muted cursor-pointer ${selectedConnections.includes(otherUser.id) ? 'bg-primary/10' : ''}`}
                           onClick={() => handleConnectionToggle(otherUser.id)}
+                          aria-label={`Select ${otherUser.full_name}`}
                         >
                           <Checkbox
                             checked={selectedConnections.includes(otherUser.id)}
                             onChange={() => handleConnectionToggle(otherUser.id)}
+                            aria-label={`Select ${otherUser.full_name}`}
                           />
-                          <Avatar className="w-8 h-8">
+                          <Avatar className="w-7 h-7">
                             <AvatarImage src={otherUser.avatar_url || undefined} />
                             <AvatarFallback>
                               {otherUser.full_name?.charAt(0) || 'U'}
                             </AvatarFallback>
                           </Avatar>
-                          <div className="flex-1">
-                            <p className="font-medium">{otherUser.full_name || 'Unknown User'}</p>
-                          </div>
+                          <span className="font-medium text-sm truncate">{otherUser.full_name || 'Unknown User'}</span>
                         </div>
                       )
                     })}
                   </div>
                 )}
               </ScrollArea>
+              {error && <p className="text-xs text-destructive mt-1">{error}</p>}
             </div>
 
             {/* Message */}
-            <div className="space-y-3">
-              <Label htmlFor="message">Message (Optional)</Label>
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="message">Message (Optional)</Label>
+                <span className={`text-xs ${message.length > maxMessageLength ? 'text-destructive' : 'text-muted-foreground'}`}>{message.length}/{maxMessageLength}</span>
+              </div>
               <Textarea
                 id="message"
+                aria-label="Message"
                 placeholder="Add a personal message to your signature request..."
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 rows={3}
+                maxLength={maxMessageLength + 10}
               />
             </div>
 
             {/* Expiration */}
-            <div className="space-y-3">
-              <Label htmlFor="expires">Expires in</Label>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="expires" className="whitespace-nowrap">Expires in</Label>
               <Select value={expiresIn} onValueChange={setExpiresIn}>
-                <SelectTrigger>
+                <SelectTrigger className="w-32">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -303,14 +340,18 @@ export function SignatureRequestDialog({ document, onRequestCreated, open: contr
           </div>
         </ScrollArea>
 
-        <DialogFooter className="mt-6">
-          <Button variant="outline" onClick={() => setOpen(false)}>
+        {/* Footer always visible */}
+        <DialogFooter className="mt-4 px-6 pb-6 flex gap-2">
+          <Button variant="outline" onClick={() => setOpen(false)} className="flex-1" aria-label="Cancel">
             Cancel
           </Button>
           <Button
             onClick={handleCreateRequest}
             disabled={loading || selectedConnections.length === 0}
+            className="flex-1"
+            aria-label="Send Request"
           >
+            {loading && <span className="animate-spin mr-2 w-4 h-4 border-2 border-white border-t-transparent rounded-full inline-block align-middle" />}
             {loading ? 'Sending...' : 'Send Request'}
           </Button>
         </DialogFooter>
