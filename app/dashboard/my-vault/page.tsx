@@ -958,10 +958,10 @@ export default function MyVaultPage() {
                                     </div>
                                   </div>
         
-        <Tabs defaultValue="shared-with-me" value={sharedTab} onValueChange={setSharedTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 h-auto">
-            <TabsTrigger value="shared-with-me" className="text-sm py-3">Shared with Me</TabsTrigger>
-            <TabsTrigger value="shared-by-me" className="text-sm py-3">Shared by Me</TabsTrigger>
+        <Tabs defaultValue="shared-with-me" value={sharedTab} onValueChange={setSharedTab} className="space-y-4 w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="shared-with-me" className="text-xs sm:text-sm">Shared with Me</TabsTrigger>
+            <TabsTrigger value="shared-by-me" className="text-xs sm:text-sm">Shared by Me</TabsTrigger>
           </TabsList>
           <TabsContent value="shared-with-me" className="mt-6">
             {sharedWithMe.length === 0 ? (

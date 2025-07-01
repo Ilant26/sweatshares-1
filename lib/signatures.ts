@@ -211,6 +211,38 @@ export async function declineSignatureRequest(
   return data
 }
 
+// Sign a document
+export async function signDocument(
+  requestId: string,
+  signatureData: any,
+  userId: string
+): Promise<SignatureRequest> {
+  const { data, error } = await supabaseClient
+    .from('signature_requests')
+    .update({
+      status: 'signed',
+      signature_data: signatureData,
+      signed_at: new Date().toISOString(),
+    })
+    .eq('id', requestId)
+    .eq('receiver_id', userId)
+    .select(`
+      *,
+      document:vault_documents(id, filename, filepath, description),
+      sender:profiles!signature_requests_sender_id_fkey(id, full_name, avatar_url),
+      receiver:profiles!signature_requests_receiver_id_fkey(id, full_name, avatar_url),
+      positions:signature_positions(*)
+    `)
+    .single()
+
+  if (error) {
+    console.error('Error signing document:', error)
+    throw new Error('Failed to sign document')
+  }
+
+  return data
+}
+
 // Delete a signature request (only sender can delete)
 export async function deleteSignatureRequest(
   requestId: string,
