@@ -22,7 +22,7 @@ import {
   AlertCircle,
   RefreshCw
 } from 'lucide-react'
-import { SignatureRequest, getSignatureRequest, signDocument, declineSignatureRequest, getDocumentUrl } from '@/lib/signatures'
+import { SignatureRequest, getSignatureRequest, declineSignatureRequest, getDocumentUrl, getSignedDocumentUrl } from '@/lib/signatures'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import type { Database } from '@/lib/database.types'
 
@@ -32,6 +32,7 @@ export default function SignaturePage() {
   const supabase = createClientComponentClient<Database>()
   const [request, setRequest] = useState<SignatureRequest | null>(null)
   const [documentUrl, setDocumentUrl] = useState<string | null>(null)
+  const [signedDocumentUrl, setSignedDocumentUrl] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [documentLoading, setDocumentLoading] = useState(false)
   const [documentError, setDocumentError] = useState<string | null>(null)
@@ -42,6 +43,19 @@ export default function SignaturePage() {
   const [signatureData, setSignatureData] = useState<string | null>(null)
 
   const requestId = params.id as string
+
+  // Initialize canvas with better quality settings
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    // Set canvas properties for better quality
+    ctx.imageSmoothingEnabled = true
+    ctx.imageSmoothingQuality = 'high'
+  }, [])
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -65,6 +79,11 @@ export default function SignaturePage() {
         // Load document URL separately
         if (signatureRequest.document?.filepath) {
           await loadDocumentUrl(signatureRequest.document.filepath)
+        }
+
+        // Load signed document URL if document is signed
+        if (signatureRequest.status === 'signed' && signatureRequest.signature_data?.signed_document_path) {
+          await loadSignedDocumentUrl(signatureRequest.signature_data.signed_document_path)
         }
       } catch (error) {
         console.error('Error loading signature request:', error)
@@ -95,6 +114,16 @@ export default function SignaturePage() {
     }
   }
 
+  const loadSignedDocumentUrl = async (filepath: string) => {
+    try {
+      const url = await getSignedDocumentUrl(filepath)
+      setSignedDocumentUrl(url)
+    } catch (error) {
+      console.error('Error loading signed document URL:', error)
+      // Don't show error for signed document as it's optional
+    }
+  }
+
   const retryLoadDocument = async () => {
     if (request?.document?.filepath) {
       await loadDocumentUrl(request.document.filepath)
@@ -112,12 +141,35 @@ export default function SignaturePage() {
 
     setSigning(true)
     try {
-      await signDocument(requestId, { signature: signatureData }, user.id)
+      // Call the API route to sign the document
+      const response = await fetch('/api/signatures/sign', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          requestId,
+          signatureData
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to sign document')
+      }
+
+      const result = await response.json()
+      setRequest(result.signatureRequest)
+      
+      // Load the signed document URL
+      if (result.signatureRequest.signature_data?.signed_document_path) {
+        await loadSignedDocumentUrl(result.signatureRequest.signature_data.signed_document_path)
+      }
+      
       toast.success('Document signed successfully')
-      router.push('/dashboard/my-vault')
     } catch (error) {
       console.error('Error signing document:', error)
-      toast.error('Failed to sign document')
+      toast.error(error instanceof Error ? error.message : 'Failed to sign document')
     } finally {
       setSigning(false)
     }
@@ -151,8 +203,10 @@ export default function SignaturePage() {
 
     ctx.beginPath()
     ctx.moveTo(x, y)
-    ctx.lineWidth = 2
+    ctx.lineWidth = 3 // Increased line width for better visibility
     ctx.strokeStyle = '#000'
+    ctx.lineCap = 'round' // Rounded line caps for smoother appearance
+    ctx.lineJoin = 'round' // Rounded line joins
   }
 
   const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -187,7 +241,15 @@ export default function SignaturePage() {
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
+    // Clear the entire canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height)
+    
+    // Reset canvas properties
+    ctx.lineWidth = 3
+    ctx.strokeStyle = '#000'
+    ctx.lineCap = 'round'
+    ctx.lineJoin = 'round'
+    
     setSignatureData(null)
   }
 
@@ -407,6 +469,7 @@ export default function SignaturePage() {
                     onMouseMove={draw}
                     onMouseUp={stopDrawing}
                     onMouseLeave={stopDrawing}
+                    style={{ touchAction: 'none' }} // Prevents touch scrolling on mobile
                   />
                   <div className="flex space-x-2 mt-2">
                     <Button variant="outline" size="sm" onClick={clearSignature}>
@@ -447,11 +510,21 @@ export default function SignaturePage() {
                     <Check className="w-5 h-5 text-green-500" />
                     <span className="font-medium text-green-600">Document has been signed</span>
                   </div>
-                  {documentUrl && (
-                    <Button variant="outline" onClick={() => window.open(documentUrl, '_blank')}>
+                  {signedDocumentUrl ? (
+                    <Button variant="outline" onClick={() => window.open(signedDocumentUrl, '_blank')}>
                       <Download className="w-4 h-4 mr-2" />
                       Download Signed Document
                     </Button>
+                  ) : (
+                    <Button variant="outline" disabled>
+                      <Download className="w-4 h-4 mr-2" />
+                      Signed Document Unavailable
+                    </Button>
+                  )}
+                  {request.signature_data?.signed_document_filename && (
+                    <p className="text-sm text-muted-foreground mt-2">
+                      File: {request.signature_data.signed_document_filename}
+                    </p>
                   )}
                 </div>
               </CardContent>

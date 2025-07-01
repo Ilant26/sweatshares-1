@@ -1,7 +1,7 @@
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import type { Database } from './database.types'
 
-const supabase = createClientComponentClient<Database>()
+const supabaseClient = createClientComponentClient<Database>()
 
 export interface SignatureRequest {
   id: string
@@ -58,7 +58,7 @@ export interface CreateSignatureRequestData {
 
 // Get signature requests sent by the current user
 export async function getSentSignatureRequests(userId: string): Promise<SignatureRequest[]> {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseClient
     .from('signature_requests')
     .select(`
       *,
@@ -79,7 +79,7 @@ export async function getSentSignatureRequests(userId: string): Promise<Signatur
 
 // Get signature requests received by the current user
 export async function getReceivedSignatureRequests(userId: string): Promise<SignatureRequest[]> {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseClient
     .from('signature_requests')
     .select(`
       *,
@@ -104,7 +104,7 @@ export async function createSignatureRequest(
   requestData: CreateSignatureRequestData
 ): Promise<SignatureRequest> {
   // First, create the signature request
-  const { data: signatureRequest, error: requestError } = await supabase
+  const { data: signatureRequest, error: requestError } = await supabaseClient
     .from('signature_requests')
     .insert({
       document_id: requestData.document_id,
@@ -128,7 +128,7 @@ export async function createSignatureRequest(
       signature_request_id: signatureRequest.id,
     }))
 
-    const { error: positionsError } = await supabase
+    const { error: positionsError } = await supabaseClient
       .from('signature_positions')
       .insert(positionsWithRequestId)
 
@@ -139,7 +139,7 @@ export async function createSignatureRequest(
   }
 
   // Fetch the complete signature request with related data
-  const { data: completeRequest, error: fetchError } = await supabase
+  const { data: completeRequest, error: fetchError } = await supabaseClient
     .from('signature_requests')
     .select(`
       *,
@@ -160,7 +160,7 @@ export async function createSignatureRequest(
 
 // Get a single signature request by ID
 export async function getSignatureRequest(requestId: string): Promise<SignatureRequest> {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseClient
     .from('signature_requests')
     .select(`
       *,
@@ -180,44 +180,14 @@ export async function getSignatureRequest(requestId: string): Promise<SignatureR
   return data
 }
 
-// Sign a document
-export async function signDocument(
-  requestId: string,
-  signatureData: any,
-  userId: string
-): Promise<SignatureRequest> {
-  const { data, error } = await supabase
-    .from('signature_requests')
-    .update({
-      status: 'signed',
-      signed_at: new Date().toISOString(),
-      signature_data: signatureData,
-    })
-    .eq('id', requestId)
-    .eq('receiver_id', userId)
-    .select(`
-      *,
-      document:vault_documents(id, filename, filepath, description),
-      sender:profiles!signature_requests_sender_id_fkey(id, full_name, avatar_url),
-      receiver:profiles!signature_requests_receiver_id_fkey(id, full_name, avatar_url),
-      positions:signature_positions(*)
-    `)
-    .single()
 
-  if (error) {
-    console.error('Error signing document:', error)
-    throw new Error('Failed to sign document')
-  }
-
-  return data
-}
 
 // Decline a signature request
 export async function declineSignatureRequest(
   requestId: string,
   userId: string
 ): Promise<SignatureRequest> {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseClient
     .from('signature_requests')
     .update({
       status: 'declined',
@@ -246,7 +216,7 @@ export async function deleteSignatureRequest(
   requestId: string,
   userId: string
 ): Promise<void> {
-  const { error } = await supabase
+  const { error } = await supabaseClient
     .from('signature_requests')
     .delete()
     .eq('id', requestId)
@@ -261,7 +231,7 @@ export async function deleteSignatureRequest(
 // Get document URL for signing
 export async function getDocumentUrl(filepath: string): Promise<string> {
   // Try to get public URL first (if bucket is public)
-  const { data: publicUrlData } = supabase.storage
+  const { data: publicUrlData } = supabaseClient.storage
     .from('vault')
     .getPublicUrl(filepath)
 
@@ -270,7 +240,7 @@ export async function getDocumentUrl(filepath: string): Promise<string> {
   }
 
   // Fallback to signed URL if public URL is not available
-  const { data, error } = await supabase.storage
+  const { data, error } = await supabaseClient.storage
     .from('vault')
     .createSignedUrl(filepath, 3600) // 1 hour expiry
 
@@ -282,12 +252,36 @@ export async function getDocumentUrl(filepath: string): Promise<string> {
   return data.signedUrl
 }
 
+// Get signed document URL
+export async function getSignedDocumentUrl(signedFilepath: string): Promise<string> {
+  // Try to get public URL first (if bucket is public)
+  const { data: publicUrlData } = supabaseClient.storage
+    .from('vault')
+    .getPublicUrl(signedFilepath)
+
+  if (publicUrlData?.publicUrl) {
+    return publicUrlData.publicUrl
+  }
+
+  // Fallback to signed URL if public URL is not available
+  const { data, error } = await supabaseClient.storage
+    .from('vault')
+    .createSignedUrl(signedFilepath, 3600) // 1 hour expiry
+
+  if (error) {
+    console.error('Error getting signed document URL:', error)
+    throw new Error('Failed to get signed document URL')
+  }
+
+  return data.signedUrl
+}
+
 // Subscribe to signature request changes
 export function subscribeToSignatureRequests(
   userId: string,
   callback: (request: SignatureRequest) => void
 ) {
-  const subscription = supabase
+  const subscription = supabaseClient
     .channel('signature_requests_changes')
     .on(
       'postgres_changes',
