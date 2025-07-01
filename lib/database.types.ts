@@ -517,6 +517,88 @@ export interface Database {
           created_at?: string
         }
       }
+      signature_requests: {
+        Row: {
+          id: string
+          document_id: string
+          sender_id: string
+          receiver_id: string
+          status: 'pending' | 'signed' | 'declined' | 'expired'
+          message: string | null
+          expires_at: string | null
+          signed_at: string | null
+          signature_data: Json | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          document_id: string
+          sender_id: string
+          receiver_id: string
+          status?: 'pending' | 'signed' | 'declined' | 'expired'
+          message?: string | null
+          expires_at?: string | null
+          signed_at?: string | null
+          signature_data?: Json | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          document_id?: string
+          sender_id?: string
+          receiver_id?: string
+          status?: 'pending' | 'signed' | 'declined' | 'expired'
+          message?: string | null
+          expires_at?: string | null
+          signed_at?: string | null
+          signature_data?: Json | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      signature_positions: {
+        Row: {
+          id: string
+          signature_request_id: string
+          page_number: number
+          x_position: number
+          y_position: number
+          width: number
+          height: number
+          field_type: 'signature' | 'date' | 'text' | 'checkbox'
+          field_label: string | null
+          required: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          signature_request_id: string
+          page_number: number
+          x_position: number
+          y_position: number
+          width: number
+          height: number
+          field_type?: 'signature' | 'date' | 'text' | 'checkbox'
+          field_label?: string | null
+          required?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          signature_request_id?: string
+          page_number?: number
+          x_position?: number
+          y_position?: number
+          width?: number
+          height?: number
+          field_type?: 'signature' | 'date' | 'text' | 'checkbox'
+          field_label?: string | null
+          required?: boolean
+          created_at?: string
+        }
+      }
 
     }
     Views: {

@@ -29,7 +29,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { EllipsisVertical, Plus } from 'lucide-react';
+import { EllipsisVertical, Plus, PenLine } from 'lucide-react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { toast } from 'sonner';
 import type { Database } from '@/lib/database.types';
@@ -37,6 +37,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { useSignatures } from '@/hooks/use-signatures';
+import { SignatureRequestDialog } from '@/components/signature-request-dialog';
 
 import {
   Lock,
@@ -122,20 +124,34 @@ export default function MyVaultPage() {
   const [documentToDelete, setDocumentToDelete] = useState<VaultDocument | null>(null);
   const [shareDialogOpen, setShareDialogOpen] = useState<boolean>(false);
   const [documentToShare, setDocumentToShare] = useState<VaultDocument | null>(null);
+  const [signatureRequestDialogOpen, setSignatureRequestDialogOpen] = useState<boolean>(false);
+  const [documentForSignature, setDocumentForSignature] = useState<VaultDocument | null>(null);
   const [connections, setConnections] = useState<any[]>([]);
   const [selectedConnections, setSelectedConnections] = useState<string[]>([]);
   const [sharing, setSharing] = useState<boolean>(false);
-  const [signatureDialogOpen, setSignatureDialogOpen] = useState(false);
-  const [signatureDoc, setSignatureDoc] = useState<VaultDocument | null>(null);
-  const [recipientEmail, setRecipientEmail] = useState('');
-  const [signatureLoading, setSignatureLoading] = useState(false);
-  const [signatureSuccess, setSignatureSuccess] = useState(false);
-  const [signatureError, setSignatureError] = useState('');
+  const { userId } = user || {};
+  const {
+    sentRequests,
+    receivedRequests,
+    isLoading: signaturesLoading,
+    error: signaturesError,
+    refreshRequests,
+  } = useSignatures({ userId: user?.id });
+  const [currentUserProfile, setCurrentUserProfile] = useState<UserProfile | null>(null);
 
   // Fetch user on mount
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
+    supabase.auth.getUser().then(async ({ data }) => {
       setUser(data.user);
+      if (data.user) {
+        // Fetch profile from profiles table
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name, avatar_url')
+          .eq('id', data.user.id)
+          .single();
+        if (profile) setCurrentUserProfile(profile);
+      }
     });
   }, []);
 
@@ -375,6 +391,11 @@ export default function MyVaultPage() {
     setSelectedConnections([]);
   };
 
+  const handleRequestSignature = (doc: VaultDocument) => {
+    setDocumentForSignature(doc);
+    setSignatureRequestDialogOpen(true);
+  };
+
   const confirmShare = async () => {
     if (!documentToShare || !user || selectedConnections.length === 0) return;
     
@@ -459,40 +480,17 @@ export default function MyVaultPage() {
     return <File className="h-5 w-5 text-gray-500" />;
   };
 
-  const handleSignatureRequest = (doc: VaultDocument) => {
-    setSignatureDoc(doc);
-    setSignatureDialogOpen(true);
-    setRecipientEmail('');
-    setSignatureSuccess(false);
-    setSignatureError('');
-  };
-
-  const sendSignatureRequest = async () => {
-    if (!signatureDoc || !recipientEmail) return;
-    setSignatureLoading(true);
-    setSignatureError('');
-    setSignatureSuccess(false);
-    try {
-      const res = await fetch('/api/dropbox-sign/create-signature-request', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          documentId: signatureDoc.id,
-          fileUrl: signatureDoc.filepath, // Adjust if you store public URLs
-          senderId: signatureDoc.owner_id,
-          recipientEmail,
-        }),
-      });
-      if (res.ok) {
-        setSignatureSuccess(true);
-      } else {
-        const data = await res.json();
-        setSignatureError(data.error || 'Failed to send signature request');
-      }
-    } catch (err: any) {
-      setSignatureError(err.message || 'Unexpected error');
-    } finally {
-      setSignatureLoading(false);
+  const getSignatureStatusBadgeVariant = (status: string) => {
+    switch (status) {
+      case 'signed':
+        return 'success';
+      case 'pending':
+        return 'warning';
+      case 'declined':
+      case 'expired':
+        return 'destructive';
+      default:
+        return 'outline';
     }
   };
 
@@ -535,7 +533,7 @@ export default function MyVaultPage() {
                       e.preventDefault();
                       if (e.dataTransfer.files && e.dataTransfer.files[0]) {
                         setFileInput(e.dataTransfer.files[0]);
-                        setForm({ ...form, name: e.dataTransfer.files[0].name, file: e.dataTransfer.files[0] });
+                        setForm({ ...form, name: e.dataTransfer.files[0].name });
                       }
                     }}
                   >
@@ -551,7 +549,7 @@ export default function MyVaultPage() {
                       onChange={(e) => {
                         if (e.target.files && e.target.files[0]) {
                           setFileInput(e.target.files[0]);
-                          setForm({ ...form, name: e.target.files[0].name, file: e.target.files[0] });
+                          setForm({ ...form, name: e.target.files[0].name });
                         }
                       }}
                     />
@@ -884,16 +882,16 @@ export default function MyVaultPage() {
                       <Button 
                         variant="outline" 
                         size="sm" 
-                        className="flex-1 text-xs h-8"
+                        className="text-xs h-8"
                         onClick={() => handleDownload(doc)}
                       >
                         <Download className="h-3 w-3 mr-1" />
                         Download
-                              </Button>
+                      </Button>
                       <Button 
                         variant="outline" 
                         size="sm" 
-                        className="flex-1 text-xs h-8"
+                        className="text-xs h-8"
                         onClick={() => handleShare(doc)}
                       >
                         <Share2 className="h-3 w-3 mr-1" />
@@ -901,12 +899,13 @@ export default function MyVaultPage() {
                       </Button>
                       <Button
                         variant="outline"
-                        size="sm"
-                        className="flex-1 text-xs h-8"
-                        onClick={() => handleSignatureRequest(doc)}
+                        size="icon"
+                        className="h-8 w-8"
+                        title="Request Signature"
+                        onClick={() => handleRequestSignature(doc)}
                       >
-                        <FileText className="h-3 w-3 mr-1" />
-                        Generate Signature Link
+                        <PenLine className="h-4 w-4" />
+                        <span className="sr-only">Request Signature</span>
                       </Button>
                     </div>
               </div>
@@ -915,7 +914,9 @@ export default function MyVaultPage() {
             ))}
                     </div>
         )}
-                                </div>
+      </div>
+
+
 
       {/* Shared Documents Section */}
       <div className="space-y-4">
@@ -1088,6 +1089,122 @@ export default function MyVaultPage() {
               </Tabs>
               </div>
 
+      {/* Signature Requests Section */}
+      <div className="space-y-6 mt-8">
+        <h2 className="text-xl font-semibold flex items-center gap-2">
+          <FileText className="h-5 w-5 text-primary" /> Signature Requests
+        </h2>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Document</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Sender</TableHead>
+                <TableHead>Recipient</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead className="text-right">Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {[...receivedRequests, ...sentRequests].map((req) => (
+                <TableRow key={req.id}>
+                  <TableCell className="font-medium">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-muted rounded-lg">
+                        {getFileIcon(req.document?.filename || '')}
+                      </div>
+                      <span className="truncate max-w-[200px]" title={req.document?.filename}>
+                        {req.document?.filename}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline">Document</Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Avatar className="h-6 w-6">
+                        <AvatarImage src={
+                          req.sender_id === user?.id
+                            ? currentUserProfile?.avatar_url || undefined
+                            : req.sender?.avatar_url || undefined
+                        } />
+                        <AvatarFallback className="text-xs">
+                          {
+                            req.sender_id === user?.id
+                              ? currentUserProfile?.full_name?.charAt(0)
+                              : req.sender?.full_name?.charAt(0)
+                          }
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="truncate max-w-[150px]" title={
+                        req.sender_id === user?.id
+                          ? currentUserProfile?.full_name || 'You'
+                          : req.sender?.full_name || 'Unknown User'
+                      }>
+                        {req.sender_id === user?.id
+                          ? currentUserProfile?.full_name || 'You'
+                          : req.sender?.full_name || 'Unknown User'}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Avatar className="h-6 w-6">
+                        <AvatarImage src={
+                          req.receiver_id === user?.id
+                            ? currentUserProfile?.avatar_url || undefined
+                            : req.receiver?.avatar_url || undefined
+                        } />
+                        <AvatarFallback className="text-xs">
+                          {
+                            req.receiver_id === user?.id
+                              ? currentUserProfile?.full_name?.charAt(0)
+                              : req.receiver?.full_name?.charAt(0)
+                          }
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="truncate max-w-[150px]" title={
+                        req.receiver_id === user?.id
+                          ? currentUserProfile?.full_name || 'You'
+                          : req.receiver?.full_name || 'Unknown User'
+                      }>
+                        {req.receiver_id === user?.id
+                          ? currentUserProfile?.full_name || 'You'
+                          : req.receiver?.full_name || 'Unknown User'}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={getSignatureStatusBadgeVariant(req.status)} className="text-xs">
+                      {req.status.charAt(0).toUpperCase() + req.status.slice(1)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {req.created_at ? new Date(req.created_at).toLocaleDateString() : 'N/A'}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => window.open(`/dashboard/signature/${req.id}`, '_self')}
+                    >
+                      View
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          {signaturesLoading && <div className="text-muted-foreground text-sm mt-4">Loading...</div>}
+          {!signaturesLoading && receivedRequests.length + sentRequests.length === 0 && (
+            <div className="text-muted-foreground text-sm mt-4">No signature requests found.</div>
+          )}
+        </div>
+      </div>
+
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent className="sm:max-w-[425px] w-[95vw]">
           <DialogHeader>
@@ -1198,39 +1315,23 @@ export default function MyVaultPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Signature Request Dialog */}
-      <Dialog open={signatureDialogOpen} onOpenChange={setSignatureDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Send for Signature</DialogTitle>
-            <DialogDescription>
-              Enter the recipient's email to send a Dropbox Sign request for <b>{signatureDoc?.filename}</b>.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <Input
-              type="email"
-              placeholder="Recipient Email"
-              value={recipientEmail}
-              onChange={e => setRecipientEmail(e.target.value)}
-              disabled={signatureLoading || signatureSuccess}
-            />
-            {signatureError && <div className="text-red-600 text-sm">{signatureError}</div>}
-            {signatureSuccess && <div className="text-green-600 text-sm">Signature request sent!</div>}
-          </div>
-          <DialogFooter>
-            <Button
-              onClick={sendSignatureRequest}
-              disabled={signatureLoading || signatureSuccess || !recipientEmail}
-            >
-              {signatureLoading ? 'Sending...' : 'Send Signature Request'}
-            </Button>
-            <Button variant="outline" onClick={() => setSignatureDialogOpen(false)} disabled={signatureLoading}>
-              Cancel
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {signatureRequestDialogOpen && documentForSignature && (
+        <SignatureRequestDialog
+          open={signatureRequestDialogOpen}
+          onOpenChange={setSignatureRequestDialogOpen}
+          document={{
+            id: documentForSignature.id,
+            filename: documentForSignature.filename,
+            filepath: documentForSignature.filepath,
+            description: documentForSignature.description ?? null,
+          }}
+          onRequestCreated={() => {
+            setSignatureRequestDialogOpen(false);
+            setDocumentForSignature(null);
+            refreshRequests();
+          }}
+        />
+      )}
     </div>
   );
 }
