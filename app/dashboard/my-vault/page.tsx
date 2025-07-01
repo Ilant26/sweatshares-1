@@ -125,6 +125,12 @@ export default function MyVaultPage() {
   const [connections, setConnections] = useState<any[]>([]);
   const [selectedConnections, setSelectedConnections] = useState<string[]>([]);
   const [sharing, setSharing] = useState<boolean>(false);
+  const [signatureDialogOpen, setSignatureDialogOpen] = useState(false);
+  const [signatureDoc, setSignatureDoc] = useState<VaultDocument | null>(null);
+  const [recipientEmail, setRecipientEmail] = useState('');
+  const [signatureLoading, setSignatureLoading] = useState(false);
+  const [signatureSuccess, setSignatureSuccess] = useState(false);
+  const [signatureError, setSignatureError] = useState('');
 
   // Fetch user on mount
   useEffect(() => {
@@ -453,6 +459,43 @@ export default function MyVaultPage() {
     return <File className="h-5 w-5 text-gray-500" />;
   };
 
+  const handleSignatureRequest = (doc: VaultDocument) => {
+    setSignatureDoc(doc);
+    setSignatureDialogOpen(true);
+    setRecipientEmail('');
+    setSignatureSuccess(false);
+    setSignatureError('');
+  };
+
+  const sendSignatureRequest = async () => {
+    if (!signatureDoc || !recipientEmail) return;
+    setSignatureLoading(true);
+    setSignatureError('');
+    setSignatureSuccess(false);
+    try {
+      const res = await fetch('/api/dropbox-sign/create-signature-request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          documentId: signatureDoc.id,
+          fileUrl: signatureDoc.filepath, // Adjust if you store public URLs
+          senderId: signatureDoc.owner_id,
+          recipientEmail,
+        }),
+      });
+      if (res.ok) {
+        setSignatureSuccess(true);
+      } else {
+        const data = await res.json();
+        setSignatureError(data.error || 'Failed to send signature request');
+      }
+    } catch (err: any) {
+      setSignatureError(err.message || 'Unexpected error');
+    } finally {
+      setSignatureLoading(false);
+    }
+  };
+
   return (
     <div className="flex-1 space-y-6 p-4 sm:p-8 pt-6">
       {/* Header Section */}
@@ -492,7 +535,7 @@ export default function MyVaultPage() {
                       e.preventDefault();
                       if (e.dataTransfer.files && e.dataTransfer.files[0]) {
                         setFileInput(e.dataTransfer.files[0]);
-                        setForm({ ...form, name: e.dataTransfer.files[0].name });
+                        setForm({ ...form, name: e.dataTransfer.files[0].name, file: e.dataTransfer.files[0] });
                       }
                     }}
                   >
@@ -508,7 +551,7 @@ export default function MyVaultPage() {
                       onChange={(e) => {
                         if (e.target.files && e.target.files[0]) {
                           setFileInput(e.target.files[0]);
-                          setForm({ ...form, name: e.target.files[0].name });
+                          setForm({ ...form, name: e.target.files[0].name, file: e.target.files[0] });
                         }
                       }}
                     />
@@ -856,6 +899,15 @@ export default function MyVaultPage() {
                         <Share2 className="h-3 w-3 mr-1" />
                         Share
                       </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 text-xs h-8"
+                        onClick={() => handleSignatureRequest(doc)}
+                      >
+                        <FileText className="h-3 w-3 mr-1" />
+                        Generate Signature Link
+                      </Button>
                     </div>
               </div>
             </CardContent>
@@ -1141,6 +1193,40 @@ export default function MyVaultPage() {
               disabled={selectedConnections.length === 0 || sharing}
             >
               {sharing ? 'Sharing...' : 'Share Document'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Signature Request Dialog */}
+      <Dialog open={signatureDialogOpen} onOpenChange={setSignatureDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Send for Signature</DialogTitle>
+            <DialogDescription>
+              Enter the recipient's email to send a Dropbox Sign request for <b>{signatureDoc?.filename}</b>.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Input
+              type="email"
+              placeholder="Recipient Email"
+              value={recipientEmail}
+              onChange={e => setRecipientEmail(e.target.value)}
+              disabled={signatureLoading || signatureSuccess}
+            />
+            {signatureError && <div className="text-red-600 text-sm">{signatureError}</div>}
+            {signatureSuccess && <div className="text-green-600 text-sm">Signature request sent!</div>}
+          </div>
+          <DialogFooter>
+            <Button
+              onClick={sendSignatureRequest}
+              disabled={signatureLoading || signatureSuccess || !recipientEmail}
+            >
+              {signatureLoading ? 'Sending...' : 'Send Signature Request'}
+            </Button>
+            <Button variant="outline" onClick={() => setSignatureDialogOpen(false)} disabled={signatureLoading}>
+              Cancel
             </Button>
           </DialogFooter>
         </DialogContent>

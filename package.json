@@ -45,6 +45,7 @@
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "framer-motion": "^12.18.1",
+    "hellosign-sdk": "^2.1.0",
     "jspdf": "^3.0.1",
     "jspdf-autotable": "^5.0.2",
     "lucide-react": "^0.513.0",
