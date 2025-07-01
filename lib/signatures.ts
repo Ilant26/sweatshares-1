@@ -1,7 +1,45 @@
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import type { Database } from './database.types'
+import { sendMessage } from './messages'
 
 const supabaseClient = createClientComponentClient<Database>()
+
+// Helper function to send signature-related messages
+async function sendSignatureMessage(
+  receiverId: string,
+  type: 'signature_request' | 'document_signed',
+  signatureRequest: SignatureRequest,
+  senderName?: string
+) {
+  try {
+    let messageContent = ''
+    let actionUrl = ''
+
+    if (type === 'signature_request') {
+      messageContent = JSON.stringify({
+        type: 'signature_request',
+        signatureRequestId: signatureRequest.id,
+        documentName: signatureRequest.document?.filename || 'Document',
+        senderName: senderName || 'Someone',
+        message: signatureRequest.message || ''
+      })
+      actionUrl = `/dashboard/signature/${signatureRequest.id}`
+    } else if (type === 'document_signed') {
+      messageContent = JSON.stringify({
+        type: 'document_signed',
+        signatureRequestId: signatureRequest.id,
+        documentName: signatureRequest.document?.filename || 'Document',
+        signerName: senderName || 'Someone'
+      })
+      actionUrl = `/dashboard/signature/${signatureRequest.id}`
+    }
+
+    await sendMessage(receiverId, messageContent)
+  } catch (error) {
+    console.error('Error sending signature message:', error)
+    // Don't throw error to avoid breaking the main signature flow
+  }
+}
 
 export interface SignatureRequest {
   id: string
@@ -144,6 +182,7 @@ export async function createSignatureRequest(
     .select(`
       *,
       document:vault_documents(id, filename, filepath, description),
+      sender:profiles!signature_requests_sender_id_fkey(id, full_name, avatar_url),
       receiver:profiles!signature_requests_receiver_id_fkey(id, full_name, avatar_url),
       positions:signature_positions(*)
     `)
@@ -154,6 +193,22 @@ export async function createSignatureRequest(
     console.error('Error fetching complete signature request:', fetchError)
     throw new Error('Failed to fetch complete signature request')
   }
+
+  // Send message to receiver about the signature request
+  const senderProfile = await supabaseClient
+    .from('profiles')
+    .select('full_name, username')
+    .eq('id', userId)
+    .single()
+
+  const senderName = senderProfile?.data?.full_name || senderProfile?.data?.username || 'Someone'
+  
+  await sendSignatureMessage(
+    requestData.receiver_id,
+    'signature_request',
+    completeRequest,
+    senderName
+  )
 
   return completeRequest
 }
@@ -239,6 +294,22 @@ export async function signDocument(
     console.error('Error signing document:', error)
     throw new Error('Failed to sign document')
   }
+
+  // Send message to sender about the signed document
+  const signerProfile = await supabaseClient
+    .from('profiles')
+    .select('full_name, username')
+    .eq('id', userId)
+    .single()
+
+  const signerName = signerProfile?.data?.full_name || signerProfile?.data?.username || 'Someone'
+  
+  await sendSignatureMessage(
+    data.sender_id,
+    'document_signed',
+    data,
+    signerName
+  )
 
   return data
 }

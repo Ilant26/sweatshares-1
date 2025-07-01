@@ -263,6 +263,37 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to update signature request' }, { status: 500 })
     }
 
+    // Send message to sender about the signed document
+    try {
+      const signerProfile = await supabase
+        .from('profiles')
+        .select('full_name, username')
+        .eq('id', user.id)
+        .single()
+
+      const signerName = signerProfile?.data?.full_name || signerProfile?.data?.username || 'Someone'
+      
+      const messageContent = JSON.stringify({
+        type: 'document_signed',
+        signatureRequestId: requestId,
+        documentName: (signatureRequest as any).document?.filename || 'Document',
+        signerName: signerName
+      })
+
+      // Send the message
+      await supabase
+        .from('messages')
+        .insert({
+          sender_id: user.id,
+          receiver_id: (signatureRequest as any).sender_id,
+          content: messageContent,
+          read: false
+        })
+    } catch (error) {
+      console.error('Error sending signature message:', error)
+      // Don't fail the entire request if message sending fails
+    }
+
     return NextResponse.json({
       success: true,
       signatureRequest: updatedRequest,

@@ -30,7 +30,7 @@ import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { toast } from 'sonner'
 import { Send, Users, Calendar, MessageSquare, FileText, Search } from 'lucide-react'
 import type { Database } from '@/lib/database.types'
-import { CreateSignatureRequestData } from '@/lib/signatures'
+import { CreateSignatureRequestData, createSignatureRequest } from '@/lib/signatures'
 
 interface SignatureRequestDialogProps {
   document: {
@@ -163,41 +163,7 @@ export function SignatureRequestDialog({ document, onRequestCreated, open: contr
         ],
       }
 
-      const { data, error } = await supabase
-        .from('signature_requests')
-        .insert({
-          document_id: requestData.document_id,
-          sender_id: user.id,
-          receiver_id: requestData.receiver_id,
-          message: requestData.message,
-          expires_at: requestData.expires_at,
-        })
-        .select()
-        .single()
-
-      if (error) {
-        console.error('Error creating signature request:', error)
-        toast.error('Failed to create signature request')
-        return
-      }
-
-      // Create signature positions
-      if (requestData.positions.length > 0) {
-        const positionsWithRequestId = requestData.positions.map(position => ({
-          ...position,
-          signature_request_id: data.id,
-        }))
-
-        const { error: positionsError } = await supabase
-          .from('signature_positions')
-          .insert(positionsWithRequestId)
-
-        if (positionsError) {
-          console.error('Error creating signature positions:', positionsError)
-          toast.error('Failed to create signature positions')
-          return
-        }
-      }
+      const signatureRequest = await createSignatureRequest(user.id, requestData)
 
       toast.success('Signature request sent successfully')
       setOpen(false)

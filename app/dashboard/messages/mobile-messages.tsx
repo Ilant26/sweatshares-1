@@ -60,6 +60,15 @@ function parseInvoiceMessage(content: string) {
     return null;
 }
 
+// Add a helper to parse signature messages
+function parseSignatureMessage(content: string) {
+    try {
+        const obj = JSON.parse(content);
+        if (obj && (obj.type === 'signature_request' || obj.type === 'document_signed')) return obj;
+    } catch {}
+    return null;
+}
+
 export function MobileMessages() {
     const { user } = useUser();
     const currentUserId = user?.id;
@@ -737,6 +746,8 @@ export function MobileMessages() {
                             const senderName = message.sender?.full_name || message.sender?.username || 'Unknown User';
                             const senderAvatar = message.sender?.avatar_url || undefined;
                             const invoiceMsg = parseInvoiceMessage(message.content);
+                            const signatureMsg = parseSignatureMessage(message.content);
+                            
                             if (invoiceMsg) {
                                 // Render invoice chat bubble
                                 return (
@@ -772,6 +783,72 @@ export function MobileMessages() {
                                                     rel="noopener noreferrer"
                                                 >
                                                     View Invoice
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            }
+                            
+                            if (signatureMsg) {
+                                // Render signature chat bubble
+                                return (
+                                    <div key={message.id} className={`flex ${isSent ? 'justify-end' : 'justify-start'} w-full`}>
+                                        <div className="flex items-end gap-2 max-w-[80%]">
+                                            {!isSent && (
+                                                <Avatar>
+                                                    <AvatarImage src={senderAvatar} alt={senderName} />
+                                                    <AvatarFallback>{senderName.charAt(0)}</AvatarFallback>
+                                                </Avatar>
+                                            )}
+                                            <div className={`rounded-lg border-2 p-4 shadow-md flex flex-col w-full ${
+                                                signatureMsg.type === 'signature_request' 
+                                                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' 
+                                                    : 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
+                                            }`}>
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <FileText className={`h-5 w-5 ${
+                                                        signatureMsg.type === 'signature_request' 
+                                                            ? 'text-blue-600' 
+                                                            : 'text-purple-600'
+                                                    }`} />
+                                                    <span className={`font-semibold ${
+                                                        signatureMsg.type === 'signature_request' 
+                                                            ? 'text-blue-700 dark:text-blue-300' 
+                                                            : 'text-purple-700 dark:text-purple-300'
+                                                    }`}>
+                                                        {signatureMsg.type === 'signature_request' ? 'Signature Request' : 'Document Signed'}
+                                                    </span>
+                                                </div>
+                                                <div className="text-sm mb-1">
+                                                    <span className="font-medium">Document:</span> {signatureMsg.documentName}
+                                                </div>
+                                                {signatureMsg.type === 'signature_request' && (
+                                                    <>
+                                                        <div className="text-sm mb-1">
+                                                            <span className="font-medium">From:</span> {signatureMsg.senderName}
+                                                        </div>
+                                                        {signatureMsg.message && (
+                                                            <div className="text-xs text-muted-foreground mb-2">{signatureMsg.message}</div>
+                                                        )}
+                                                    </>
+                                                )}
+                                                {signatureMsg.type === 'document_signed' && (
+                                                    <div className="text-sm mb-1">
+                                                        <span className="font-medium">Signed by:</span> {signatureMsg.signerName}
+                                                    </div>
+                                                )}
+                                                <a
+                                                    href={`/dashboard/signature/${signatureMsg.signatureRequestId}`}
+                                                    className={`inline-block mt-2 px-4 py-2 rounded text-white text-xs font-semibold transition ${
+                                                        signatureMsg.type === 'signature_request' 
+                                                            ? 'bg-blue-600 hover:bg-blue-700' 
+                                                            : 'bg-purple-600 hover:bg-purple-700'
+                                                    }`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                >
+                                                    {signatureMsg.type === 'signature_request' ? 'Sign Document' : 'View Signature'}
                                                 </a>
                                             </div>
                                         </div>
@@ -995,6 +1072,11 @@ export function MobileMessages() {
                                 {(() => {
                                     const invoice = parseInvoiceMessage(conversation.lastMessage);
                                     if (invoice) return 'Invoice Sent';
+                                    const signature = parseSignatureMessage(conversation.lastMessage);
+                                    if (signature) {
+                                        if (signature.type === 'signature_request') return 'Signature Request';
+                                        if (signature.type === 'document_signed') return 'Document Signed';
+                                    }
                                     return conversation.lastMessage;
                                 })()}
                             </p>
