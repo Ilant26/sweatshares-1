@@ -45,6 +45,11 @@ import {
   MoreHorizontal,
   Edit,
   Trash2,
+  UserPlus,
+  Check,
+  Briefcase,
+  MapPin,
+  DollarSign,
 } from "lucide-react";
 import { AttachmentType } from "@/lib/database.types";
 import { supabase } from "@/lib/supabase";
@@ -90,6 +95,9 @@ export default function NewsFeedPage() {
     posts: 0,
     listings: 0
   });
+  const [suggestedConnections, setSuggestedConnections] = useState<any[]>([]);
+  const [connectionStatus, setConnectionStatus] = useState<{[key: string]: 'none' | 'pending' | 'accepted' | 'rejected'}>({});
+  const [recentListings, setRecentListings] = useState<any[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const router = useRouter();
@@ -129,16 +137,67 @@ export default function NewsFeedPage() {
       }
     };
 
+    const fetchSuggestedConnections = async () => {
+      if (!user) return;
+
+      try {
+        // Get all connections (accepted, pending, rejected) for current user
+        const { data: userConnections } = await supabase
+          .from('connections')
+          .select('*')
+          .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`);
+
+        // Get IDs of users the current user is already connected with
+        const connectedUserIds = userConnections?.map(conn => 
+          conn.sender_id === user.id ? conn.receiver_id : conn.sender_id
+        ) || [];
+
+        // Fetch profiles that the user is not connected with
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, username, full_name, avatar_url, professional_role, bio, country, is_online, last_seen')
+          .neq('id', user.id)
+          .not('id', 'in', `(${connectedUserIds.join(',')})`)
+          .limit(3); // Limit to 3 suggestions
+
+        if (profiles) {
+          setSuggestedConnections(profiles);
+          
+          // Build connection status map for suggested connections
+          const statusMap: {[key: string]: 'none' | 'pending' | 'accepted' | 'rejected'} = {};
+          profiles.forEach(profile => {
+            statusMap[profile.id] = 'none';
+          });
+          setConnectionStatus(statusMap);
+        }
+      } catch (error) {
+        console.error('Error fetching suggested connections:', error);
+      }
+    };
+
+    const fetchRecentListings = async () => {
+      try {
+        const { data: listings } = await supabase
+          .from('listings')
+          .select('*, profiles(full_name, professional_role, avatar_url)')
+          .eq('status', 'active')
+          .order('created_at', { ascending: false })
+          .limit(5); // Limit to 5 recent listings
+
+        if (listings) {
+          setRecentListings(listings);
+        }
+      } catch (error) {
+        console.error('Error fetching recent listings:', error);
+      }
+    };
+
     fetchStats();
+    fetchSuggestedConnections();
+    fetchRecentListings();
   }, [user]);
 
-  const trendingTopics = [
-    { name: "#ArtificialIntelligence", posts: "1,345 posts" },
-    { name: "#StartupFunding", posts: "878 posts" },
-    { name: "#SustainableDevelopment", posts: "733 posts" },
-    { name: "#RemoteWork", posts: "681 posts" },
-    { name: "#TechForGood", posts: "542 posts" },
-  ];
+
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -354,6 +413,114 @@ export default function NewsFeedPage() {
     }
   };
 
+  const handleConnect = async (profileId: string) => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('connections')
+        .insert({
+          sender_id: user.id,
+          receiver_id: profileId,
+          status: 'pending'
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error sending connection request:', error);
+        toast({
+          title: "Error",
+          description: "Failed to send connection request. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Update local state
+      setConnectionStatus(prev => ({
+        ...prev,
+        [profileId]: 'pending'
+      }));
+
+      // Create notification for the receiver
+      await supabase
+        .from('notifications')
+        .insert({
+          user_id: profileId,
+          type: 'connection_request',
+          content: 'sent you a connection request',
+          sender_id: user.id,
+          read: false
+        });
+
+      toast({
+        title: "Success",
+        description: "Connection request sent successfully.",
+      });
+    } catch (error) {
+      console.error('Error in handleConnect:', error);
+      toast({
+        title: "Error",
+        description: "Failed to send connection request. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const getConnectionButton = (profile: any) => {
+    const status = connectionStatus[profile.id] || 'none';
+
+    if (status === 'pending') {
+      return (
+        <Button variant="outline" size="sm" disabled>
+          <UserPlus className="h-4 w-4 mr-1" />
+          Connection sent
+        </Button>
+      );
+    }
+    if (status === 'accepted') {
+      return (
+        <Button variant="ghost" size="sm" disabled>
+          <Check className="h-4 w-4 mr-1" />
+          Connected
+        </Button>
+      );
+    }
+    if (status === 'rejected') {
+      return null;
+    }
+    return (
+      <Button variant="outline" size="sm" onClick={() => handleConnect(profile.id)}>
+        <UserPlus className="h-4 w-4 mr-1" />
+        Connect
+      </Button>
+    );
+  };
+
+  const formatListingType = (listingType: string): string => {
+    const typeMap: { [key: string]: string } = {
+      // Founder listing types
+      "find-funding": "Find Funding",
+      "cofounder": "Co Founder",
+      "expert-freelance": "Expert/ Freelance",
+      "employee": "Employee",
+      "mentor": "Mentor",
+      "sell-startup": "Startup Sale",
+      
+      // Investor listing types
+      "investment-opportunity": "Investment Opportunity",
+      "buy-startup": "Buy Startup",
+      "co-investor": "Co-investor",
+      
+      // Expert listing types
+      "mission": "Mission",
+      "job": "Job"
+    };
+    
+    return typeMap[listingType] || listingType;
+  };
+
   return (
     <motion.div 
       className="flex min-h-screen w-full flex-col bg-background"
@@ -361,8 +528,8 @@ export default function NewsFeedPage() {
       animate="visible"
       variants={pageVariants}
     >
-      <div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-14">
-        <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8 lg:grid-cols-[250px_1fr_250px] xl:grid-cols-[300px_1fr_300px]">
+      <div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-8">
+        <main className="grid flex-1 items-start gap-4 p-4 sm:px-4 sm:py-0 md:gap-6 lg:grid-cols-[220px_1fr_250px] xl:grid-cols-[250px_1fr_300px]">
           {/* Left Sidebar */}
           <motion.div className="grid auto-rows-max items-start gap-4 md:gap-8" variants={itemVariants}>
             {/* Profile Card */}
@@ -863,40 +1030,90 @@ export default function NewsFeedPage() {
 
           {/* Right Sidebar */}
           <motion.div className="grid auto-rows-max items-start gap-4 md:gap-8" variants={itemVariants}>
-            {/* Filter Card */}
+            {/* Suggested Connections Card */}
             <motion.div variants={itemVariants}>
               <Card>
-                <CardHeader className="pb-3">
-                  <h3 className="text-lg font-semibold">Filter by</h3>
+                <CardHeader className="pb-2">
+                  <h3 className="text-base font-semibold">Suggested Connections</h3>
                 </CardHeader>
                 <CardContent className="grid gap-2">
-                  <h4 className="text-sm font-medium">Industry</h4>
-                  <Input placeholder="Select industries" />
-                  <h4 className="text-sm font-medium mt-4">Publication date</h4>
-                  <Button variant="outline" className="w-full justify-start">
-                    Show all
-                    <Filter className="ml-auto h-4 w-4" />
-                  </Button>
-                  <Button variant="secondary" className="mt-4">
-                    Reset filters
+                  {suggestedConnections.length > 0 ? (
+                    suggestedConnections.map((profile) => (
+                      <div key={profile.id} className="flex items-center space-x-2 p-2 rounded-lg border">
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={profile.avatar_url || undefined} alt={profile.full_name || undefined} />
+                          <AvatarFallback>{profile.full_name?.charAt(0) || profile.username?.charAt(0) || 'U'}</AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <h4 
+                            className="text-sm font-medium cursor-pointer hover:text-primary transition-colors truncate"
+                            onClick={() => handleProfileClick(profile.id)}
+                          >
+                            {profile.full_name || profile.username}
+                          </h4>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {profile.professional_role}
+                          </p>
+                        </div>
+                        <div className="flex-shrink-0">
+                          {getConnectionButton(profile)}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-3">
+                      <p className="text-sm text-muted-foreground">No suggestions available</p>
+                    </div>
+                  )}
+                  <Button variant="outline" className="w-full mt-1" size="sm" onClick={() => router.push('/dashboard/connect')}>
+                    View More
+                    <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </CardContent>
               </Card>
             </motion.div>
 
-            {/* Trending Topics Card */}
+                        {/* Recent Listings Card */}
             <motion.div variants={itemVariants}>
               <Card>
-                <CardHeader className="pb-3">
-                  <h3 className="text-lg font-semibold">Trending Topics</h3>
+                <CardHeader className="pb-2">
+                  <h3 className="text-base font-semibold">Recent Listings</h3>
                 </CardHeader>
                 <CardContent className="grid gap-2">
-                  {trendingTopics.map((topic, index) => (
-                    <div key={index} className="flex justify-between items-center text-sm">
-                      <div>{topic.name}</div>
-                      <div className="text-muted-foreground">{topic.posts}</div>
+                  {recentListings.length > 0 ? (
+                    recentListings.map((listing) => (
+                      <div key={listing.id} className="p-2 rounded border hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => router.push(`/dashboard/listings/${listing.id}`)}>
+                        <div className="flex items-center space-x-2">
+                          <Avatar className="h-6 w-6 flex-shrink-0">
+                            <AvatarImage src={listing.profiles?.avatar_url || undefined} alt={listing.profiles?.full_name || undefined} />
+                            <AvatarFallback>{listing.profiles?.full_name?.charAt(0) || 'U'}</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0 overflow-hidden">
+                            <div className="flex items-center space-x-1 mb-1">
+                              <h4 className="text-xs font-medium truncate flex-1">
+                                {listing.profiles?.full_name || listing.profiles?.username || 'Unknown User'}
+                              </h4>
+                              <Badge variant="outline" className="text-xs flex-shrink-0 px-1 py-0">
+                                {formatListingType(listing.listing_type)}
+                              </Badge>
+                            </div>
+                            <p className="text-xs font-medium text-primary line-clamp-1">
+                              {listing.title}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-3">
+                      <Briefcase className="h-6 w-6 mx-auto text-muted-foreground mb-2" />
+                      <p className="text-sm text-muted-foreground">No recent listings</p>
                     </div>
-                  ))}
+                  )}
+                  <Button variant="outline" className="w-full mt-1" size="sm" onClick={() => router.push('/dashboard/listings')}>
+                    View All Listings
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
                 </CardContent>
               </Card>
             </motion.div>

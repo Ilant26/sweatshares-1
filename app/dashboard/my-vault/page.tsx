@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -93,11 +94,14 @@ interface VaultDocument {
 
 export default function MyVaultPage() {
   const supabase = createClientComponentClient<Database>();
+  const searchParams = useSearchParams();
   // Types for documents and activities
   type SharedDocument = VaultDocument;
   type Activity = any;
   const [user, setUser] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<string>('personal-documents');
+  const [showSignatureInstructions, setShowSignatureInstructions] = useState<boolean>(false);
+  const [targetUserId, setTargetUserId] = useState<string | null>(null);
   const [addDocumentDialogOpen, setAddDocumentDialogOpen] = useState<boolean>(false);
   const [uploading, setUploading] = useState<boolean>(false);
   const [personalDocuments, setPersonalDocuments] = useState<VaultDocument[]>([]);
@@ -154,6 +158,18 @@ export default function MyVaultPage() {
       }
     });
   }, []);
+
+  // Handle URL parameters for signature request flow
+  useEffect(() => {
+    const signature = searchParams.get('signature');
+    const userId = searchParams.get('userId');
+    
+    if (signature === 'true' && userId) {
+      setShowSignatureInstructions(true);
+      setTargetUserId(userId);
+      setActiveTab('personal-documents');
+    }
+  }, [searchParams]);
 
   // Fetch personal documents
   useEffect(() => {
@@ -659,6 +675,49 @@ export default function MyVaultPage() {
           </div>
         </div>
       </div>
+
+      {/* Signature Request Instructions */}
+      {showSignatureInstructions && (
+        <Card className="border-blue-200 bg-blue-50 dark:bg-blue-950/20">
+          <CardContent className="p-4">
+            <div className="flex items-start gap-3">
+              <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                <FileText className="h-5 w-5 text-blue-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-1">
+                  Send Signature Request
+                </h3>
+                <p className="text-sm text-blue-700 dark:text-blue-200 mb-3">
+                  To send a signature request to your contact, follow these steps:
+                </p>
+                <div className="space-y-2 text-sm text-blue-700 dark:text-blue-200">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    <span>1. Select a document from your Personal Documents below</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    <span>2. Click the "Request Signature" button (📝 icon) on the document</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    <span>3. Your contact will receive a message with a link to sign the document</span>
+                  </div>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="mt-3 border-blue-300 text-blue-700 hover:bg-blue-100"
+                  onClick={() => setShowSignatureInstructions(false)}
+                >
+                  Got it
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Stats Overview */}
       <div className="space-y-6">

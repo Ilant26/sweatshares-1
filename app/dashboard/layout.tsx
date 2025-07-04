@@ -115,6 +115,14 @@ function DashboardHeader() {
       {
         current: '/dashboard/find-partner',
         previous: { name: 'Dashboard', path: '/dashboard' }
+      },
+      {
+        current: '/dashboard/support',
+        previous: { name: 'Dashboard', path: '/dashboard' }
+      },
+      {
+        current: '/dashboard/report-a-bug',
+        previous: { name: 'Dashboard', path: '/dashboard' }
       }
     ];
 
@@ -183,14 +191,24 @@ function DashboardHeader() {
     if (currentPath.startsWith('/dashboard/connect/')) {
       return { name: 'Connect', path: '/dashboard/connect' };
     }
+    if (currentPath.startsWith('/dashboard/support/')) {
+      return { name: 'Support', path: '/dashboard/support' };
+    }
+    if (currentPath.startsWith('/dashboard/report-a-bug/')) {
+      return { name: 'Report a Bug', path: '/dashboard/report-a-bug' };
+    }
 
     // Fallback to dashboard
     return { name: 'Dashboard', path: '/dashboard' };
   };
 
   const handleGoBack = () => {
-    const previousPage = getPreviousPageInfo();
-    router.push(previousPage.path);
+    if (typeof window !== 'undefined' && window.history.length > 1) {
+      router.back();
+    } else {
+      // Fallback to dashboard if no history
+      router.push('/dashboard');
+    }
   };
 
   useEffect(() => {
@@ -228,7 +246,7 @@ function DashboardHeader() {
             onClick={handleGoBack}
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
-            <span className="hidden sm:inline">Back to {getPreviousPageInfo().name}</span>
+            <span className="hidden sm:inline">Back to previous page</span>
             <span className="sm:hidden">Back</span>
           </Button>
         )}

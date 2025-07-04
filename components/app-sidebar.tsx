@@ -163,17 +163,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild tooltip="Support">
-              <Link href="/support" className="relative flex items-center">
+              <Link href="/dashboard/support" className="relative flex items-center">
                 <HelpCircle className="size-4" />
                 <span>Support</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild tooltip="Make a Feedback">
-              <Link href="/feedback" className="relative flex items-center">
+            <SidebarMenuButton asChild tooltip="Report a Bug">
+              <Link href="/dashboard/report-a-bug" className="relative flex items-center">
                 <MessageSquarePlus className="size-4" />
-                <span>Make a Feedback</span>
+                <span>Report a Bug</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>

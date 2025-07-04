@@ -35,15 +35,7 @@ interface Conversation {
     isPlaceholder?: boolean;
 }
 
-interface VaultDocument {
-    id: string;
-    filename: string;
-    filepath: string;
-    type?: string;
-    size?: number;
-    owner_id: string;
-    created_at: string;
-}
+
 
 // Utility to deduplicate messages by id
 function dedupeMessages(messages: Message[]): Message[] {
@@ -92,8 +84,7 @@ export default function MessagesPage() {
     const [selectedUserProfile, setSelectedUserProfile] = useState<any>(null);
     const { refreshUnread } = useUnreadMessages();
     const router = useRouter();
-    const [vaultDocuments, setVaultDocuments] = useState<VaultDocument[]>([]);
-    const [showVaultDialog, setShowVaultDialog] = useState(false);
+
     const supabase = createClientComponentClient();
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -217,21 +208,7 @@ export default function MessagesPage() {
         fetchConnections();
     }, [currentUserId]);
 
-    // Fetch vault documents
-    useEffect(() => {
-        if (!user) return;
-        const fetchVaultDocs = async () => {
-            const { data, error } = await supabase
-                .from('vault_documents')
-                .select('*')
-                .eq('owner_id', user.id)
-                .order('created_at', { ascending: false });
-            if (!error) {
-                setVaultDocuments(data || []);
-            }
-        };
-        fetchVaultDocs();
-    }, [user]);
+
 
     // Helper to fetch and cache a profile by userId
     async function fetchAndCacheProfile(userId: string) {
@@ -574,46 +551,9 @@ export default function MessagesPage() {
         router.push(`/dashboard/profile/${userId}`);
     };
 
-    const handleVaultDocumentSelect = async (doc: VaultDocument) => {
-        try {
-            const { data, error } = await supabase.storage
-                .from('vault')
-                .download(doc.filepath);
-            
-            if (error) throw error;
-            
-            // Create a File object from the downloaded data
-            const file = new File([data], doc.filename, { type: data.type });
-            
-            // Here you would typically handle the file attachment
-            // For now, we'll just show a success message
-            toast.success(`Selected ${doc.filename} from vault`);
-            setShowVaultDialog(false);
-        } catch (error) {
-            console.error('Error selecting vault document:', error);
-            toast.error('Failed to select document from vault');
-        }
-    };
 
-    const getFileIcon = (filename: string) => {
-        const extension = filename.split('.').pop()?.toLowerCase();
-        switch (extension) {
-            case 'pdf':
-                return <FileText className="h-4 w-4 text-red-500" />;
-            case 'doc':
-            case 'docx':
-                return <FileText className="h-4 w-4 text-blue-500" />;
-            case 'xls':
-            case 'xlsx':
-                return <FileText className="h-4 w-4 text-green-500" />;
-            case 'jpg':
-            case 'jpeg':
-            case 'png':
-                return <FileText className="h-4 w-4 text-yellow-500" />;
-            default:
-                return <FileText className="h-4 w-4 text-gray-500" />;
-        }
-    };
+
+
 
     // Add a function to handle file download
     const handleFileDownload = async (filepath: string, filename: string) => {
@@ -700,6 +640,12 @@ export default function MessagesPage() {
     const handleSendInvoice = () => {
         if (selectedConversation) {
             router.push(`/dashboard/my-invoices?create=true&userId=${selectedConversation}`);
+        }
+    };
+
+    const handleSendSignatureRequest = () => {
+        if (selectedConversation) {
+            router.push(`/dashboard/my-vault?signature=true&userId=${selectedConversation}`);
         }
     };
 
@@ -1073,15 +1019,12 @@ export default function MessagesPage() {
                                                     <FileText className="mr-2 h-4 w-4" /> Upload from device
                                                 </div>
                                             </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => setShowVaultDialog(true)}>
-                                                <Lock className="mr-2 h-4 w-4" /> Select from My Vault
-                                            </DropdownMenuItem>
-                                            <DropdownMenuSeparator />
-                                            <DropdownMenuItem>
-                                                <CreditCard className="mr-2 h-4 w-4" /> Generate payment link
-                                            </DropdownMenuItem>
+
                                             <DropdownMenuItem onClick={handleSendInvoice} disabled={!selectedConversation}>
                                                 <Receipt className="mr-2 h-4 w-4" /> Send an invoice
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onClick={handleSendSignatureRequest} disabled={!selectedConversation}>
+                                                <FileText className="mr-2 h-4 w-4" /> Send Signature Request
                                             </DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
@@ -1121,49 +1064,7 @@ export default function MessagesPage() {
                 </Card>
             </div>
 
-            {/* Vault Document Selection Dialog */}
-            <Dialog open={showVaultDialog} onOpenChange={setShowVaultDialog}>
-                <DialogContent className="sm:max-w-[600px]">
-                    <DialogHeader>
-                        <DialogTitle>Select from My Vault</DialogTitle>
-                        <DialogDescription>
-                            Choose a document from your secure vault to attach
-                        </DialogDescription>
-                    </DialogHeader>
-                    <ScrollArea className="h-[400px] pr-4">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>NAME</TableHead>
-                                    <TableHead>TYPE</TableHead>
-                                    <TableHead>ADDED</TableHead>
-                                    <TableHead className="text-right">ACTIONS</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {vaultDocuments.map((doc) => (
-                                    <TableRow key={doc.id}>
-                                        <TableCell className="font-medium flex items-center gap-2">
-                                            {getFileIcon(doc.filename)} {doc.filename}
-                                        </TableCell>
-                                        <TableCell><Badge variant="outline">{doc.type || 'N/A'}</Badge></TableCell>
-                                        <TableCell>{new Date(doc.created_at).toLocaleString()}</TableCell>
-                                        <TableCell className="text-right">
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => handleVaultDocumentSelect(doc)}
-                                            >
-                                                Select
-                                            </Button>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </ScrollArea>
-                </DialogContent>
-            </Dialog>
+
         </div>
     );
 } 

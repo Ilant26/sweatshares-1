@@ -215,6 +215,20 @@ function renderMessageContent(content: string) {
         </span>
       );
     }
+    if (obj && obj.type === 'document_signed') {
+      return (
+        <span>
+          Document <b>"{obj.documentName}"</b> has been signed by <b>{obj.signerName}</b>
+        </span>
+      );
+    }
+    if (obj && obj.type === 'signature_request') {
+      return (
+        <span>
+          Signature request for document <b>"{obj.documentName}"</b> from <b>{obj.senderName}</b>
+        </span>
+      );
+    }
   } catch {
     // Not JSON, fall through
   }
