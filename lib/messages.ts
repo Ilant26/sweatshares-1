@@ -178,13 +178,20 @@ export async function getProfileById(userId: string) {
 
 let sharedChannel: RealtimeChannel | null = null;
 let messageCallbacks: ((message: any) => void)[] = [];
+let isSubscribing = false;
+let retryTimeout: NodeJS.Timeout | null = null;
 
 export function subscribeToMessages(callback: (message: any) => void) {
     // Add callback to the list
     messageCallbacks.push(callback);
 
-    // If channel doesn't exist, create it
-    if (!sharedChannel) {
+    // If channel doesn't exist or is closed and we're not already subscribing, create it
+    if ((!sharedChannel || sharedChannel.state === 'closed') && !isSubscribing) {
+        // Reset channel if it's in a closed state
+        if (sharedChannel && sharedChannel.state === 'closed') {
+            sharedChannel = null;
+        }
+        isSubscribing = true;
         try {
             sharedChannel = supabase
                 .channel('messages')
@@ -207,13 +214,35 @@ export function subscribeToMessages(callback: (message: any) => void) {
                     }
                 )
                 .subscribe((status) => {
+                    isSubscribing = false;
                     if (status === 'SUBSCRIBED') {
                         console.log('Successfully subscribed to messages channel');
+                        // Clear any retry timeout since we're successfully connected
+                        if (retryTimeout) {
+                            clearTimeout(retryTimeout);
+                            retryTimeout = null;
+                        }
+                    } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+                        console.warn('Messages channel closed or errored:', status);
+                        // Reset channel state so it can be recreated
+                        sharedChannel = null;
+                        isSubscribing = false;
+                        
+                        // Retry subscription after a delay if there are still callbacks
+                        if (messageCallbacks.length > 0 && !retryTimeout) {
+                            retryTimeout = setTimeout(() => {
+                                retryTimeout = null;
+                                // Force recreation of channel on next subscription attempt
+                                sharedChannel = null;
+                                isSubscribing = false;
+                            }, 5000); // Retry after 5 seconds
+                        }
                     } else {
                         console.error('Failed to subscribe to messages channel:', status);
                     }
                 });
         } catch (err) {
+            isSubscribing = false;
             console.error('Error setting up message subscription:', err);
             throw err;
         }
@@ -228,10 +257,21 @@ export function subscribeToMessages(callback: (message: any) => void) {
             // If no more callbacks, unsubscribe from channel
             if (messageCallbacks.length === 0 && sharedChannel) {
                 try {
-                    sharedChannel.unsubscribe();
+                    // Check if channel is still active before unsubscribing
+                    if (sharedChannel && (sharedChannel.state === 'joined' || sharedChannel.state === 'joining')) {
+                        sharedChannel.unsubscribe();
+                    }
                     sharedChannel = null;
                 } catch (err) {
                     console.error('Error unsubscribing from channel:', err);
+                    // Reset channel state even if unsubscribe fails
+                    sharedChannel = null;
+                }
+                
+                // Clear retry timeout since no one is listening anymore
+                if (retryTimeout) {
+                    clearTimeout(retryTimeout);
+                    retryTimeout = null;
                 }
             }
         }

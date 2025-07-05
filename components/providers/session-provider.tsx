@@ -118,14 +118,31 @@ export function UnreadMessagesProvider({ children }: { children: React.ReactNode
   useEffect(() => {
     fetchUnreadCount()
     if (!user) return
+    
     // Real-time subscription for new/unread messages
-    const subscription = subscribeToMessages((newMessage: any) => {
-      if (newMessage.receiver_id === user.id && !newMessage.read) {
-        setUnreadCount((prev) => prev + 1)
+    let subscription: { unsubscribe: () => void } | null = null
+    
+    // Only subscribe if user is authenticated
+    if (user && user.id) {
+      try {
+        subscription = subscribeToMessages((newMessage: any) => {
+          if (newMessage.receiver_id === user.id && !newMessage.read) {
+            setUnreadCount((prev) => prev + 1)
+          }
+        })
+      } catch (error) {
+        console.error('Failed to subscribe to messages:', error)
       }
-    })
+    }
+    
     return () => {
-      subscription?.unsubscribe?.()
+      if (subscription?.unsubscribe) {
+        try {
+          subscription.unsubscribe()
+        } catch (error) {
+          console.error('Error unsubscribing from messages:', error)
+        }
+      }
     }
   }, [user, fetchUnreadCount])
 
