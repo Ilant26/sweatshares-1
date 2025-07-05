@@ -71,6 +71,7 @@ export default function MessagesPage() {
     const userIdFromUrl = searchParams.get('userId');
     const messageFromUrl = searchParams.get('message');
     const [selectedConversation, setSelectedConversation] = React.useState<string | null>(userIdFromUrl);
+    const [hasAutoSelected, setHasAutoSelected] = React.useState(false);
     const [searchQuery, setSearchQuery] = React.useState('');
     const isMobile = useIsMobile();
     const messagesEndRef = React.useRef<HTMLDivElement>(null);
@@ -350,6 +351,14 @@ export default function MessagesPage() {
         };
         fetchProfile();
     }, [selectedConversation, conversations]);
+
+    // Auto-select first conversation when page loads
+    useEffect(() => {
+        if (!hasAutoSelected && !selectedConversation && filteredConversations.length > 0 && !isLoadingAllMessages) {
+            setSelectedConversation(filteredConversations[0].id);
+            setHasAutoSelected(true);
+        }
+    }, [filteredConversations, selectedConversation, hasAutoSelected, isLoadingAllMessages]);
 
     // After building conversations
     let allConversations = [...conversations];

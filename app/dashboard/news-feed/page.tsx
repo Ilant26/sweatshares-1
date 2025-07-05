@@ -521,6 +521,29 @@ export default function NewsFeedPage() {
     return typeMap[listingType] || listingType;
   };
 
+  const getListingTypeColor = (listingType: string): string => {
+    const colorMap: { [key: string]: string } = {
+      // Founder listing types - Blue tones
+      "find-funding": "bg-blue-100 text-blue-800 border-blue-200",
+      "cofounder": "bg-indigo-100 text-indigo-800 border-indigo-200",
+      "expert-freelance": "bg-cyan-100 text-cyan-800 border-cyan-200",
+      "employee": "bg-sky-100 text-sky-800 border-sky-200",
+      "mentor": "bg-blue-100 text-blue-800 border-blue-200",
+      "sell-startup": "bg-purple-100 text-purple-800 border-purple-200",
+      
+      // Investor listing types - Green tones
+      "investment-opportunity": "bg-emerald-100 text-emerald-800 border-emerald-200",
+      "buy-startup": "bg-green-100 text-green-800 border-green-200",
+      "co-investor": "bg-teal-100 text-teal-800 border-teal-200",
+      
+      // Expert listing types - Orange/Yellow tones
+      "mission": "bg-orange-100 text-orange-800 border-orange-200",
+      "job": "bg-amber-100 text-amber-800 border-amber-200"
+    };
+    
+    return colorMap[listingType] || "bg-gray-100 text-gray-800 border-gray-200";
+  };
+
   return (
     <motion.div 
       className="flex min-h-screen w-full flex-col bg-background"
@@ -1090,10 +1113,10 @@ export default function NewsFeedPage() {
                           </Avatar>
                           <div className="flex-1 min-w-0 overflow-hidden">
                             <div className="flex items-center space-x-1 mb-1">
-                              <h4 className="text-xs font-medium truncate flex-1">
+                              <h4 className="text-xs font-bold truncate flex-1">
                                 {listing.profiles?.full_name || listing.profiles?.username || 'Unknown User'}
                               </h4>
-                              <Badge variant="outline" className="text-xs flex-shrink-0 px-1 py-0">
+                              <Badge className={`text-xs flex-shrink-0 px-2 py-0.5 border ${getListingTypeColor(listing.listing_type)}`}>
                                 {formatListingType(listing.listing_type)}
                               </Badge>
                             </div>
