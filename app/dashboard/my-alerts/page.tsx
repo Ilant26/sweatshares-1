@@ -141,17 +141,27 @@ export default function MyAlertsPage() {
     },
   ];
 
-  return (
-    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-      <div className="flex items-center justify-between space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight">My Alerts</h2>
-        <div className="flex items-center space-x-2">
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" /> New Alert
-              </Button>
-            </DialogTrigger>
+      return (
+        <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+            {/* Header Section */}
+            <div className="flex flex-col space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+                    <div className="flex items-center space-x-3">
+                        <div className="p-2 bg-primary/10 rounded-lg">
+                            <BellRing className="h-6 w-6 text-primary" />
+                        </div>
+                        <div>
+                            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">My Alerts</h1>
+                            <p className="text-sm text-muted-foreground">Get notified instantly when new profiles match your search criteria</p>
+                        </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <Dialog>
+                            <DialogTrigger asChild>
+                                <Button>
+                                    <Plus className="mr-2 h-4 w-4" /> New Alert
+                                </Button>
+                            </DialogTrigger>
             <DialogContent className="sm:max-w-[425px] md:max-w-[700px]">
               <DialogHeader>
                 <DialogTitle>Create New Alert</DialogTitle>
@@ -195,9 +205,7 @@ export default function MyAlertsPage() {
           </Dialog>
         </div>
       </div>
-      <p className="text-muted-foreground">
-        Get notified instantly when new profiles match your search criteria
-      </p>
+    </div>
 
       <Tabs defaultValue="active" onValueChange={setActiveTab} className="space-y-4">
         <TabsList>

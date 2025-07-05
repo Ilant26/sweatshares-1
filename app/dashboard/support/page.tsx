@@ -288,17 +288,22 @@ export default function SupportPage() {
     }
   };
 
-  return (
-    <div className="container mx-auto p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Support Center</h1>
-          <p className="text-muted-foreground">
-            Get help with your account, billing, or technical issues
-          </p>
-        </div>
-      </div>
+      return (
+        <div className="container mx-auto p-6 space-y-6">
+            {/* Header Section */}
+            <div className="flex flex-col space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+                    <div className="flex items-center space-x-3">
+                        <div className="p-2 bg-primary/10 rounded-lg">
+                            <HelpCircle className="h-6 w-6 text-primary" />
+                        </div>
+                        <div>
+                            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Support Center</h1>
+                            <p className="text-sm text-muted-foreground">Get help with your account, billing, or technical issues</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
       {/* Support Channels */}
       <div className="grid gap-4 md:grid-cols-3">
         {supportChannels.map((channel) => (

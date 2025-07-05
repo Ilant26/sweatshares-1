@@ -15,7 +15,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Textarea } from '@/components/ui/textarea';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { Plus, Search, ChevronDown, Edit, Trash2, Eye, Settings2, Calendar as CalendarIcon, DollarSign, Filter, ListFilter, SlidersHorizontal, ArrowUpDown, AlignLeft } from 'lucide-react';
+import { Plus, Search, ChevronDown, Edit, Trash2, Eye, Settings2, Calendar as CalendarIcon, DollarSign, Filter, ListFilter, SlidersHorizontal, ArrowUpDown, AlignLeft, List as ListIcon } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/lib/supabase';
 import { useSession } from '@/components/providers/session-provider';
@@ -293,18 +293,28 @@ export default function MyListingsPage() {
 
     return (
         <div className="flex-1 space-y-6 p-4 sm:p-8 pt-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-2">
-                <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Manage Your Listings</h2>
-                <div className="flex flex-col sm:flex-row gap-2">
-                    <Button onClick={() => router.push('/dashboard/listings')} variant="outline" className="w-full sm:w-auto">
-                        View Listings
-                    </Button>
-                    <Button onClick={() => setIsNewListingModalOpen(true)} className="w-full sm:w-auto">
-                        <Plus className="mr-2 h-4 w-4" /> New Listing
-                    </Button>
+            {/* Header Section */}
+            <div className="flex flex-col space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+                    <div className="flex items-center space-x-3">
+                        <div className="p-2 bg-primary/10 rounded-lg">
+                            <ListIcon className="h-6 w-6 text-primary" />
+                        </div>
+                        <div>
+                            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Manage Your Listings</h1>
+                            <p className="text-sm text-muted-foreground">Create and manage your professional opportunity listings</p>
+                        </div>
+                    </div>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                        <Button onClick={() => router.push('/dashboard/listings')} variant="outline" className="w-full sm:w-auto">
+                            View Listings
+                        </Button>
+                        <Button onClick={() => setIsNewListingModalOpen(true)} className="w-full sm:w-auto">
+                            <Plus className="mr-2 h-4 w-4" /> New Listing
+                        </Button>
+                    </div>
                 </div>
             </div>
-            <p className="text-muted-foreground">Create and manage your professional opportunity listings</p>
 
             <div className="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0 md:space-x-4">
                 <div className="relative w-full md:w-1/3">

@@ -177,26 +177,37 @@ export default function MyFavoritesPage() {
     );
   }
 
-  return (
-    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-      <div className="flex items-center justify-between space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight">My Favorites</h2>
-        <div className="flex items-center space-x-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline">
-                <SlidersHorizontal className="mr-2 h-4 w-4" /> Sort by
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem>Date Added (newest)</DropdownMenuItem>
-              <DropdownMenuItem>Date Added (oldest)</DropdownMenuItem>
-              <DropdownMenuItem>Name (A-Z)</DropdownMenuItem>
-              <DropdownMenuItem>Name (Z-A)</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
+      return (
+        <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+            {/* Header Section */}
+            <div className="flex flex-col space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+                    <div className="flex items-center space-x-3">
+                        <div className="p-2 bg-primary/10 rounded-lg">
+                            <Star className="h-6 w-6 text-primary" />
+                        </div>
+                        <div>
+                            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">My Favorites</h1>
+                            <p className="text-sm text-muted-foreground">Your saved profiles and listings</p>
+                        </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline">
+                                    <SlidersHorizontal className="mr-2 h-4 w-4" /> Sort by
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem>Date Added (newest)</DropdownMenuItem>
+                                <DropdownMenuItem>Date Added (oldest)</DropdownMenuItem>
+                                <DropdownMenuItem>Name (A-Z)</DropdownMenuItem>
+                                <DropdownMenuItem>Name (Z-A)</DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
+                </div>
+            </div>
 
       <div className="flex items-center gap-2">
         <div className="relative flex-1">

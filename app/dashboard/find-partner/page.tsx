@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { AnimatedGroup } from "@/components/ui/animated-group";
-import { Loader2, Star, Eye, User, Tag, Briefcase, MapPin, XCircle, Heart, Share2, Mail, DollarSign, ListFilter } from "lucide-react";
+import { Loader2, Star, Eye, User, Tag, Briefcase, MapPin, XCircle, Heart, Share2, Mail, DollarSign, ListFilter, Handshake } from "lucide-react";
 import { format } from "date-fns";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -367,13 +367,23 @@ export default function FindPartnerPage() {
   };
 
   // --- UI ---
-  return (
-    <div className="flex flex-col flex-1 min-h-screen w-full bg-background">
-      <div className="flex flex-col gap-2 px-4 md:px-8 pt-6 pb-2 w-full">
-        <div className="flex-1 flex flex-col gap-2 mb-2">
-          <h1 className="text-3xl font-bold tracking-tight">Find My Partner</h1>
-          <p className="text-muted-foreground text-sm">Browse and connect with talented professionals. Use filters to find your perfect match!</p>
-        </div>
+      return (
+        <div className="flex flex-col flex-1 min-h-screen w-full bg-background">
+            <div className="flex flex-col gap-2 px-4 md:px-8 pt-6 pb-2 w-full">
+                {/* Header Section */}
+                <div className="flex flex-col space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+                        <div className="flex items-center space-x-3">
+                            <div className="p-2 bg-primary/10 rounded-lg">
+                                <Handshake className="h-6 w-6 text-primary" />
+                            </div>
+                            <div>
+                                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Find My Partner</h1>
+                                <p className="text-sm text-muted-foreground">Browse and connect with talented professionals. Use filters to find your perfect match!</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
         <div className="flex flex-wrap gap-2 md:gap-4 w-full items-end mb-6">
           {/* Profile Filters */}
           <Input
