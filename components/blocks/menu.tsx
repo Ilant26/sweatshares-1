@@ -55,24 +55,26 @@ export const Menu = () => {
                                 aria-label="home"
                                 className="flex items-center space-x-2"
                                 legacyBehavior>
-                                {/* Light mode logo */}
-                                <Image
-                                  src="/logo/logo-svg-dark-text.svg"
-                                  alt="SweatShares Logo"
-                                  width={120}
-                                  height={40}
-                                  priority
-                                  className="block dark:hidden"
-                                />
-                                {/* Dark mode logo */}
-                                <Image
-                                  src="/logo/logo-svg-white-text.svg"
-                                  alt="SweatShares Logo (White)"
-                                  width={120}
-                                  height={40}
-                                  priority
-                                  className="hidden dark:block"
-                                />
+                                <div className="flex items-center space-x-2">
+                                    {/* Light mode logo */}
+                                    <Image
+                                      src="/logo/logo-svg-dark-text.svg"
+                                      alt="SweatShares Logo"
+                                      width={120}
+                                      height={40}
+                                      priority
+                                      className="block dark:hidden"
+                                    />
+                                    {/* Dark mode logo */}
+                                    <Image
+                                      src="/logo/logo-svg-white-text.svg"
+                                      alt="SweatShares Logo (White)"
+                                      width={120}
+                                      height={40}
+                                      priority
+                                      className="hidden dark:block"
+                                    />
+                                </div>
                             </Link>
 
                             <button
@@ -105,10 +107,12 @@ export const Menu = () => {
                                                         : "text-muted-foreground hover:text-accent-foreground"
                                                 )}
                                                 legacyBehavior>
-                                                {item.name}
-                                                {isActive && (
-                                                    <div className="absolute -bottom-1 left-0 right-0 h-0.5 bg-primary rounded-full" />
-                                                )}
+                                                <div className="relative">
+                                                    {item.name}
+                                                    {isActive && (
+                                                        <div className="absolute -bottom-1 left-0 right-0 h-0.5 bg-primary rounded-full" />
+                                                    )}
+                                                </div>
                                             </Link>
                                         </li>
                                     );
@@ -135,11 +139,13 @@ export const Menu = () => {
                                                                     : "text-muted-foreground hover:text-accent-foreground"
                                                             )}
                                                             legacyBehavior>
-                                                            <item.icon className={cn(
-                                                                "size-5",
-                                                                isActive ? "text-primary" : ""
-                                                            )} />
-                                                            {item.name}
+                                                            <div className="flex items-center gap-3">
+                                                                <item.icon className={cn(
+                                                                    "size-5",
+                                                                    isActive ? "text-primary" : ""
+                                                                )} />
+                                                                {item.name}
+                                                            </div>
                                                         </Link>
                                                     </li>
                                                 );

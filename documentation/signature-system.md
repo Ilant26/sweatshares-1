@@ -507,4 +507,4 @@ WHERE content::json->>'type' = 'signature_request';
 
 ---
 
-*This documentation covers the complete signature system implementation in SweatShares. For technical support or questions, please refer to the troubleshooting section or contact the development team.* 
+*This documentation covers the complete signature system implementation in SweatShares. For technical support or questions, please refer to the troubleshooting section or contact hello@celco.agency or adnan.benchaiba@gmail.com 

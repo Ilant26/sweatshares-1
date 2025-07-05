@@ -1609,11 +1609,13 @@ export default function MyInvoicesPage() {
                               href={`/dashboard/profile/${invoice.receiver_id}`}
                               className="flex items-center gap-2 hover:opacity-80 transition-opacity"
                               legacyBehavior>
-                              <Avatar className="h-8 w-8">
-                                <AvatarImage src={recipient.avatar_url || undefined} />
-                                <AvatarFallback>{(recipient.full_name || recipient.username || '?')[0]}</AvatarFallback>
-                              </Avatar>
-                              <span className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium">{recipient.full_name || recipient.username}</span>
+                              <div className="flex items-center gap-2">
+                                <Avatar className="h-8 w-8">
+                                  <AvatarImage src={recipient.avatar_url || undefined} />
+                                  <AvatarFallback>{(recipient.full_name || recipient.username || '?')[0]}</AvatarFallback>
+                                </Avatar>
+                                <span className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium">{recipient.full_name || recipient.username}</span>
+                              </div>
                             </Link>
                           ) : (
                             getClientName(invoice)
@@ -1693,11 +1695,13 @@ export default function MyInvoicesPage() {
                               href={`/dashboard/profile/${invoice.receiver_id}`}
                               className="flex items-center gap-2 hover:opacity-80 transition-opacity"
                               legacyBehavior>
-                              <Avatar className="h-8 w-8">
-                                <AvatarImage src={recipient.avatar_url || undefined} />
-                                <AvatarFallback>{(recipient.full_name || recipient.username || '?')[0]}</AvatarFallback>
-                              </Avatar>
-                              <span className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium">{recipient.full_name || recipient.username}</span>
+                              <div className="flex items-center gap-2">
+                                <Avatar className="h-8 w-8">
+                                  <AvatarImage src={recipient.avatar_url || undefined} />
+                                  <AvatarFallback>{(recipient.full_name || recipient.username || '?')[0]}</AvatarFallback>
+                                </Avatar>
+                                <span className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium">{recipient.full_name || recipient.username}</span>
+                              </div>
                             </Link>
                           ) : (
                             getClientName(invoice)
@@ -1928,11 +1932,13 @@ export default function MyInvoicesPage() {
                               href={`/dashboard/profile/${invoice.sender_id}`}
                               className="flex items-center gap-2 mt-1 hover:opacity-80 transition-opacity"
                               legacyBehavior>
-                              <Avatar className="h-8 w-8">
-                                <AvatarImage src={sender.avatar_url || undefined} />
-                                <AvatarFallback>{(sender.full_name || sender.username || '?')[0]}</AvatarFallback>
-                              </Avatar>
-                              <span className="font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">{sender.full_name || sender.username}</span>
+                              <div className="flex items-center gap-2">
+                                <Avatar className="h-8 w-8">
+                                  <AvatarImage src={sender.avatar_url || undefined} />
+                                  <AvatarFallback>{(sender.full_name || sender.username || '?')[0]}</AvatarFallback>
+                                </Avatar>
+                                <span className="font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">{sender.full_name || sender.username}</span>
+                              </div>
                             </Link>
                           ) : (
                             <p className="font-medium">{getClientName(invoice)}</p>
@@ -2007,11 +2013,13 @@ export default function MyInvoicesPage() {
                               href={`/dashboard/profile/${invoice.sender_id}`}
                               className="flex items-center gap-2 hover:opacity-80 transition-opacity"
                               legacyBehavior>
-                              <Avatar className="h-8 w-8">
-                                <AvatarImage src={sender.avatar_url || undefined} />
-                                <AvatarFallback>{(sender.full_name || sender.username || '?')[0]}</AvatarFallback>
-                              </Avatar>
-                              <span className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium">{sender.full_name || sender.username}</span>
+                              <div className="flex items-center gap-2">
+                                <Avatar className="h-8 w-8">
+                                  <AvatarImage src={sender.avatar_url || undefined} />
+                                  <AvatarFallback>{(sender.full_name || sender.username || '?')[0]}</AvatarFallback>
+                                </Avatar>
+                                <span className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium">{sender.full_name || sender.username}</span>
+                              </div>
                             </Link>
                           ) : (
                             getClientName(invoice)

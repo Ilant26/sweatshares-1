@@ -528,22 +528,28 @@ export default function SupportPage() {
                     href="#"
                     className="flex items-center space-x-2 text-sm hover:text-primary"
                     legacyBehavior>
-                    <ExternalLink className="h-4 w-4" />
-                    <span>Getting Started Guide</span>
+                    <div className="flex items-center space-x-2">
+                      <ExternalLink className="h-4 w-4" />
+                      <span>Getting Started Guide</span>
+                    </div>
                   </Link>
                   <Link
                     href="#"
                     className="flex items-center space-x-2 text-sm hover:text-primary"
                     legacyBehavior>
-                    <ExternalLink className="h-4 w-4" />
-                    <span>User Manual</span>
+                    <div className="flex items-center space-x-2">
+                      <ExternalLink className="h-4 w-4" />
+                      <span>User Manual</span>
+                    </div>
                   </Link>
                   <Link
                     href="#"
                     className="flex items-center space-x-2 text-sm hover:text-primary"
                     legacyBehavior>
-                    <ExternalLink className="h-4 w-4" />
-                    <span>API Documentation</span>
+                    <div className="flex items-center space-x-2">
+                      <ExternalLink className="h-4 w-4" />
+                      <span>API Documentation</span>
+                    </div>
                   </Link>
                 </div>
               </CardContent>
@@ -562,22 +568,28 @@ export default function SupportPage() {
                     href="#"
                     className="flex items-center space-x-2 text-sm hover:text-primary"
                     legacyBehavior>
-                    <ExternalLink className="h-4 w-4" />
-                    <span>Community Forum</span>
+                    <div className="flex items-center space-x-2">
+                      <ExternalLink className="h-4 w-4" />
+                      <span>Community Forum</span>
+                    </div>
                   </Link>
                   <Link
                     href="#"
                     className="flex items-center space-x-2 text-sm hover:text-primary"
                     legacyBehavior>
-                    <ExternalLink className="h-4 w-4" />
-                    <span>Discord Server</span>
+                    <div className="flex items-center space-x-2">
+                      <ExternalLink className="h-4 w-4" />
+                      <span>Discord Server</span>
+                    </div>
                   </Link>
                   <Link
                     href="#"
                     className="flex items-center space-x-2 text-sm hover:text-primary"
                     legacyBehavior>
-                    <ExternalLink className="h-4 w-4" />
-                    <span>GitHub Issues</span>
+                    <div className="flex items-center space-x-2">
+                      <ExternalLink className="h-4 w-4" />
+                      <span>GitHub Issues</span>
+                    </div>
                   </Link>
                 </div>
               </CardContent>

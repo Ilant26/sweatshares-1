@@ -18,8 +18,10 @@ export default function ContentSection() {
                             size="sm"
                             className="gap-1 pr-1.5">
                             <Link href="#" legacyBehavior>
-                                <span>Learn More</span>
-                                <ChevronRight className="size-2" />
+                                <div className="flex items-center gap-1">
+                                    <span>Learn More</span>
+                                    <ChevronRight className="size-2" />
+                                </div>
                             </Link>
                         </Button>
                     </div>

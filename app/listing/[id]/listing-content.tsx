@@ -85,8 +85,10 @@ export function ListingContent({ listing, profile }: ListingContentProps) {
           <motion.div variants={itemVariants}>
             <Button variant="ghost" size="sm" asChild className="mb-6 hover:bg-muted/50">
               <Link href="/listing" className="flex items-center gap-2" legacyBehavior>
-                <ArrowLeft className="h-4 w-4" />
-                Back to Listings
+                <div className="flex items-center gap-2">
+                  <ArrowLeft className="h-4 w-4" />
+                  Back to Listings
+                </div>
               </Link>
             </Button>
           </motion.div>

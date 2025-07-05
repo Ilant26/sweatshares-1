@@ -155,10 +155,12 @@ Looking forward to hearing from you!`;
           {/* Back Button */}
           <motion.div variants={itemVariants} className="mb-6">
             <Link href="/dashboard/listings" legacyBehavior>
-              <Button variant="ghost" className="gap-2">
-                <ArrowLeft className="h-4 w-4" />
-                Retour aux annonces
-              </Button>
+              <div>
+                <Button variant="ghost" className="gap-2">
+                  <ArrowLeft className="h-4 w-4" />
+                  Retour aux annonces
+                </Button>
+              </div>
             </Link>
           </motion.div>
 

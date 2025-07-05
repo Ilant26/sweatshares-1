@@ -582,7 +582,9 @@ export default function Page() {
             <CardTitle>Recent Connections</CardTitle>
             <Link href="/dashboard/my-network" passHref legacyBehavior>
               <a className="px-0 pt-0 justify-start inline-flex items-center text-sm font-medium text-primary hover:underline" style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
-                View all <ArrowRight className="ml-2 h-4 w-4" />
+                <div className="flex items-center">
+                  View all <ArrowRight className="ml-2 h-4 w-4" />
+                </div>
               </a>
             </Link>
           </CardHeader>
@@ -645,7 +647,7 @@ export default function Page() {
             <CardTitle className="text-sm font-medium">Recent Messages</CardTitle>
             <Link href="/dashboard/messages" passHref legacyBehavior>
               <a className="px-0 pt-0 justify-start inline-flex items-center text-sm font-medium text-primary hover:underline" style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
-                View all
+                <div>View all</div>
               </a>
             </Link>
           </CardHeader>
@@ -683,7 +685,7 @@ export default function Page() {
             <CardTitle className="text-sm font-medium">My Favorites</CardTitle>
             <Link href="/dashboard/my-favorites" passHref legacyBehavior>
               <a className="px-0 pt-0 justify-start inline-flex items-center text-sm font-medium text-primary hover:underline" style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
-                View all
+                <div>View all</div>
               </a>
             </Link>
           </CardHeader>
@@ -732,7 +734,7 @@ export default function Page() {
             <CardTitle className="text-sm font-bold">Active Alerts</CardTitle>
             <Link href="/dashboard/my-alerts" passHref legacyBehavior>
               <a className="px-0 pt-0 justify-start inline-flex items-center text-sm font-medium text-primary hover:underline" style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
-                Manage
+                <div>Manage</div>
               </a>
             </Link>
           </CardHeader>
