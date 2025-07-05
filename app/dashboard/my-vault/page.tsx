@@ -1196,7 +1196,9 @@ export default function MyVaultPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {[...receivedRequests, ...sentRequests].map((req) => (
+              {[...receivedRequests, ...sentRequests]
+                .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                .map((req) => (
                 <TableRow key={req.id}>
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-3">
