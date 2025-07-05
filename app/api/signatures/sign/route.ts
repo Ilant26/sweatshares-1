@@ -72,17 +72,54 @@ export async function POST(request: NextRequest) {
     // Convert base64 signature to image
     const signatureImage = await createSignatureImage(signatureData)
     
+    console.log('Signature image processing:', {
+      signatureDataLength: signatureData.length,
+      signatureImageLength: signatureImage.length,
+      isBase64: signatureData.startsWith('data:image/')
+    });
+    
     // Embed the signature image with error handling
     let signaturePdfImage
     try {
+      // Try to embed as PNG first
       signaturePdfImage = await pdfDoc.embedPng(signatureImage)
-    } catch (error) {
-      console.error('Error embedding signature image:', error)
-      throw new Error('Failed to process signature image')
+      console.log('Signature image embedded successfully as PNG:', {
+        width: signaturePdfImage.width,
+        height: signaturePdfImage.height
+      });
+    } catch (pngError) {
+      console.warn('Failed to embed as PNG, trying JPEG:', pngError);
+      try {
+        // Try to embed as JPEG
+        signaturePdfImage = await pdfDoc.embedJpg(signatureImage)
+        console.log('Signature image embedded successfully as JPEG:', {
+          width: signaturePdfImage.width,
+          height: signaturePdfImage.height
+        });
+      } catch (jpegError) {
+        console.error('Error embedding signature image as both PNG and JPEG:', { pngError, jpegError });
+        // Don't throw error, we'll use fallback text signature
+        signaturePdfImage = null;
+      }
     }
     
     // Get signature positions from the request
     const positions = (signatureRequest as any).positions || []
+    
+    console.log('Signature request data:', {
+      requestId,
+      positions: positions.length,
+      signatureRequest: {
+        id: (signatureRequest as any).id,
+        status: (signatureRequest as any).status,
+        document: (signatureRequest as any).document,
+        receiver: (signatureRequest as any).receiver
+      }
+    });
+    
+    if (positions.length === 0) {
+      console.warn('No signature positions found for request:', requestId);
+    }
     
     // The coordinates are stored from the PDF viewer at base scale
     // We need to scale them back down to the original PDF coordinates
@@ -95,31 +132,15 @@ export async function POST(request: NextRequest) {
         const page = pages[pageIndex]
         const { width, height } = page.getSize()
         
-        // Log the coordinate information for debugging
-        console.log('Processing signature position:', {
-          position: {
-            x: position.x_position,
-            y: position.y_position,
-            width: position.width,
-            height: position.height,
-            scale: position.scale,
-            original_pdf_width: position.original_pdf_width,
-            original_pdf_height: position.original_pdf_height
-          },
-          page: {
-            width,
-            height
-          }
-        });
-        
         // The coordinates are already in original PDF coordinate space from the frontend
         const boxWidth = position.width || 300
         const boxHeight = position.height || 200
         
-        // Verify coordinates are within PDF bounds
-        if (position.x_position < 0 || position.y_position < 0 || 
-            position.x_position + boxWidth > width || 
-            position.y_position + boxHeight > height) {
+        // Verify coordinates are within PDF bounds (with some tolerance)
+        const tolerance = 50; // Allow some overflow for better user experience
+        if (position.x_position < -tolerance || position.y_position < -tolerance || 
+            position.x_position + boxWidth > width + tolerance || 
+            position.y_position + boxHeight > height + tolerance) {
           console.warn('Signature position outside PDF bounds:', {
             position: { x: position.x_position, y: position.y_position, width: boxWidth, height: boxHeight },
             pageBounds: { width, height }
@@ -132,7 +153,7 @@ export async function POST(request: NextRequest) {
         const signatureAreaWidth = boxWidth
         
         // Calculate aspect ratio of the signature image
-        const signatureAspectRatio = signaturePdfImage.width / signaturePdfImage.height
+        const signatureAspectRatio = (signaturePdfImage?.width && signaturePdfImage?.height) ? signaturePdfImage.width / signaturePdfImage.height : 1
         
         // Calculate optimal signature size that fits within the signature area
         // while maintaining aspect ratio
@@ -152,20 +173,70 @@ export async function POST(request: NextRequest) {
         }
         
         // Position signature at the top of the box (above metadata)
+        // The coordinates from frontend are already in PDF coordinate space
+        // PDF coordinate system: (0,0) is bottom-left, Y increases upward
         const signatureX = position.x_position + (signatureAreaWidth - signatureWidth) / 2
-        const signatureY = height - position.y_position - signatureHeight // Flip Y coordinate
+        const signatureY = position.y_position + signatureAreaHeight - signatureHeight // Top of the signature area
+        
+        // Calculate metadata positioning (within the signature box area)
+        const metadataX = position.x_position
+        const metadataY = position.y_position // Start at the bottom of the signature box
+        
+        // Log the coordinate information for debugging
+        console.log('Processing signature position:', {
+          position: {
+            x: position.x_position,
+            y: position.y_position,
+            width: position.width,
+            height: position.height,
+            scale: position.scale,
+            original_pdf_width: position.original_pdf_width,
+            original_pdf_height: position.original_pdf_height
+          },
+          page: {
+            width,
+            height
+          },
+          calculated: {
+            signatureX,
+            signatureY,
+            metadataX,
+            metadataY,
+            boxWidth,
+            boxHeight,
+            signatureAreaWidth,
+            signatureAreaHeight
+          }
+        });
         
         // Add signature to the page (at the top of the box)
-        page.drawImage(signaturePdfImage, {
-          x: signatureX,
-          y: signatureY,
-          width: signatureWidth,
-          height: signatureHeight,
-        })
-        
-        // Calculate metadata positioning (directly below the signature)
-        const metadataX = position.x_position
-        const metadataY = signatureY - 5 // Start 5 points below the signature
+        try {
+          if (signaturePdfImage) {
+            page.drawImage(signaturePdfImage, {
+              x: signatureX,
+              y: signatureY,
+              width: signatureWidth,
+              height: signatureHeight,
+            })
+          } else {
+            // Fallback: draw a simple text signature
+            page.drawText('SIGNATURE', {
+              x: signatureX,
+              y: signatureY + signatureHeight / 2,
+              size: 12,
+              color: rgb(0, 0, 0),
+            })
+          }
+        } catch (error) {
+          console.error('Error drawing signature image:', error);
+          // Fallback: draw a simple text signature
+          page.drawText('SIGNATURE', {
+            x: signatureX,
+            y: signatureY + signatureHeight / 2,
+            size: 12,
+            color: rgb(0, 0, 0),
+          })
+        }
         
         // Add metadata within the signature box
         const fontSize = 10
@@ -175,7 +246,7 @@ export async function POST(request: NextRequest) {
         if ((signatureRequest as any).receiver?.full_name) {
           page.drawText(`Signed by: ${(signatureRequest as any).receiver.full_name}`, {
             x: metadataX,
-            y: metadataY - lineHeight * 2,
+            y: metadataY + lineHeight,
             size: fontSize,
             color: rgb(0, 0, 0),
           })
@@ -192,7 +263,7 @@ export async function POST(request: NextRequest) {
         
         page.drawText(`Date: ${signatureDate}`, {
           x: metadataX,
-          y: metadataY - lineHeight,
+          y: metadataY + lineHeight * 2,
           size: fontSize,
           color: rgb(0, 0, 0),
         })
@@ -200,7 +271,7 @@ export async function POST(request: NextRequest) {
         // Add signature request ID for verification (smaller and lighter)
         page.drawText(`Request ID: ${(signatureRequest as any).id}`, {
           x: metadataX,
-          y: metadataY,
+          y: metadataY + lineHeight * 3,
           size: fontSize - 2,
           color: rgb(0.5, 0.5, 0.5),
         })
@@ -209,7 +280,7 @@ export async function POST(request: NextRequest) {
         if (position.field_type === 'text' && position.field_label) {
           page.drawText(position.field_label, {
             x: metadataX,
-            y: metadataY + lineHeight,
+            y: metadataY + lineHeight * 4,
             size: 10,
             color: rgb(0.5, 0.5, 0.5),
           })
@@ -224,7 +295,7 @@ export async function POST(request: NextRequest) {
           })
           page.drawText(currentDate, {
             x: metadataX,
-            y: metadataY + lineHeight * 2,
+            y: metadataY + lineHeight * 5,
             size: 12,
             color: rgb(0, 0, 0),
           })

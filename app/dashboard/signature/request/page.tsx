@@ -34,10 +34,10 @@ import {
 interface SignatureBox {
   id: string;
   pageNumber: number;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
+  x: number; // PDF coordinates
+  y: number; // PDF coordinates
+  width: number; // PDF coordinates
+  height: number; // PDF coordinates
   fieldType: 'signature';
   fieldLabel: string;
   required: boolean;
@@ -235,40 +235,6 @@ export default function SignatureRequestPage() {
     }
   };
 
-  // Helper function to convert coordinates from viewer space to original PDF coordinates
-  const convertToBaseScale = (x: number, y: number, width: number, height: number) => {
-    // Convert from current scale (with zoom) to original PDF coordinates
-    const currentScale = baseScale * zoomLevel;
-    
-    // Convert viewer coordinates to original PDF coordinates
-    const convertedX = x / currentScale;
-    const convertedY = y / currentScale;
-    const convertedWidth = width / currentScale;
-    const convertedHeight = height / currentScale;
-    
-    return {
-      x: convertedX,
-      y: convertedY,
-      width: convertedWidth,
-      height: convertedHeight
-    };
-  };
-
-  const handlePageChange = async (newPage: number) => {
-    if (newPage < 1 || newPage > totalPages || !mountedRef.current) return;
-    
-    try {
-      const pdfjsLib = await import('pdfjs-dist');
-      const loadingTask = pdfjsLib.getDocument(pdfUrl);
-      const pdf = await loadingTask.promise;
-      
-      await renderPage(pdf, newPage);
-      setCurrentPage(newPage);
-    } catch (error) {
-      console.error('Error changing page:', error);
-    }
-  };
-
   const handleZoomChange = async (newZoom: number) => {
     if (newZoom < 0.5 || newZoom > 3.0) return; // Limit zoom range
     setZoomLevel(newZoom);
@@ -283,6 +249,93 @@ export default function SignatureRequestPage() {
       } catch (error) {
         console.error('Error re-rendering PDF with zoom:', error);
       }
+    }
+  };
+
+  // Function to convert viewer coordinates to PDF coordinates
+  const convertViewerToPdfCoordinates = (viewerX: number, viewerY: number, viewerWidth: number, viewerHeight: number) => {
+    const currentScale = baseScale * zoomLevel;
+    
+    // Get the canvas and container to calculate the offset
+    const canvas = canvasRef.current;
+    const container = pdfContainerRef.current;
+    
+    if (!canvas || !container) {
+      return { x: viewerX / currentScale, y: viewerY / currentScale, width: viewerWidth / currentScale, height: viewerHeight / currentScale };
+    }
+    
+    // Calculate the offset between container and canvas
+    const containerRect = container.getBoundingClientRect();
+    const canvasRect = canvas.getBoundingClientRect();
+    
+    // The canvas is centered in the container, so we need to adjust for this offset
+    const canvasOffsetX = canvasRect.left - containerRect.left;
+    const canvasOffsetY = canvasRect.top - containerRect.top;
+    
+    // Adjust viewer coordinates to be relative to the canvas
+    const canvasRelativeX = viewerX - canvasOffsetX;
+    const canvasRelativeY = viewerY - canvasOffsetY;
+    
+    // Convert canvas-relative coordinates to PDF coordinates
+    const pdfX = canvasRelativeX / currentScale;
+    const pdfWidth = viewerWidth / currentScale;
+    const pdfHeight = viewerHeight / currentScale;
+    
+    // Flip Y coordinate
+    const canvasHeightPx = canvas.height;
+    const pdfY = canvasHeightPx / currentScale - canvasRelativeY / currentScale - pdfHeight;
+    
+    return { x: pdfX, y: pdfY, width: pdfWidth, height: pdfHeight };
+  };
+
+  // Function to convert PDF coordinates to viewer coordinates for display
+  const convertPdfToViewerCoordinates = (pdfX: number, pdfY: number, pdfWidth: number, pdfHeight: number) => {
+    const currentScale = baseScale * zoomLevel;
+    
+    // Get the canvas and container to calculate the offset
+    const canvas = canvasRef.current;
+    const container = pdfContainerRef.current;
+    
+    if (!canvas || !container) {
+      return { x: pdfX * currentScale, y: pdfY * currentScale, width: pdfWidth * currentScale, height: pdfHeight * currentScale };
+    }
+    
+    // Calculate the offset between container and canvas
+    const containerRect = container.getBoundingClientRect();
+    const canvasRect = canvas.getBoundingClientRect();
+    
+    // The canvas is centered in the container, so we need to adjust for this offset
+    const canvasOffsetX = canvasRect.left - containerRect.left;
+    const canvasOffsetY = canvasRect.top - containerRect.top;
+    
+    // Convert PDF coordinates to canvas coordinates
+    const canvasX = pdfX * currentScale;
+    const canvasWidth = pdfWidth * currentScale;
+    const canvasHeight = pdfHeight * currentScale;
+    
+    // Flip Y coordinate back
+    const canvasHeightPx = canvas.height;
+    const canvasY = canvasHeightPx - (pdfY + pdfHeight) * currentScale;
+    
+    // Convert to viewer coordinates (relative to container)
+    const viewerX = canvasX + canvasOffsetX;
+    const viewerY = canvasY + canvasOffsetY;
+    
+    return { x: viewerX, y: viewerY, width: canvasWidth, height: canvasHeight };
+  };
+
+  const handlePageChange = async (newPage: number) => {
+    if (newPage < 1 || newPage > totalPages || !mountedRef.current) return;
+    
+    try {
+      const pdfjsLib = await import('pdfjs-dist');
+      const loadingTask = pdfjsLib.getDocument(pdfUrl);
+      const pdf = await loadingTask.promise;
+      
+      await renderPage(pdf, newPage);
+      setCurrentPage(newPage);
+    } catch (error) {
+      console.error('Error changing page:', error);
     }
   };
 
@@ -319,13 +372,21 @@ export default function SignatureRequestPage() {
     setSelectedBoxId(null);
 
     // Add new box
+    const viewerX = x - 150; // Center the box on click
+    const viewerY = y - 100; // Center the box on click
+    const viewerWidth = 300; // Width for signature and metadata
+    const viewerHeight = 150; // Reduced height for better signature/metadata ratio
+    
+    // Convert to PDF coordinates
+    const pdfCoords = convertViewerToPdfCoordinates(viewerX, viewerY, viewerWidth, viewerHeight);
+    
     const newBox: SignatureBox = {
       id: `box_${Date.now()}_${Math.random()}`,
       pageNumber: currentPage,
-      x: x - 150, // Center the box on click
-      y: y - 100, // Center the box on click
-      width: 300, // Width for signature and metadata
-      height: 150, // Reduced height for better signature/metadata ratio
+      x: pdfCoords.x,
+      y: pdfCoords.y,
+      width: pdfCoords.width,
+      height: pdfCoords.height,
       fieldType: 'signature',
       fieldLabel: fieldLabel || 'Signature',
       required: isRequired,
@@ -395,10 +456,20 @@ export default function SignatureRequestPage() {
     setSelectedBoxId(boxId);
     setIsDragging(true);
     
-    // Calculate offset from mouse to box corner
-    const rect = event.currentTarget.getBoundingClientRect();
-    const offsetX = event.clientX - rect.left;
-    const offsetY = event.clientY - rect.top;
+    // Calculate offset from mouse to box corner in PDF coordinates
+    const canvas = canvasRef.current;
+    const rect = canvas?.getBoundingClientRect();
+    if (!rect) return;
+    
+    const viewerX = event.clientX - rect.left;
+    const viewerY = event.clientY - rect.top;
+    
+    // Convert viewer coordinates to PDF coordinates
+    const pdfMouseCoords = convertViewerToPdfCoordinates(viewerX, viewerY, 0, 0);
+    
+    // Calculate offset in PDF coordinates
+    const offsetX = pdfMouseCoords.x - box.x;
+    const offsetY = pdfMouseCoords.y - box.y;
     
     setDragOffset({ x: offsetX, y: offsetY });
   };
@@ -416,7 +487,14 @@ export default function SignatureRequestPage() {
     setSelectedBoxId(boxId);
     setIsResizing(true);
     setResizeHandle(handle);
-    setResizeStart({ x: box.x, y: box.y, width: box.width, height: box.height });
+    
+    // Store the starting position in PDF coordinates
+    setResizeStart({ 
+      x: box.x, 
+      y: box.y, 
+      width: box.width, 
+      height: box.height 
+    });
   };
 
   const handleMouseMove = (event: React.MouseEvent<HTMLDivElement>) => {
@@ -430,34 +508,37 @@ export default function SignatureRequestPage() {
 
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
+    const viewerX = event.clientX - rect.left;
+    const viewerY = event.clientY - rect.top;
 
     // Check for handle hovering when not dragging or resizing
     if (!isDragging && !isResizing && selectedBoxId) {
       const selectedBox = signatureBoxes.find(box => box.id === selectedBoxId);
       if (selectedBox && selectedBox.pageNumber === currentPage) {
-        const handleSize = 15; // Match the detection size from mouseDown
+        // Convert PDF coordinates to viewer coordinates for handle detection
+        const viewerCoords = convertPdfToViewerCoordinates(selectedBox.x, selectedBox.y, selectedBox.width, selectedBox.height);
+        
+        const handleSize = 20; // Increased to match larger handles
         const isNearCorner = (posX: number, posY: number, cornerX: number, cornerY: number) => {
           return Math.abs(posX - cornerX) <= handleSize && Math.abs(posY - cornerY) <= handleSize;
         };
         
-        const topLeftX = selectedBox.x;
-        const topLeftY = selectedBox.y;
-        const topRightX = selectedBox.x + selectedBox.width;
-        const topRightY = selectedBox.y;
-        const bottomLeftX = selectedBox.x;
-        const bottomLeftY = selectedBox.y + selectedBox.height;
-        const bottomRightX = selectedBox.x + selectedBox.width;
-        const bottomRightY = selectedBox.y + selectedBox.height;
+        const topLeftX = viewerCoords.x;
+        const topLeftY = viewerCoords.y;
+        const topRightX = viewerCoords.x + viewerCoords.width;
+        const topRightY = viewerCoords.y;
+        const bottomLeftX = viewerCoords.x;
+        const bottomLeftY = viewerCoords.y + viewerCoords.height;
+        const bottomRightX = viewerCoords.x + viewerCoords.width;
+        const bottomRightY = viewerCoords.y + viewerCoords.height;
         
-        if (isNearCorner(x, y, topLeftX, topLeftY)) {
+        if (isNearCorner(viewerX, viewerY, topLeftX, topLeftY)) {
           setHoveredHandle('nw');
-        } else if (isNearCorner(x, y, topRightX, topRightY)) {
+        } else if (isNearCorner(viewerX, viewerY, topRightX, topRightY)) {
           setHoveredHandle('ne');
-        } else if (isNearCorner(x, y, bottomLeftX, bottomLeftY)) {
+        } else if (isNearCorner(viewerX, viewerY, bottomLeftX, bottomLeftY)) {
           setHoveredHandle('sw');
-        } else if (isNearCorner(x, y, bottomRightX, bottomRightY)) {
+        } else if (isNearCorner(viewerX, viewerY, bottomRightX, bottomRightY)) {
           setHoveredHandle('se');
         } else {
           setHoveredHandle(null);
@@ -471,8 +552,21 @@ export default function SignatureRequestPage() {
       if (box.id !== selectedBoxId) return box;
 
       if (isDragging) {
-        const newX = Math.max(0, x - dragOffset.x);
-        const newY = Math.max(0, y - dragOffset.y);
+        // Convert current mouse position to PDF coordinates
+        const pdfMouseCoords = convertViewerToPdfCoordinates(viewerX, viewerY, 0, 0);
+        
+        // Calculate new position by subtracting the offset
+        let newX = pdfMouseCoords.x - dragOffset.x;
+        let newY = pdfMouseCoords.y - dragOffset.y;
+        
+        // Constrain to PDF bounds
+        const canvas = canvasRef.current;
+        const canvasHeight = canvas ? canvas.height : 0;
+        const pdfHeight = canvasHeight / (baseScale * zoomLevel);
+        const pdfWidth = canvas ? canvas.width / (baseScale * zoomLevel) : 0;
+        
+        newX = Math.max(0, Math.min(newX, pdfWidth - box.width));
+        newY = Math.max(0, Math.min(newY, pdfHeight - box.height));
         
         return {
           ...box,
@@ -482,7 +576,17 @@ export default function SignatureRequestPage() {
       }
 
       if (isResizing && resizeHandle) {
-        const minSize = 50; // Minimum box size
+        const minSize = 50 / (baseScale * zoomLevel); // Minimum box size in PDF coordinates
+        
+        // Convert current mouse position to PDF coordinates
+        const pdfMouseCoords = convertViewerToPdfCoordinates(viewerX, viewerY, 0, 0);
+        
+        // Get PDF bounds
+        const canvas = canvasRef.current;
+        const canvasHeight = canvas ? canvas.height : 0;
+        const pdfHeight = canvasHeight / (baseScale * zoomLevel);
+        const pdfWidth = canvas ? canvas.width / (baseScale * zoomLevel) : 0;
+        
         let newX = box.x;
         let newY = box.y;
         let newWidth = box.width;
@@ -490,26 +594,32 @@ export default function SignatureRequestPage() {
 
         switch (resizeHandle) {
           case 'nw':
-            newWidth = Math.max(minSize, resizeStart.x + resizeStart.width - x);
-            newHeight = Math.max(minSize, resizeStart.y + resizeStart.height - y);
-            newX = x;
-            newY = y;
+            newWidth = Math.max(minSize, resizeStart.x + resizeStart.width - pdfMouseCoords.x);
+            newHeight = Math.max(minSize, resizeStart.y + resizeStart.height - pdfMouseCoords.y);
+            newX = pdfMouseCoords.x;
+            newY = pdfMouseCoords.y;
             break;
           case 'ne':
-            newWidth = Math.max(minSize, x - resizeStart.x);
-            newHeight = Math.max(minSize, resizeStart.y + resizeStart.height - y);
-            newY = y;
+            newWidth = Math.max(minSize, pdfMouseCoords.x - resizeStart.x);
+            newHeight = Math.max(minSize, resizeStart.y + resizeStart.height - pdfMouseCoords.y);
+            newY = pdfMouseCoords.y;
             break;
           case 'sw':
-            newWidth = Math.max(minSize, resizeStart.x + resizeStart.width - x);
-            newHeight = Math.max(minSize, y - resizeStart.y);
-            newX = x;
+            newWidth = Math.max(minSize, resizeStart.x + resizeStart.width - pdfMouseCoords.x);
+            newHeight = Math.max(minSize, pdfMouseCoords.y - resizeStart.y);
+            newX = pdfMouseCoords.x;
             break;
           case 'se':
-            newWidth = Math.max(minSize, x - resizeStart.x);
-            newHeight = Math.max(minSize, y - resizeStart.y);
+            newWidth = Math.max(minSize, pdfMouseCoords.x - resizeStart.x);
+            newHeight = Math.max(minSize, pdfMouseCoords.y - resizeStart.y);
             break;
         }
+        
+        // Constrain to PDF bounds
+        newX = Math.max(0, Math.min(newX, pdfWidth - newWidth));
+        newY = Math.max(0, Math.min(newY, pdfHeight - newHeight));
+        newWidth = Math.min(newWidth, pdfWidth - newX);
+        newHeight = Math.min(newHeight, pdfHeight - newY);
 
         return {
           ...box,
@@ -645,14 +755,13 @@ export default function SignatureRequestPage() {
         message: message || undefined,
         expires_at: expiresDate.toISOString(),
         positions: signatureBoxes.map(box => {
-          // Convert coordinates to base scale for consistent positioning
-          const converted = convertToBaseScale(box.x, box.y, box.width, box.height);
+          // The signature boxes are already stored in PDF coordinates
           return {
             page_number: box.pageNumber,
-            x_position: Math.round(converted.x),
-            y_position: Math.round(converted.y),
-            width: Math.round(converted.width),
-            height: Math.round(converted.height),
+            x_position: Math.round(box.x),
+            y_position: Math.round(box.y),
+            width: Math.round(box.width),
+            height: Math.round(box.height),
             field_type: box.fieldType,
             field_label: box.fieldLabel,
             required: box.required,
@@ -955,115 +1064,124 @@ export default function SignatureRequestPage() {
                 {/* Signature Boxes Overlay */}
                 {signatureBoxes
                   .filter(box => box.pageNumber === currentPage)
-                  .map(box => (
-                    <div
-                      key={box.id}
-                      className={`absolute border-2 rounded ${
-                        box.isSelected || selectedBoxId === box.id
-                          ? 'border-blue-500 bg-blue-100 bg-opacity-30'
-                          : 'border-gray-400 bg-gray-100 bg-opacity-20'
-                      }`}
-                      style={{
-                        left: box.x,
-                        top: box.y,
-                        width: box.width,
-                        height: box.height,
-                        pointerEvents: 'auto',
-                        cursor: 'move'
-                      }}
-                      onMouseDown={handleBoxDragStart(box.id)}
-                    >
-                      <div className="text-xs font-medium text-gray-700 p-1">
-                        {box.fieldLabel}
-                      </div>
-                      
-                      {/* Signature preview area */}
-                      <div className="absolute inset-0 pointer-events-none">
-                        <div className="absolute top-2 left-2 right-2 bottom-16 border border-dashed border-gray-300 rounded bg-white bg-opacity-50 flex items-center justify-center">
-                          <span className="text-xs text-gray-500">Signature Area</span>
+                  .map(box => {
+                    // Convert PDF coordinates to viewer coordinates for display
+                    const viewerCoords = convertPdfToViewerCoordinates(box.x, box.y, box.width, box.height);
+                    
+                    return (
+                      <div
+                        key={box.id}
+                        className={`absolute border-2 rounded ${
+                          box.isSelected || selectedBoxId === box.id
+                            ? isDragging 
+                              ? 'border-green-500 bg-green-100 bg-opacity-30 shadow-lg'
+                              : isResizing
+                              ? 'border-orange-500 bg-orange-100 bg-opacity-30 shadow-lg'
+                              : 'border-blue-500 bg-blue-100 bg-opacity-30'
+                            : 'border-gray-400 bg-gray-100 bg-opacity-20'
+                        }`}
+                        style={{
+                          left: viewerCoords.x,
+                          top: viewerCoords.y,
+                          width: viewerCoords.width,
+                          height: viewerCoords.height,
+                          pointerEvents: 'auto',
+                          cursor: 'move'
+                        }}
+                        onMouseDown={handleBoxDragStart(box.id)}
+                      >
+                        <div className="text-xs font-medium text-gray-700 p-1">
+                          {box.fieldLabel}
                         </div>
-                        <div className="absolute bottom-2 left-2 right-2 h-12 border border-dashed border-gray-300 rounded bg-gray-50 bg-opacity-50 flex items-center justify-center">
-                          <span className="text-xs text-gray-500">Metadata Area</span>
+                        
+                        {/* Signature preview area */}
+                        <div className="absolute inset-0 pointer-events-none">
+                          <div className="absolute top-2 left-2 right-2 bottom-16 border border-dashed border-gray-300 rounded bg-white bg-opacity-50 flex items-center justify-center">
+                            <span className="text-xs text-gray-500">Signature Area</span>
+                          </div>
+                          <div className="absolute bottom-2 left-2 right-2 h-12 border border-dashed border-gray-300 rounded bg-gray-50 bg-opacity-50 flex items-center justify-center">
+                            <span className="text-xs text-gray-500">Metadata Area</span>
+                          </div>
                         </div>
+                        
+                        {/* Delete Button */}
+                        {(box.isSelected || selectedBoxId === box.id) && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeSignatureBox(box.id);
+                            }}
+                            className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center hover:bg-red-600"
+                            style={{ pointerEvents: 'auto', zIndex: 30 }}
+                          >
+                            ×
+                          </button>
+                        )}
+                        
+                        {/* Resize Handles */}
+                        {(box.isSelected || selectedBoxId === box.id) && (
+                          <>
+                            {/* Top-left */}
+                            <div
+                              className={`absolute w-8 h-8 bg-blue-600 border-2 border-white rounded-full cursor-nw-resize shadow-lg transition-all hover:bg-blue-700 ${
+                                hoveredHandle === 'nw' || (isResizing && resizeHandle === 'nw') ? 'bg-blue-700 scale-110' : ''
+                              }`}
+                            style={{
+                                left: -4,
+                                top: -4,
+                                pointerEvents: 'auto',
+                                zIndex: 20
+                              }}
+                              onMouseDown={handleResizeStart('nw', box.id)}
+                              title="Resize from top-left"
+                            />
+                            {/* Top-right */}
+                            <div
+                              className={`absolute w-8 h-8 bg-blue-600 border-2 border-white rounded-full cursor-ne-resize shadow-lg transition-all hover:bg-blue-700 ${
+                                hoveredHandle === 'ne' || (isResizing && resizeHandle === 'ne') ? 'bg-blue-700 scale-110' : ''
+                              }`}
+                              style={{
+                                right: -4,
+                                top: -4,
+                                pointerEvents: 'auto',
+                                zIndex: 20
+                              }}
+                              onMouseDown={handleResizeStart('ne', box.id)}
+                              title="Resize from top-right"
+                            />
+                            {/* Bottom-left */}
+                            <div
+                              className={`absolute w-8 h-8 bg-blue-600 border-2 border-white rounded-full cursor-sw-resize shadow-lg transition-all hover:bg-blue-700 ${
+                                hoveredHandle === 'sw' || (isResizing && resizeHandle === 'sw') ? 'bg-blue-700 scale-110' : ''
+                              }`}
+                              style={{
+                                left: -4,
+                                bottom: -4,
+                                pointerEvents: 'auto',
+                                zIndex: 20
+                              }}
+                              onMouseDown={handleResizeStart('sw', box.id)}
+                              title="Resize from bottom-left"
+                            />
+                            {/* Bottom-right */}
+                            <div
+                              className={`absolute w-8 h-8 bg-blue-600 border-2 border-white rounded-full cursor-se-resize shadow-lg transition-all hover:bg-blue-700 ${
+                                hoveredHandle === 'se' || (isResizing && resizeHandle === 'se') ? 'bg-blue-700 scale-110' : ''
+                              }`}
+                              style={{
+                                right: -4,
+                                bottom: -4,
+                                pointerEvents: 'auto',
+                                zIndex: 20
+                              }}
+                              onMouseDown={handleResizeStart('se', box.id)}
+                              title="Resize from bottom-right"
+                            />
+                          </>
+                    )}
                       </div>
-                      
-                      {/* Delete Button */}
-                      {(box.isSelected || selectedBoxId === box.id) && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            removeSignatureBox(box.id);
-                          }}
-                          className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center hover:bg-red-600"
-                          style={{ pointerEvents: 'auto', zIndex: 30 }}
-                        >
-                          ×
-                        </button>
-                      )}
-                      
-                      {/* Resize Handles */}
-                      {(box.isSelected || selectedBoxId === box.id) && (
-                        <>
-                          {/* Top-left */}
-                          <div
-                            className={`absolute w-6 h-6 bg-blue-600 border-2 border-white rounded-full cursor-nw-resize shadow-lg transition-all ${
-                              hoveredHandle === 'nw' || (isResizing && resizeHandle === 'nw') ? 'bg-blue-700 scale-125' : ''
-                            }`}
-                          style={{
-                              left: -3,
-                              top: -3,
-                              pointerEvents: 'auto',
-                              zIndex: 20
-                            }}
-                            onMouseDown={handleResizeStart('nw', box.id)}
-                            title="Resize from top-left"
-                          />
-                          {/* Top-right */}
-                          <div
-                            className={`absolute w-6 h-6 bg-blue-600 border-2 border-white rounded-full cursor-ne-resize shadow-lg transition-all ${
-                              hoveredHandle === 'ne' || (isResizing && resizeHandle === 'ne') ? 'bg-blue-700 scale-125' : ''
-                            }`}
-                            style={{
-                              right: -3,
-                              top: -3,
-                              pointerEvents: 'auto',
-                              zIndex: 20
-                            }}
-                            onMouseDown={handleResizeStart('ne', box.id)}
-                            title="Resize from top-right"
-                          />
-                          {/* Bottom-left */}
-                          <div
-                            className={`absolute w-6 h-6 bg-blue-600 border-2 border-white rounded-full cursor-sw-resize shadow-lg transition-all ${
-                              hoveredHandle === 'sw' || (isResizing && resizeHandle === 'sw') ? 'bg-blue-700 scale-125' : ''
-                            }`}
-                            style={{
-                              left: -3,
-                              bottom: -3,
-                              pointerEvents: 'auto',
-                              zIndex: 20
-                            }}
-                            onMouseDown={handleResizeStart('sw', box.id)}
-                            title="Resize from bottom-left"
-                          />
-                          {/* Bottom-right */}
-                          <div
-                            className={`absolute w-6 h-6 bg-blue-600 border-2 border-white rounded-full cursor-se-resize shadow-lg transition-all ${
-                              hoveredHandle === 'se' || (isResizing && resizeHandle === 'se') ? 'bg-blue-700 scale-125' : ''
-                            }`}
-                            style={{
-                              right: -3,
-                              bottom: -3,
-                              pointerEvents: 'auto',
-                              zIndex: 20
-                            }}
-                            onMouseDown={handleResizeStart('se', box.id)}
-                            title="Resize from bottom-right"
-                          />
-                        </>
-                  )}
-                </div>
-                  ))}
+                    );
+                  })}
               </div>
 
 
@@ -1094,6 +1212,9 @@ export default function SignatureRequestPage() {
                 </div>
                 {isResizing && (
                   <div className="text-primary font-medium">🔄 Resizing active - drag to resize</div>
+                )}
+                {isDragging && (
+                  <div className="text-primary font-medium">🖱️ Dragging active - move to reposition</div>
                 )}
               </div>
             </CardContent>
