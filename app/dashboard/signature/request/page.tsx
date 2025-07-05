@@ -91,6 +91,10 @@ export default function SignatureRequestPage() {
 
   const documentId = searchParams.get('documentId');
 
+  // Store drag/resize state in canvas coordinates for accuracy
+  const [dragStart, setDragStart] = useState<{ mouseX: number; mouseY: number; boxX: number; boxY: number } | null>(null);
+  const [resizeStartCanvas, setResizeStartCanvas] = useState<{ mouseX: number; mouseY: number; boxX: number; boxY: number; boxWidth: number; boxHeight: number } | null>(null);
+
   // Set mounted state
   useEffect(() => {
     setIsMounted(true);
@@ -447,203 +451,130 @@ export default function SignatureRequestPage() {
   const handleBoxDragStart = (boxId: string) => (event: React.MouseEvent) => {
     event.preventDefault();
     event.stopPropagation();
-    
     const box = signatureBoxes.find(b => b.id === boxId);
-    if (!box) {
-      return;
-    }
-    
+    if (!box || !canvasRef.current) return;
     setSelectedBoxId(boxId);
     setIsDragging(true);
-    
-    // Calculate offset from mouse to box corner in PDF coordinates
-    const canvas = canvasRef.current;
-    const rect = canvas?.getBoundingClientRect();
-    if (!rect) return;
-    
-    const viewerX = event.clientX - rect.left;
-    const viewerY = event.clientY - rect.top;
-    
-    // Convert viewer coordinates to PDF coordinates
-    const pdfMouseCoords = convertViewerToPdfCoordinates(viewerX, viewerY, 0, 0);
-    
-    // Calculate offset in PDF coordinates
-    const offsetX = pdfMouseCoords.x - box.x;
-    const offsetY = pdfMouseCoords.y - box.y;
-    
-    setDragOffset({ x: offsetX, y: offsetY });
+    // Mouse position relative to canvas
+    const canvasRect = canvasRef.current.getBoundingClientRect();
+    const mouseX = event.clientX - canvasRect.left;
+    const mouseY = event.clientY - canvasRect.top;
+    // Box position in canvas coordinates
+    const { x: boxX, y: boxY } = convertPdfToViewerCoordinates(box.x, box.y, 0, 0);
+    setDragStart({ mouseX, mouseY, boxX, boxY });
   };
 
   // Separate handler for resize handles
   const handleResizeStart = (handle: 'nw' | 'ne' | 'sw' | 'se', boxId: string) => (event: React.MouseEvent) => {
     event.preventDefault();
     event.stopPropagation();
-    
     const box = signatureBoxes.find(b => b.id === boxId);
-    if (!box) {
-      return;
-    }
-    
+    if (!box || !canvasRef.current) return;
     setSelectedBoxId(boxId);
     setIsResizing(true);
     setResizeHandle(handle);
-    
-    // Store the starting position in PDF coordinates
-    setResizeStart({ 
-      x: box.x, 
-      y: box.y, 
-      width: box.width, 
-      height: box.height 
-    });
+    // Mouse position relative to canvas
+    const canvasRect = canvasRef.current.getBoundingClientRect();
+    const mouseX = event.clientX - canvasRect.left;
+    const mouseY = event.clientY - canvasRect.top;
+    // Box position in canvas coordinates
+    const { x: boxX, y: boxY, width: boxWidth, height: boxHeight } = convertPdfToViewerCoordinates(box.x, box.y, box.width, box.height);
+    setResizeStartCanvas({ mouseX, mouseY, boxX, boxY, boxWidth, boxHeight });
+    setResizeStart({ x: box.x, y: box.y, width: box.width, height: box.height });
   };
 
   const handleMouseMove = (event: React.MouseEvent<HTMLDivElement>) => {
     if (!canvasRef.current || !mountedRef.current) return;
-
-    // Prevent event propagation during resize to avoid conflicts
-    if (isResizing) {
-      event.preventDefault();
-      event.stopPropagation();
-    }
-
-    const canvas = canvasRef.current;
-    const rect = canvas.getBoundingClientRect();
-    const viewerX = event.clientX - rect.left;
-    const viewerY = event.clientY - rect.top;
-
-    // Check for handle hovering when not dragging or resizing
-    if (!isDragging && !isResizing && selectedBoxId) {
-      const selectedBox = signatureBoxes.find(box => box.id === selectedBoxId);
-      if (selectedBox && selectedBox.pageNumber === currentPage) {
-        // Convert PDF coordinates to viewer coordinates for handle detection
-        const viewerCoords = convertPdfToViewerCoordinates(selectedBox.x, selectedBox.y, selectedBox.width, selectedBox.height);
-        
-        const handleSize = 20; // Increased to match larger handles
-        const isNearCorner = (posX: number, posY: number, cornerX: number, cornerY: number) => {
-          return Math.abs(posX - cornerX) <= handleSize && Math.abs(posY - cornerY) <= handleSize;
-        };
-        
-        const topLeftX = viewerCoords.x;
-        const topLeftY = viewerCoords.y;
-        const topRightX = viewerCoords.x + viewerCoords.width;
-        const topRightY = viewerCoords.y;
-        const bottomLeftX = viewerCoords.x;
-        const bottomLeftY = viewerCoords.y + viewerCoords.height;
-        const bottomRightX = viewerCoords.x + viewerCoords.width;
-        const bottomRightY = viewerCoords.y + viewerCoords.height;
-        
-        if (isNearCorner(viewerX, viewerY, topLeftX, topLeftY)) {
-          setHoveredHandle('nw');
-        } else if (isNearCorner(viewerX, viewerY, topRightX, topRightY)) {
-          setHoveredHandle('ne');
-        } else if (isNearCorner(viewerX, viewerY, bottomLeftX, bottomLeftY)) {
-          setHoveredHandle('sw');
-        } else if (isNearCorner(viewerX, viewerY, bottomRightX, bottomRightY)) {
-          setHoveredHandle('se');
-        } else {
-          setHoveredHandle(null);
-        }
-      }
-    }
-
+    const canvasRect = canvasRef.current.getBoundingClientRect();
+    const mouseX = event.clientX - canvasRect.left;
+    const mouseY = event.clientY - canvasRect.top;
     if (!isDragging && !isResizing) return;
-
     setSignatureBoxes(prev => prev.map(box => {
       if (box.id !== selectedBoxId) return box;
-
-      if (isDragging) {
-        // Convert current mouse position to PDF coordinates
-        const pdfMouseCoords = convertViewerToPdfCoordinates(viewerX, viewerY, 0, 0);
-        
-        // Calculate new position by subtracting the offset
-        let newX = pdfMouseCoords.x - dragOffset.x;
-        let newY = pdfMouseCoords.y - dragOffset.y;
-        
+      if (isDragging && dragStart) {
+        // Move box by mouse delta in canvas coordinates
+        const dx = mouseX - dragStart.mouseX;
+        const dy = mouseY - dragStart.mouseY;
+        // New box position in canvas coordinates
+        let newCanvasX = dragStart.boxX + dx;
+        let newCanvasY = dragStart.boxY + dy;
+        // Snap to pixel grid
+        newCanvasX = Math.round(newCanvasX);
+        newCanvasY = Math.round(newCanvasY);
+        // Convert to PDF coordinates
+        const pdfCoords = convertViewerToPdfCoordinates(newCanvasX, newCanvasY, box.width * baseScale * zoomLevel, box.height * baseScale * zoomLevel);
         // Constrain to PDF bounds
         const canvas = canvasRef.current;
-        const canvasHeight = canvas ? canvas.height : 0;
-        const pdfHeight = canvasHeight / (baseScale * zoomLevel);
         const pdfWidth = canvas ? canvas.width / (baseScale * zoomLevel) : 0;
-        
-        newX = Math.max(0, Math.min(newX, pdfWidth - box.width));
-        newY = Math.max(0, Math.min(newY, pdfHeight - box.height));
-        
-        return {
-          ...box,
-          x: newX,
-          y: newY
-        };
+        const pdfHeight = canvas ? canvas.height / (baseScale * zoomLevel) : 0;
+        let newX = Math.max(0, Math.min(pdfCoords.x, pdfWidth - box.width));
+        let newY = Math.max(0, Math.min(pdfCoords.y, pdfHeight - box.height));
+        return { ...box, x: newX, y: newY };
       }
-
-      if (isResizing && resizeHandle) {
-        const minSize = 50 / (baseScale * zoomLevel); // Minimum box size in PDF coordinates
-        
-        // Convert current mouse position to PDF coordinates
-        const pdfMouseCoords = convertViewerToPdfCoordinates(viewerX, viewerY, 0, 0);
-        
-        // Get PDF bounds
-        const canvas = canvasRef.current;
-        const canvasHeight = canvas ? canvas.height : 0;
-        const pdfHeight = canvasHeight / (baseScale * zoomLevel);
-        const pdfWidth = canvas ? canvas.width / (baseScale * zoomLevel) : 0;
-        
-        let newX = box.x;
-        let newY = box.y;
-        let newWidth = box.width;
-        let newHeight = box.height;
-
+      if (isResizing && resizeHandle && resizeStartCanvas) {
+        const METADATA_HEIGHT = 60 / (baseScale * zoomLevel);
+        const MIN_SIGNATURE_HEIGHT = 50 / (baseScale * zoomLevel);
+        const minBoxHeight = METADATA_HEIGHT + MIN_SIGNATURE_HEIGHT;
+        const minBoxWidth = 50 / (baseScale * zoomLevel);
+        let { boxX, boxY, boxWidth, boxHeight, mouseX: startMouseX, mouseY: startMouseY } = resizeStartCanvas;
+        let newCanvasX = boxX;
+        let newCanvasY = boxY;
+        let newCanvasWidth = boxWidth;
+        let newCanvasHeight = boxHeight;
         switch (resizeHandle) {
           case 'nw':
-            newWidth = Math.max(minSize, resizeStart.x + resizeStart.width - pdfMouseCoords.x);
-            newHeight = Math.max(minSize, resizeStart.y + resizeStart.height - pdfMouseCoords.y);
-            newX = pdfMouseCoords.x;
-            newY = pdfMouseCoords.y;
+            newCanvasWidth = Math.max(minBoxWidth * baseScale * zoomLevel, boxWidth + (startMouseX - mouseX));
+            newCanvasHeight = Math.max(minBoxHeight * baseScale * zoomLevel, boxHeight + (startMouseY - mouseY));
+            newCanvasX = boxX + (boxWidth - newCanvasWidth);
+            newCanvasY = boxY + (boxHeight - newCanvasHeight);
             break;
           case 'ne':
-            newWidth = Math.max(minSize, pdfMouseCoords.x - resizeStart.x);
-            newHeight = Math.max(minSize, resizeStart.y + resizeStart.height - pdfMouseCoords.y);
-            newY = pdfMouseCoords.y;
+            newCanvasWidth = Math.max(minBoxWidth * baseScale * zoomLevel, boxWidth + (mouseX - startMouseX));
+            newCanvasHeight = Math.max(minBoxHeight * baseScale * zoomLevel, boxHeight + (startMouseY - mouseY));
+            newCanvasY = boxY + (boxHeight - newCanvasHeight);
             break;
           case 'sw':
-            newWidth = Math.max(minSize, resizeStart.x + resizeStart.width - pdfMouseCoords.x);
-            newHeight = Math.max(minSize, pdfMouseCoords.y - resizeStart.y);
-            newX = pdfMouseCoords.x;
+            newCanvasWidth = Math.max(minBoxWidth * baseScale * zoomLevel, boxWidth + (startMouseX - mouseX));
+            newCanvasHeight = Math.max(minBoxHeight * baseScale * zoomLevel, boxHeight + (mouseY - startMouseY));
+            newCanvasX = boxX + (boxWidth - newCanvasWidth);
             break;
           case 'se':
-            newWidth = Math.max(minSize, pdfMouseCoords.x - resizeStart.x);
-            newHeight = Math.max(minSize, pdfMouseCoords.y - resizeStart.y);
+            newCanvasWidth = Math.max(minBoxWidth * baseScale * zoomLevel, boxWidth + (mouseX - startMouseX));
+            newCanvasHeight = Math.max(minBoxHeight * baseScale * zoomLevel, boxHeight + (mouseY - startMouseY));
             break;
         }
-        
+        // Snap to pixel grid
+        newCanvasX = Math.round(newCanvasX);
+        newCanvasY = Math.round(newCanvasY);
+        newCanvasWidth = Math.round(newCanvasWidth);
+        newCanvasHeight = Math.round(newCanvasHeight);
+        // Convert to PDF coordinates
+        const pdfCoords = convertViewerToPdfCoordinates(newCanvasX, newCanvasY, newCanvasWidth, newCanvasHeight);
         // Constrain to PDF bounds
-        newX = Math.max(0, Math.min(newX, pdfWidth - newWidth));
-        newY = Math.max(0, Math.min(newY, pdfHeight - newHeight));
-        newWidth = Math.min(newWidth, pdfWidth - newX);
-        newHeight = Math.min(newHeight, pdfHeight - newY);
-
-        return {
-          ...box,
-          x: newX,
-          y: newY,
-          width: newWidth,
-          height: newHeight
-        };
+        const canvas = canvasRef.current;
+        const pdfWidth = canvas ? canvas.width / (baseScale * zoomLevel) : 0;
+        const pdfHeight = canvas ? canvas.height / (baseScale * zoomLevel) : 0;
+        let newX = Math.max(0, Math.min(pdfCoords.x, pdfWidth - pdfCoords.width));
+        let newY = Math.max(0, Math.min(pdfCoords.y, pdfHeight - pdfCoords.height));
+        let newWidth = Math.min(pdfCoords.width, pdfWidth - newX);
+        let newHeight = Math.min(pdfCoords.height, pdfHeight - newY);
+        return { ...box, x: newX, y: newY, width: newWidth, height: newHeight };
       }
-
       return box;
     }));
   };
 
+  // On drag/resize end, clear the drag/resize state
   const handleMouseUp = (event: React.MouseEvent<HTMLDivElement>) => {
-    // Prevent event propagation during resize to avoid conflicts
     if (isResizing) {
       event.preventDefault();
       event.stopPropagation();
     }
-    
     setIsDragging(false);
     setIsResizing(false);
     setResizeHandle(null);
+    setDragStart(null);
+    setResizeStartCanvas(null);
   };
 
   // Keyboard shortcuts and resize handler - only run when mounted and document is available
@@ -982,37 +913,7 @@ export default function SignatureRequestPage() {
                     </Badge>
                   )}
                 </div>
-
-                {/* Zoom Controls */}
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleZoomChange(zoomLevel - 0.25)}
-                    disabled={zoomLevel <= 0.5}
-                  >
-                    -
-                  </Button>
-                  <span className="text-sm min-w-[60px] text-center">
-                    {Math.round(zoomLevel * 100)}%
-                  </span>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                    onClick={() => handleZoomChange(zoomLevel + 0.25)}
-                    disabled={zoomLevel >= 3.0}
-                  >
-                    +
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleZoomChange(1.0)}
-                  >
-                    Reset
-                        </Button>
-                </div>
-                      </div>
+              </div>
                       
               {/* PDF Canvas */}
                 <div 
