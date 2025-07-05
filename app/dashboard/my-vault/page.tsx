@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -40,6 +40,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { useSignatures } from '@/hooks/use-signatures';
 import { SignatureRequestDialog } from '@/components/signature-request-dialog';
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 
 import {
   Lock,
@@ -143,6 +144,10 @@ export default function MyVaultPage() {
     refreshRequests,
   } = useSignatures({ userId: user?.id });
   const [currentUserProfile, setCurrentUserProfile] = useState<UserProfile | null>(null);
+  
+  // Pagination state for signature requests
+  const [signatureRequestsPage, setSignatureRequestsPage] = useState(1);
+  const signatureRequestsPerPage = 10;
 
   // Fetch user on mount
   useEffect(() => {
@@ -1198,6 +1203,7 @@ export default function MyVaultPage() {
             <TableBody>
               {[...receivedRequests, ...sentRequests]
                 .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                .slice((signatureRequestsPage - 1) * signatureRequestsPerPage, signatureRequestsPage * signatureRequestsPerPage)
                 .map((req) => (
                 <TableRow key={req.id}>
                   <TableCell className="font-medium">
@@ -1291,6 +1297,56 @@ export default function MyVaultPage() {
           {signaturesLoading && <div className="text-muted-foreground text-sm mt-4">Loading...</div>}
           {!signaturesLoading && receivedRequests.length + sentRequests.length === 0 && (
             <div className="text-muted-foreground text-sm mt-4">No signature requests found.</div>
+          )}
+          
+          {/* Pagination for Signature Requests */}
+          {!signaturesLoading && receivedRequests.length + sentRequests.length > 0 && (
+            <div className="flex items-center justify-between mt-4">
+              <div className="text-sm text-muted-foreground">
+                Showing {((signatureRequestsPage - 1) * signatureRequestsPerPage) + 1} to{' '}
+                {Math.min(signatureRequestsPage * signatureRequestsPerPage, receivedRequests.length + sentRequests.length)} of{' '}
+                {receivedRequests.length + sentRequests.length} signature requests
+              </div>
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious 
+                      onClick={() => setSignatureRequestsPage(prev => Math.max(1, prev - 1))}
+                      className={signatureRequestsPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                    />
+                  </PaginationItem>
+                  {Array.from({ length: Math.ceil((receivedRequests.length + sentRequests.length) / signatureRequestsPerPage) }, (_, i) => i + 1)
+                    .filter(page => {
+                      const totalPages = Math.ceil((receivedRequests.length + sentRequests.length) / signatureRequestsPerPage);
+                      return page === 1 || page === totalPages || (page >= signatureRequestsPage - 1 && page <= signatureRequestsPage + 1);
+                    })
+                    .map((page, index, array) => (
+                      <React.Fragment key={page}>
+                        {index > 0 && array[index - 1] !== page - 1 && (
+                          <PaginationItem>
+                            <span className="px-2 text-muted-foreground">...</span>
+                          </PaginationItem>
+                        )}
+                        <PaginationItem>
+                          <PaginationLink
+                            onClick={() => setSignatureRequestsPage(page)}
+                            isActive={signatureRequestsPage === page}
+                            className="cursor-pointer"
+                          >
+                            {page}
+                          </PaginationLink>
+                        </PaginationItem>
+                      </React.Fragment>
+                    ))}
+                  <PaginationItem>
+                    <PaginationNext 
+                      onClick={() => setSignatureRequestsPage(prev => Math.min(Math.ceil((receivedRequests.length + sentRequests.length) / signatureRequestsPerPage), prev + 1))}
+                      className={signatureRequestsPage >= Math.ceil((receivedRequests.length + sentRequests.length) / signatureRequestsPerPage) ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
           )}
         </div>
       </div>
