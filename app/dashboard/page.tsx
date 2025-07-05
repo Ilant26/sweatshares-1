@@ -501,7 +501,6 @@ export default function Page() {
       <p className="text-muted-foreground">
         Here's an overview of your activity on SweatShares
       </p>
-
       {/* Summary Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
@@ -551,7 +550,6 @@ export default function Page() {
           </CardContent>
         </Card>
       </div>
-
       {/* Main Content Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
         {/* Account Activity Card - Full width on small/medium, 4/7 on large */}
@@ -599,7 +597,10 @@ export default function Page() {
                     </Avatar>
                     <div>
                       <p className="text-sm font-medium leading-none">
-                        <Link href={`/dashboard/profile/${user.id}`} className="hover:underline text-primary">
+                        <Link
+                          href={`/dashboard/profile/${user.id}`}
+                          className="hover:underline text-primary"
+                          legacyBehavior>
                           {user.full_name || user.username}
                         </Link>
                       </p>
@@ -658,7 +659,10 @@ export default function Page() {
                 <div className="flex-1">
                   <div className="flex justify-between items-center">
                     <p className="text-sm font-medium leading-none">
-                      <Link href={`/dashboard/profile/${message.sender_id}`} className="hover:underline text-primary">
+                      <Link
+                        href={`/dashboard/profile/${message.sender_id}`}
+                        className="hover:underline text-primary"
+                        legacyBehavior>
                         {message.sender.full_name || message.sender.username}
                       </Link>
                     </p>
@@ -694,13 +698,19 @@ export default function Page() {
                   <div>
                     {item.type === 'profile' ? (
                       <p className="text-sm font-medium leading-none">
-                        <Link href={`/dashboard/profile/${item.id}`} className="hover:underline text-primary">
+                        <Link
+                          href={`/dashboard/profile/${item.id}`}
+                          className="hover:underline text-primary"
+                          legacyBehavior>
                           {item.name}
                         </Link>
                       </p>
                     ) : item.type === 'listing' ? (
                       <p className="text-sm font-medium leading-none">
-                        <Link href={`/dashboard/listings/${item.id}?source=dashboard`} className="hover:underline text-primary">
+                        <Link
+                          href={`/dashboard/listings/${item.id}?source=dashboard`}
+                          className="hover:underline text-primary"
+                          legacyBehavior>
                           {item.name}
                         </Link>
                       </p>

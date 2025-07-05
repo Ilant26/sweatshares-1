@@ -154,7 +154,7 @@ Looking forward to hearing from you!`;
         <div className="pt-6">
           {/* Back Button */}
           <motion.div variants={itemVariants} className="mb-6">
-            <Link href="/dashboard/listings">
+            <Link href="/dashboard/listings" legacyBehavior>
               <Button variant="ghost" className="gap-2">
                 <ArrowLeft className="h-4 w-4" />
                 Retour aux annonces

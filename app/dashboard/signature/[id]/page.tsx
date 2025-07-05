@@ -198,8 +198,11 @@ export default function SignaturePage() {
     if (!ctx) return
 
     const rect = canvas.getBoundingClientRect()
-    const x = e.clientX - rect.left
-    const y = e.clientY - rect.top
+    const scaleX = canvas.width / rect.width
+    const scaleY = canvas.height / rect.height
+    
+    const x = (e.clientX - rect.left) * scaleX
+    const y = (e.clientY - rect.top) * scaleY
 
     ctx.beginPath()
     ctx.moveTo(x, y)
@@ -219,8 +222,11 @@ export default function SignaturePage() {
     if (!ctx) return
 
     const rect = canvas.getBoundingClientRect()
-    const x = e.clientX - rect.left
-    const y = e.clientY - rect.top
+    const scaleX = canvas.width / rect.width
+    const scaleY = canvas.height / rect.height
+    
+    const x = (e.clientX - rect.left) * scaleX
+    const y = (e.clientY - rect.top) * scaleY
 
     ctx.lineTo(x, y)
     ctx.stroke()
@@ -328,70 +334,8 @@ export default function SignaturePage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Document Viewer */}
-        <div className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <FileText className="w-5 h-5" />
-                <span>Document</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center space-x-3 p-3 bg-muted rounded-lg">
-                  <FileText className="w-8 h-8 text-muted-foreground" />
-                  <div>
-                    <p className="font-medium">{request.document?.filename}</p>
-                    {request.document?.description && (
-                      <p className="text-sm text-muted-foreground">{request.document.description}</p>
-                    )}
-                  </div>
-                </div>
-                
-                {/* Document Preview with Error Handling */}
-                {documentLoading && (
-                  <div className="border rounded-lg p-8 text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-                    <p className="mt-4 text-muted-foreground">Loading document preview...</p>
-                  </div>
-                )}
-                
-                {documentError && (
-                  <div className="border rounded-lg p-6 text-center">
-                    <AlertCircle className="w-8 h-8 text-red-500 mx-auto mb-3" />
-                    <p className="text-red-600 font-medium mb-2">Document Preview Unavailable</p>
-                    <p className="text-sm text-muted-foreground mb-4">{documentError}</p>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={retryLoadDocument}
-                      disabled={documentLoading}
-                    >
-                      <RefreshCw className={`w-4 h-4 mr-2 ${documentLoading ? 'animate-spin' : ''}`} />
-                      Retry
-                    </Button>
-                  </div>
-                )}
-                
-                {documentUrl && !documentLoading && !documentError && (
-                  <div className="border rounded-lg overflow-hidden">
-                    <iframe
-                      src={documentUrl}
-                      className="w-full h-96"
-                      title="Document Preview"
-                    />
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Signature Panel */}
-        <div className="space-y-4">
-          {/* Request Details */}
+      <div className="space-y-6">
+        {/* 1. Request Details */}
           <Card>
             <CardHeader>
               <CardTitle>Request Details</CardTitle>
@@ -463,7 +407,170 @@ export default function SignaturePage() {
             </CardContent>
           </Card>
 
-          {/* Signature Area */}
+        {/* 2. Document in Full Length */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <FileText className="w-5 h-5" />
+              <span>Document</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-center space-x-3 p-3 bg-muted rounded-lg">
+                <FileText className="w-8 h-8 text-muted-foreground" />
+                <div>
+                  <p className="font-medium">{request.document?.filename}</p>
+                  {request.document?.description && (
+                    <p className="text-sm text-muted-foreground">{request.document.description}</p>
+                  )}
+                </div>
+              </div>
+              
+              {/* Document Preview with Error Handling */}
+              {documentLoading && (
+                <div className="border rounded-lg p-8 text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                  <p className="mt-4 text-muted-foreground">Loading document preview...</p>
+                </div>
+              )}
+              
+              {documentError && (
+                <div className="border rounded-lg p-6 text-center">
+                  <AlertCircle className="w-8 h-8 text-red-500 mx-auto mb-3" />
+                  <p className="text-red-600 font-medium mb-2">Document Preview Unavailable</p>
+                  <p className="text-sm text-muted-foreground mb-4">{documentError}</p>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={retryLoadDocument}
+                    disabled={documentLoading}
+                  >
+                    <RefreshCw className={`w-4 h-4 mr-2 ${documentLoading ? 'animate-spin' : ''}`} />
+                    Retry
+                  </Button>
+                </div>
+              )}
+              
+                              {documentUrl && !documentLoading && !documentError && request.status !== 'signed' && (
+                  <div className="border rounded-lg overflow-hidden">
+                    <div className="bg-muted px-4 py-2 border-b">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">Document Preview</span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const link = document.createElement('a');
+                            link.href = documentUrl;
+                            link.download = request.document?.filename || 'document.pdf';
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                          }}
+                        >
+                          <Download className="w-4 h-4 mr-2" />
+                          Download Original
+                        </Button>
+                      </div>
+                    </div>
+                    <iframe
+                      src={documentUrl}
+                      className="w-full h-[600px]"
+                      title="Document Preview"
+                    />
+                  </div>
+                )}
+              
+              {/* Signed Document Preview */}
+              {request.status === 'signed' && signedDocumentUrl && (
+                <div className="border rounded-lg overflow-hidden">
+                  <div className="bg-green-50 px-4 py-2 border-b border-green-200">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <Check className="w-4 h-4 text-green-600" />
+                        <span className="text-sm font-medium text-green-800">Signed Document</span>
+                      </div>
+                                              <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => {
+                            const link = document.createElement('a');
+                            link.href = signedDocumentUrl;
+                            link.download = request.signature_data?.signed_document_filename || 'signed-document.pdf';
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                          }}
+                          className="bg-green-600 hover:bg-green-700 text-white"
+                        >
+                          <Download className="w-4 h-4 mr-2" />
+                          Download Signed PDF
+                        </Button>
+                    </div>
+                  </div>
+                  <iframe
+                    src={signedDocumentUrl}
+                    className="w-full h-[600px]"
+                    title="Signed Document Preview"
+                  />
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* 3. Signature Details */}
+        {request.status === 'signed' && request.signature_data && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Signature Details</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="border rounded-lg p-4 bg-green-50 border-green-200">
+                <div className="flex items-center space-x-2 mb-3">
+                  <Check className="w-5 h-5 text-green-600" />
+                  <span className="font-medium text-green-800">Document Successfully Signed</span>
+                </div>
+                {request.signature_data?.signed_document_filename && (
+                  <p className="text-sm text-muted-foreground">
+                    <strong>Signed File:</strong> {request.signature_data.signed_document_filename}
+                  </p>
+                )}
+                {request.signed_at && (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    <strong>Signed on:</strong> {formatDate(request.signed_at)}
+                  </p>
+                )}
+                <p className="text-sm text-muted-foreground mt-2">
+                  The signed document is now available for download and contains all signatures and metadata.
+                </p>
+                
+                {signedDocumentUrl && (
+                  <div className="mt-4">
+                    <Button
+                      onClick={() => {
+                        const link = document.createElement('a');
+                        link.href = signedDocumentUrl;
+                        link.download = request.signature_data?.signed_document_filename || 'signed-document.pdf';
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                      }}
+                      className="w-full bg-green-600 hover:bg-green-700 text-white"
+                      size="lg"
+                    >
+                      <Download className="w-5 h-5 mr-2" />
+                      Download Signed Document
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Signature Area - Only show for pending requests */}
           {isReceiver && request.status === 'pending' && (
             <Card>
               <CardHeader>
@@ -483,7 +590,11 @@ export default function SignaturePage() {
                     onMouseMove={draw}
                     onMouseUp={stopDrawing}
                     onMouseLeave={stopDrawing}
-                    style={{ touchAction: 'none' }} // Prevents touch scrolling on mobile
+                    style={{ 
+                      touchAction: 'none', // Prevents touch scrolling on mobile
+                      maxWidth: '100%',
+                      height: 'auto'
+                    }}
                   />
                   <div className="flex space-x-2 mt-2">
                     <Button variant="outline" size="sm" onClick={clearSignature}>
@@ -511,40 +622,6 @@ export default function SignaturePage() {
               </CardContent>
             </Card>
           )}
-
-          {/* Signed Document Status */}
-          {request.status === 'signed' && request.signature_data && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Signed Document</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="border rounded-lg p-4 bg-muted/50">
-                  <div className="flex items-center space-x-2 mb-4">
-                    <Check className="w-5 h-5 text-green-500" />
-                    <span className="font-medium text-green-600">Document has been signed</span>
-                  </div>
-                  {signedDocumentUrl ? (
-                    <Button variant="outline" onClick={() => window.open(signedDocumentUrl, '_blank')}>
-                      <Download className="w-4 h-4 mr-2" />
-                      Download Signed Document
-                    </Button>
-                  ) : (
-                    <Button variant="outline" disabled>
-                      <Download className="w-4 h-4 mr-2" />
-                      Signed Document Unavailable
-                    </Button>
-                  )}
-                  {request.signature_data?.signed_document_filename && (
-                    <p className="text-sm text-muted-foreground mt-2">
-                      File: {request.signature_data.signed_document_filename}
-                    </p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
       </div>
     </div>
   )

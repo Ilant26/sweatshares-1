@@ -100,13 +100,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         "px-3 transition-all duration-200 ease-out",
         state === "collapsed" ? "py-4" : "py-6"
       )}>
-        <Link 
-          href="/" 
+        <Link
+          href="/"
           className={cn(
             "flex items-center transition-all duration-200 ease-out",
             state === "collapsed" ? "justify-center" : "justify-start"
-          )}
-        >
+          )}>
           <div className="relative flex items-center">
             {/* Icon - always present but fades in/out */}
             <div className={cn(
@@ -163,17 +162,25 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild tooltip="Support">
-              <Link href="/dashboard/support" className="relative flex items-center">
-                <HelpCircle className="size-4" />
-                <span>Support</span>
+              <Link
+                href="/dashboard/support"
+                className="relative flex items-center">
+                <div className="flex items-center">
+                  <HelpCircle className="size-4" />
+                  <span className={cn("ml-2", state === "collapsed" ? "hidden" : "")}>Support</span>
+                </div>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton asChild tooltip="Report a Bug">
-              <Link href="/dashboard/report-a-bug" className="relative flex items-center">
-                <MessageSquarePlus className="size-4" />
-                <span>Report a Bug</span>
+              <Link
+                href="/dashboard/report-a-bug"
+                className="relative flex items-center">
+                <div className="flex items-center">
+                  <MessageSquarePlus className="size-4" />
+                  <span className={cn("ml-2", state === "collapsed" ? "hidden" : "")}>Report a Bug</span>
+                </div>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -181,5 +188,5 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
-  )
+  );
 }

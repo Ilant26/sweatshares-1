@@ -18,7 +18,7 @@ export default function ContentSection() {
                             variant="secondary"
                             size="sm"
                             className="gap-1 pr-1.5">
-                            <Link href="/auth/sign-up">
+                            <Link href="/auth/sign-up" legacyBehavior>
                                 <span>Start Now</span>
                                 <ChevronRight className="size-2" />
                             </Link>
@@ -27,5 +27,5 @@ export default function ContentSection() {
                 </div>
             </div>
         </section>
-    )
+    );
 }

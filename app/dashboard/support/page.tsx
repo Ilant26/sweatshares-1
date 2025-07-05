@@ -299,7 +299,6 @@ export default function SupportPage() {
           </p>
         </div>
       </div>
-
       {/* Support Channels */}
       <div className="grid gap-4 md:grid-cols-3">
         {supportChannels.map((channel) => (
@@ -324,7 +323,6 @@ export default function SupportPage() {
           </Card>
         ))}
       </div>
-
       {/* Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-4">
@@ -526,15 +524,24 @@ export default function SupportPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Link href="#" className="flex items-center space-x-2 text-sm hover:text-primary">
+                  <Link
+                    href="#"
+                    className="flex items-center space-x-2 text-sm hover:text-primary"
+                    legacyBehavior>
                     <ExternalLink className="h-4 w-4" />
                     <span>Getting Started Guide</span>
                   </Link>
-                  <Link href="#" className="flex items-center space-x-2 text-sm hover:text-primary">
+                  <Link
+                    href="#"
+                    className="flex items-center space-x-2 text-sm hover:text-primary"
+                    legacyBehavior>
                     <ExternalLink className="h-4 w-4" />
                     <span>User Manual</span>
                   </Link>
-                  <Link href="#" className="flex items-center space-x-2 text-sm hover:text-primary">
+                  <Link
+                    href="#"
+                    className="flex items-center space-x-2 text-sm hover:text-primary"
+                    legacyBehavior>
                     <ExternalLink className="h-4 w-4" />
                     <span>API Documentation</span>
                   </Link>
@@ -551,15 +558,24 @@ export default function SupportPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Link href="#" className="flex items-center space-x-2 text-sm hover:text-primary">
+                  <Link
+                    href="#"
+                    className="flex items-center space-x-2 text-sm hover:text-primary"
+                    legacyBehavior>
                     <ExternalLink className="h-4 w-4" />
                     <span>Community Forum</span>
                   </Link>
-                  <Link href="#" className="flex items-center space-x-2 text-sm hover:text-primary">
+                  <Link
+                    href="#"
+                    className="flex items-center space-x-2 text-sm hover:text-primary"
+                    legacyBehavior>
                     <ExternalLink className="h-4 w-4" />
                     <span>Discord Server</span>
                   </Link>
-                  <Link href="#" className="flex items-center space-x-2 text-sm hover:text-primary">
+                  <Link
+                    href="#"
+                    className="flex items-center space-x-2 text-sm hover:text-primary"
+                    legacyBehavior>
                     <ExternalLink className="h-4 w-4" />
                     <span>GitHub Issues</span>
                   </Link>

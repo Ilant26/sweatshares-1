@@ -27,7 +27,8 @@ export async function POST(request: NextRequest) {
         *,
         document:vault_documents(id, filename, filepath, description),
         sender:profiles!signature_requests_sender_id_fkey(id, full_name, avatar_url),
-        receiver:profiles!signature_requests_receiver_id_fkey(id, full_name, avatar_url)
+        receiver:profiles!signature_requests_receiver_id_fkey(id, full_name, avatar_url),
+        positions:signature_positions(*)
       `)
       .eq('id', requestId)
       .single()
@@ -71,10 +72,6 @@ export async function POST(request: NextRequest) {
     // Convert base64 signature to image
     const signatureImage = await createSignatureImage(signatureData)
     
-    // Get the first page to determine page size
-    const firstPage = pages[0]
-    const { width, height } = firstPage.getSize()
-    
     // Embed the signature image with error handling
     let signaturePdfImage
     try {
@@ -84,134 +81,158 @@ export async function POST(request: NextRequest) {
       throw new Error('Failed to process signature image')
     }
     
-    // Add a new page for the signature
-    const signaturePage = pdfDoc.addPage([width, height])
+    // Get signature positions from the request
+    const positions = (signatureRequest as any).positions || []
     
-    // Calculate signature position and size
-    // Use a more flexible approach that preserves aspect ratio
-    const maxSignatureWidth = 300
-    const maxSignatureHeight = 120
-    const margin = 80
+    // The coordinates are stored from the PDF viewer at base scale
+    // We need to scale them back down to the original PDF coordinates
+    // Each position should have its own scale information
     
-    // Calculate aspect ratio of the signature image
-    const signatureAspectRatio = signaturePdfImage.width / signaturePdfImage.height
-    
-    // Calculate optimal size while maintaining aspect ratio
-    let signatureWidth = maxSignatureWidth
-    let signatureHeight = signatureWidth / signatureAspectRatio
-    
-    // If height exceeds max, scale down proportionally
-    if (signatureHeight > maxSignatureHeight) {
-      signatureHeight = maxSignatureHeight
-      signatureWidth = signatureHeight * signatureAspectRatio
-    }
-    
-    // Center the signature on the new page
-    const x = (width - signatureWidth) / 2
-    const y = height - margin - signatureHeight
-    
-    // Add a title to the signature page
-    const titleFontSize = 16
-    const titleY = height - 50
-    signaturePage.drawText('DOCUMENT SIGNATURE PAGE', {
-      x: (width - 300) / 2, // Center the title
-      y: titleY,
-      size: titleFontSize,
-      color: rgb(0, 0, 0),
-    })
-    
-    // Add a separator line below the title
-    signaturePage.drawLine({
-      start: { x: 50, y: titleY - 20 },
-      end: { x: width - 50, y: titleY - 20 },
-      thickness: 1,
-      color: rgb(0.7, 0.7, 0.7),
-    })
-    
-    // Add a subtle background rectangle for the signature area
-    signaturePage.drawRectangle({
-      x: x - 10,
-      y: y - 10,
-      width: signatureWidth + 20,
-      height: signatureHeight + 20,
-      borderWidth: 2,
-      borderColor: rgb(0.7, 0.7, 0.7),
-      color: rgb(0.98, 0.98, 0.98), // Light gray background
-    })
-    
-    // Add signature to the new page with proper scaling
-    signaturePage.drawImage(signaturePdfImage, {
-      x,
-      y,
-      width: signatureWidth,
-      height: signatureHeight,
-    })
+    // Process each signature position
+    for (const position of positions) {
+      const pageIndex = position.page_number - 1
+      if (pageIndex >= 0 && pageIndex < pages.length) {
+        const page = pages[pageIndex]
+        const { width, height } = page.getSize()
+        
+        // Log the coordinate information for debugging
+        console.log('Processing signature position:', {
+          position: {
+            x: position.x_position,
+            y: position.y_position,
+            width: position.width,
+            height: position.height,
+            scale: position.scale,
+            original_pdf_width: position.original_pdf_width,
+            original_pdf_height: position.original_pdf_height
+          },
+          page: {
+            width,
+            height
+          }
+        });
+        
+        // The coordinates are already in original PDF coordinate space from the frontend
+        const boxWidth = position.width || 300
+        const boxHeight = position.height || 200
+        
+        // Verify coordinates are within PDF bounds
+        if (position.x_position < 0 || position.y_position < 0 || 
+            position.x_position + boxWidth > width || 
+            position.y_position + boxHeight > height) {
+          console.warn('Signature position outside PDF bounds:', {
+            position: { x: position.x_position, y: position.y_position, width: boxWidth, height: boxHeight },
+            pageBounds: { width, height }
+          });
+        }
+        
+        // Calculate space for signature and metadata within the box
+        const metadataHeight = 60 // Space for 3 lines of metadata
+        const signatureAreaHeight = boxHeight - metadataHeight
+        const signatureAreaWidth = boxWidth
+        
+        // Calculate aspect ratio of the signature image
+        const signatureAspectRatio = signaturePdfImage.width / signaturePdfImage.height
+        
+        // Calculate optimal signature size that fits within the signature area
+        // while maintaining aspect ratio
+        let signatureWidth = signatureAreaWidth
+        let signatureHeight = signatureWidth / signatureAspectRatio
+        
+        // If height exceeds available space, scale down proportionally
+        if (signatureHeight > signatureAreaHeight) {
+          signatureHeight = signatureAreaHeight
+          signatureWidth = signatureHeight * signatureAspectRatio
+        }
+        
+        // If width exceeds available space, scale down proportionally
+        if (signatureWidth > signatureAreaWidth) {
+          signatureWidth = signatureAreaWidth
+          signatureHeight = signatureWidth / signatureAspectRatio
+        }
+        
+        // Position signature at the top of the box (above metadata)
+        const signatureX = position.x_position + (signatureAreaWidth - signatureWidth) / 2
+        const signatureY = height - position.y_position - signatureHeight // Flip Y coordinate
+        
+        // Add signature to the page (at the top of the box)
+        page.drawImage(signaturePdfImage, {
+          x: signatureX,
+          y: signatureY,
+          width: signatureWidth,
+          height: signatureHeight,
+        })
+        
+        // Calculate metadata positioning (directly below the signature)
+        const metadataX = position.x_position
+        const metadataY = signatureY - 5 // Start 5 points below the signature
+        
+        // Add metadata within the signature box
+        const fontSize = 10
+        const lineHeight = 12 // Reduced line height for tighter spacing
+        
+        // Add signer name
+        if ((signatureRequest as any).receiver?.full_name) {
+          page.drawText(`Signed by: ${(signatureRequest as any).receiver.full_name}`, {
+            x: metadataX,
+            y: metadataY - lineHeight * 2,
+            size: fontSize,
+            color: rgb(0, 0, 0),
+          })
+        }
+        
+        // Add signature date
+        const signatureDate = new Date().toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        })
+        
+        page.drawText(`Date: ${signatureDate}`, {
+          x: metadataX,
+          y: metadataY - lineHeight,
+          size: fontSize,
+          color: rgb(0, 0, 0),
+        })
 
-    // Add signature metadata text
-    const fontSize = 12
-    const textY = y - 40 // Increased spacing to avoid overlap
-    
-    // Add signer name
-    if ((signatureRequest as any).receiver?.full_name) {
-      signaturePage.drawText(`Signed by: ${(signatureRequest as any).receiver.full_name}`, {
-        x: x,
-        y: textY,
-        size: fontSize,
-        color: rgb(0, 0, 0),
-      })
+        // Add signature request ID for verification (smaller and lighter)
+        page.drawText(`Request ID: ${(signatureRequest as any).id}`, {
+          x: metadataX,
+          y: metadataY,
+          size: fontSize - 2,
+          color: rgb(0.5, 0.5, 0.5),
+        })
+        
+        // Add field label if it's a text field
+        if (position.field_type === 'text' && position.field_label) {
+          page.drawText(position.field_label, {
+            x: metadataX,
+            y: metadataY + lineHeight,
+            size: 10,
+            color: rgb(0.5, 0.5, 0.5),
+          })
+        }
+        
+        // Add date for date fields
+        if (position.field_type === 'date') {
+          const currentDate = new Date().toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+          })
+          page.drawText(currentDate, {
+            x: metadataX,
+            y: metadataY + lineHeight * 2,
+            size: 12,
+            color: rgb(0, 0, 0),
+          })
+        }
+      }
     }
     
-    // Add signature date
-    const signatureDate = new Date().toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-    
-    signaturePage.drawText(`Date: ${signatureDate}`, {
-      x: x,
-      y: textY - 20,
-      size: fontSize,
-      color: rgb(0, 0, 0),
-    })
-
-    // Add signature request ID for verification
-    signaturePage.drawText(`Request ID: ${(signatureRequest as any).id}`, {
-      x: x,
-      y: textY - 40,
-      size: fontSize - 2,
-      color: rgb(0.5, 0.5, 0.5),
-    })
-    
-    // Add document information
-    if ((signatureRequest as any).document?.filename) {
-      signaturePage.drawText(`Document: ${(signatureRequest as any).document.filename}`, {
-        x: x,
-        y: textY - 60,
-        size: fontSize - 2,
-        color: rgb(0.3, 0.3, 0.3),
-      })
-    }
-    
-    // Add a footer note
-    const footerY = 50
-    signaturePage.drawText('This page contains the digital signature for the above document.', {
-      x: (width - 400) / 2, // Center the footer
-      y: footerY,
-      size: fontSize - 2,
-      color: rgb(0.5, 0.5, 0.5),
-    })
-    
-    // Add page number indicator
-    const totalPages = pdfDoc.getPageCount()
-    signaturePage.drawText(`Page ${totalPages} of ${totalPages} - Signature Page`, {
-      x: width - 150,
-      y: 30,
-      size: fontSize - 3,
-      color: rgb(0.4, 0.4, 0.4),
-    })
+    // Note: Metadata is now added within each signature box instead of at fixed coordinates
 
     // Serialize the PDF
     const signedPdfBytes = await pdfDoc.save()

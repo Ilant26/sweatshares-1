@@ -454,7 +454,6 @@ export function AuthUI({
           </div>
         </div>
       </div>
-
       <div
         className="relative hidden flex-col p-8 text-white dark:border-r md:flex lg:col-span-2"
         style={{
@@ -464,7 +463,10 @@ export function AuthUI({
         }}
       >
         <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-background/20 backdrop-brightness-75 md:from-background/70 md:to-background/30" />
-        <Link href="/" className="relative z-20 flex items-center text-lg font-medium text-white md:text-background-foreground">
+        <Link
+          href="/"
+          className="relative z-20 flex items-center text-lg font-medium text-white md:text-background-foreground"
+          legacyBehavior>
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 24 24"

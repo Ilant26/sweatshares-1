@@ -83,6 +83,9 @@ export interface SignaturePosition {
   field_type: 'signature' | 'date' | 'text' | 'checkbox'
   field_label: string | null
   required: boolean
+  scale: number
+  original_pdf_width?: number
+  original_pdf_height?: number
   created_at: string
 }
 

@@ -1518,9 +1518,6 @@ export default function MyInvoicesPage() {
           </div>
         </div>
       </div>
-
-
-
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="sent" className="text-xs sm:text-sm">My Invoices ({sentInvoicesCount})</TabsTrigger>
@@ -1608,7 +1605,10 @@ export default function MyInvoicesPage() {
                           }
                           const recipient = getRecipientProfile(invoice);
                           return recipient ? (
-                            <Link href={`/dashboard/profile/${invoice.receiver_id}`} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                            <Link
+                              href={`/dashboard/profile/${invoice.receiver_id}`}
+                              className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                              legacyBehavior>
                               <Avatar className="h-8 w-8">
                                 <AvatarImage src={recipient.avatar_url || undefined} />
                                 <AvatarFallback>{(recipient.full_name || recipient.username || '?')[0]}</AvatarFallback>
@@ -1689,7 +1689,10 @@ export default function MyInvoicesPage() {
                           }
                           const recipient = getRecipientProfile(invoice);
                           return recipient ? (
-                            <Link href={`/dashboard/profile/${invoice.receiver_id}`} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                            <Link
+                              href={`/dashboard/profile/${invoice.receiver_id}`}
+                              className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                              legacyBehavior>
                               <Avatar className="h-8 w-8">
                                 <AvatarImage src={recipient.avatar_url || undefined} />
                                 <AvatarFallback>{(recipient.full_name || recipient.username || '?')[0]}</AvatarFallback>
@@ -1921,7 +1924,10 @@ export default function MyInvoicesPage() {
                         {(() => {
                           const sender = getSenderProfile(invoice);
                           return sender ? (
-                            <Link href={`/dashboard/profile/${invoice.sender_id}`} className="flex items-center gap-2 mt-1 hover:opacity-80 transition-opacity">
+                            <Link
+                              href={`/dashboard/profile/${invoice.sender_id}`}
+                              className="flex items-center gap-2 mt-1 hover:opacity-80 transition-opacity"
+                              legacyBehavior>
                               <Avatar className="h-8 w-8">
                                 <AvatarImage src={sender.avatar_url || undefined} />
                                 <AvatarFallback>{(sender.full_name || sender.username || '?')[0]}</AvatarFallback>
@@ -1997,7 +2003,10 @@ export default function MyInvoicesPage() {
                         {(() => {
                           const sender = getSenderProfile(invoice);
                           return sender ? (
-                            <Link href={`/dashboard/profile/${invoice.sender_id}`} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                            <Link
+                              href={`/dashboard/profile/${invoice.sender_id}`}
+                              className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                              legacyBehavior>
                               <Avatar className="h-8 w-8">
                                 <AvatarImage src={sender.avatar_url || undefined} />
                                 <AvatarFallback>{(sender.full_name || sender.username || '?')[0]}</AvatarFallback>
@@ -2155,7 +2164,6 @@ export default function MyInvoicesPage() {
           </div>
         </TabsContent>
       </Tabs>
-
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Enhanced Financial Summary */}
         <div className="space-y-4">
@@ -2371,7 +2379,6 @@ export default function MyInvoicesPage() {
           </Card>
         </div>
       </div>
-
       {/* Edit Invoice Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto w-[95vw]">
@@ -2737,7 +2744,6 @@ export default function MyInvoicesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
       {/* View Invoice Dialog (Read-only) */}
       <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
         <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto w-[95vw]">

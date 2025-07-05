@@ -53,7 +53,8 @@ export const Menu = () => {
                             <Link
                                 href="/"
                                 aria-label="home"
-                                className="flex items-center space-x-2">
+                                className="flex items-center space-x-2"
+                                legacyBehavior>
                                 {/* Light mode logo */}
                                 <Image
                                   src="/logo/logo-svg-dark-text.svg"
@@ -102,7 +103,8 @@ export const Menu = () => {
                                                     isActive 
                                                         ? "text-primary font-medium" 
                                                         : "text-muted-foreground hover:text-accent-foreground"
-                                                )}>
+                                                )}
+                                                legacyBehavior>
                                                 {item.name}
                                                 {isActive && (
                                                     <div className="absolute -bottom-1 left-0 right-0 h-0.5 bg-primary rounded-full" />
@@ -131,7 +133,8 @@ export const Menu = () => {
                                                                 isActive 
                                                                     ? "text-primary font-medium" 
                                                                     : "text-muted-foreground hover:text-accent-foreground"
-                                                            )}>
+                                                            )}
+                                                            legacyBehavior>
                                                             <item.icon className={cn(
                                                                 "size-5",
                                                                 isActive ? "text-primary" : ""

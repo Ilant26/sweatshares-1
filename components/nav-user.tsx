@@ -58,16 +58,20 @@ export function NavUser({
       <SidebarMenuItem>
         <SidebarMenuButton asChild tooltip="Support">
           <Link href="/support" className="relative flex items-center">
-            <HelpCircle className="size-4" />
-            <span>Support</span>
+            <div className="flex items-center">
+              <HelpCircle className="size-4" />
+              <span className="ml-2">Support</span>
+            </div>
           </Link>
         </SidebarMenuButton>
       </SidebarMenuItem>
       <SidebarMenuItem>
         <SidebarMenuButton asChild tooltip="Make a Feedback">
           <Link href="/feedback" className="relative flex items-center">
-            <MessageSquarePlus className="size-4" />
-            <span>Make a Feedback</span>
+            <div className="flex items-center">
+              <MessageSquarePlus className="size-4" />
+              <span className="ml-2">Make a Feedback</span>
+            </div>
           </Link>
         </SidebarMenuButton>
       </SidebarMenuItem>
@@ -111,8 +115,10 @@ export function NavUser({
             <DropdownMenuGroup>
               <DropdownMenuItem asChild>
                 <Link href="#">
-                <Sparkles />
-                Upgrade to Pro
+                  <div className="flex items-center">
+                    <Sparkles className="size-4" />
+                    <span className="ml-2">Upgrade to Pro</span>
+                  </div>
                 </Link>
               </DropdownMenuItem>
             </DropdownMenuGroup>
@@ -120,25 +126,29 @@ export function NavUser({
             <DropdownMenuGroup>
               <DropdownMenuItem asChild>
                 <Link href="/dashboard/profile-settings">
-                <BadgeCheck />
-                My Account
+                  <div className="flex items-center">
+                    <BadgeCheck className="size-4" />
+                    <span className="ml-2">My Account</span>
+                  </div>
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link href="#">
-                <CreditCard />
-                Billing
+                  <div className="flex items-center">
+                    <CreditCard className="size-4" />
+                    <span className="ml-2">Billing</span>
+                  </div>
                 </Link>
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout}>
-              <LogOut />
+              <LogOut className="size-4" />
               Log out
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>
     </SidebarMenu>
-  )
+  );
 }

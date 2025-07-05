@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -95,6 +95,7 @@ interface VaultDocument {
 export default function MyVaultPage() {
   const supabase = createClientComponentClient<Database>();
   const searchParams = useSearchParams();
+  const router = useRouter();
   // Types for documents and activities
   type SharedDocument = VaultDocument;
   type Activity = any;
@@ -431,8 +432,7 @@ export default function MyVaultPage() {
   };
 
   const handleRequestSignature = (doc: VaultDocument) => {
-    setDocumentForSignature(doc);
-    setSignatureRequestDialogOpen(true);
+    router.push(`/dashboard/signature/request?documentId=${doc.id}`);
   };
 
   const confirmShare = async () => {
