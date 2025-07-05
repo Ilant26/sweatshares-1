@@ -65,9 +65,9 @@ export function HeroSection({
                                 <AnimatedGroup variants={transitionVariants}>
                                     <Link
                                         href="#link"
-                                        className="hover:bg-background dark:hover:border-t-border bg-muted group mx-auto flex w-fit items-center gap-4 rounded-full border p-1 pl-4 shadow-md shadow-black/5 transition-all duration-300 dark:border-t-white/5 dark:shadow-zinc-950"
+                                        className="hover:bg-background dark:hover:border-t-border bg-muted group mx-auto flex w-fit items-center justify-center gap-4 rounded-full border p-1 pl-4 shadow-md shadow-black/5 transition-all duration-300 dark:border-t-white/5 dark:shadow-zinc-950"
                                         legacyBehavior>
-                                        <div className="flex items-center gap-4">
+                                        <div className="flex items-center justify-center gap-4">
                                             <span className="text-foreground text-sm">SweatShares is now live! 🎉</span>
                                             <span className="dark:border-background block h-4 w-0.5 border-l bg-white dark:bg-zinc-700"></span>
 

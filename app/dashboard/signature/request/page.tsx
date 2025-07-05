@@ -246,15 +246,6 @@ export default function SignatureRequestPage() {
     const convertedWidth = width / currentScale;
     const convertedHeight = height / currentScale;
     
-    console.log('Coordinate conversion:', {
-      viewer: { x, y, width, height },
-      pdf: { x: convertedX, y: convertedY, width: convertedWidth, height: convertedHeight },
-      currentScale,
-      baseScale,
-      zoomLevel,
-      originalPdfDimensions
-    });
-    
     return {
       x: convertedX,
       y: convertedY,
@@ -385,9 +376,6 @@ export default function SignatureRequestPage() {
       
       if (!isNearCorner) {
         // If not near corners, then it's dragging
-        console.log('🚀 Starting drag from container');
-        console.log('Click position:', { x, y });
-        console.log('Box position:', { x: clickedBox.x, y: clickedBox.y, width: clickedBox.width, height: clickedBox.height });
         setIsDragging(true);
         setDragOffset({ x: x - clickedBox.x, y: y - clickedBox.y });
       }
@@ -399,11 +387,8 @@ export default function SignatureRequestPage() {
     event.preventDefault();
     event.stopPropagation();
     
-    console.log('🚀 DRAG STARTED from box:', boxId);
-    
     const box = signatureBoxes.find(b => b.id === boxId);
     if (!box) {
-      console.error('❌ Box not found for drag:', boxId);
       return;
     }
     
@@ -416,8 +401,6 @@ export default function SignatureRequestPage() {
     const offsetY = event.clientY - rect.top;
     
     setDragOffset({ x: offsetX, y: offsetY });
-    
-    console.log('✅ Drag state set:', { boxId, offsetX, offsetY });
   };
 
   // Separate handler for resize handles
@@ -425,23 +408,15 @@ export default function SignatureRequestPage() {
     event.preventDefault();
     event.stopPropagation();
     
-    console.log(`🚀 RESIZE STARTED: ${handle} for box ${boxId}`);
-    console.log('Event details:', { clientX: event.clientX, clientY: event.clientY });
-    
     const box = signatureBoxes.find(b => b.id === boxId);
     if (!box) {
-      console.error('❌ Box not found:', boxId);
       return;
     }
-    
-    console.log('📦 Box found:', box);
     
     setSelectedBoxId(boxId);
     setIsResizing(true);
     setResizeHandle(handle);
     setResizeStart({ x: box.x, y: box.y, width: box.width, height: box.height });
-    
-    console.log('✅ Resize state set:', { handle, boxId, startPos: { x: box.x, y: box.y, width: box.width, height: box.height } });
   };
 
   const handleMouseMove = (event: React.MouseEvent<HTMLDivElement>) => {
@@ -499,12 +474,6 @@ export default function SignatureRequestPage() {
         const newX = Math.max(0, x - dragOffset.x);
         const newY = Math.max(0, y - dragOffset.y);
         
-        console.log('🖱️ Dragging:', {
-          mousePos: { x, y },
-          dragOffset,
-          newPos: { x: newX, y: newY }
-        });
-        
         return {
           ...box,
           x: newX,
@@ -518,13 +487,6 @@ export default function SignatureRequestPage() {
         let newY = box.y;
         let newWidth = box.width;
         let newHeight = box.height;
-
-        console.log('Resizing:', {
-          handle: resizeHandle,
-          mousePos: { x, y },
-          startPos: resizeStart,
-          currentBox: { x: box.x, y: box.y, width: box.width, height: box.height }
-        });
 
         switch (resizeHandle) {
           case 'nw':
@@ -548,8 +510,6 @@ export default function SignatureRequestPage() {
             newHeight = Math.max(minSize, y - resizeStart.y);
             break;
         }
-
-        console.log('New dimensions:', { newX, newY, newWidth, newHeight });
 
         return {
           ...box,
@@ -687,13 +647,6 @@ export default function SignatureRequestPage() {
         positions: signatureBoxes.map(box => {
           // Convert coordinates to base scale for consistent positioning
           const converted = convertToBaseScale(box.x, box.y, box.width, box.height);
-          console.log('Coordinate conversion:', {
-            original: { x: box.x, y: box.y, width: box.width, height: box.height },
-            converted: converted,
-            baseScale,
-            zoomLevel,
-            page: box.pageNumber
-          });
           return {
             page_number: box.pageNumber,
             x_position: Math.round(converted.x),
@@ -747,22 +700,135 @@ export default function SignatureRequestPage() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => router.push('/dashboard/my-vault')}
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Vault
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold">Request Signature</h1>
-            <p className="text-muted-foreground">Add signature fields and send to recipient</p>
+      {/* Header Section */}
+      <div className="flex flex-col space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+          <div className="flex items-center space-x-3">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <FileText className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Request Signature</h1>
+              <p className="text-sm text-muted-foreground">Add signature fields and send to recipient</p>
+            </div>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push('/dashboard/my-vault')}
+              className="gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span className="hidden sm:inline">Back to Vault</span>
+              <span className="sm:hidden">Back</span>
+            </Button>
           </div>
         </div>
+      </div>
+
+      {/* Recipients and Message Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        {/* Recipients */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Recipients</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="space-y-2">
+              <div className="relative">
+                <Search className="absolute left-2 top-2.5 w-4 h-4 text-muted-foreground" />
+                <Input
+                  aria-label="Search recipients"
+                  className="pl-8"
+                  placeholder="Search by name..."
+                  value={recipientSearch}
+                  onChange={e => setRecipientSearch(e.target.value)}
+                />
+              </div>
+              <ScrollArea className="h-40 border rounded-md p-2 bg-background">
+                {connections.length === 0 ? (
+                  <div className="text-center text-muted-foreground py-8">
+                    <Users className="w-8 h-8 mx-auto mb-2" />
+                    <p>No connections found</p>
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    {connections
+                      .filter((connection) => {
+                        if (!recipientSearch) return true;
+                        return connection.full_name?.toLowerCase().includes(recipientSearch.toLowerCase());
+                      })
+                      .map((connection) => (
+                        <div
+                          key={connection.id}
+                          className={`flex items-center gap-2 p-2 rounded-md hover:bg-muted cursor-pointer ${selectedReceiver === connection.id ? 'bg-primary/10' : ''}`}
+                          onClick={() => setSelectedReceiver(connection.id)}
+                        >
+                          <input
+                            type="radio"
+                            checked={selectedReceiver === connection.id}
+                            onChange={() => setSelectedReceiver(connection.id)}
+                            className="rounded"
+                          />
+                          <Avatar className="w-7 h-7">
+                            <AvatarImage src={connection.avatar_url || undefined} />
+                            <AvatarFallback>
+                              {connection.full_name?.charAt(0) || 'U'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="font-medium text-sm truncate">{connection.full_name || 'Unknown User'}</span>
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </ScrollArea>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Message */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Message (Optional)</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Character count</span>
+                <span className={`text-xs ${message.length > 300 ? 'text-destructive' : 'text-muted-foreground'}`}>{message.length}/300</span>
+              </div>
+              <Textarea
+                id="message"
+                aria-label="Message"
+                placeholder="Add a personal message to your signature request..."
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                rows={3}
+                maxLength={310}
+              />
+            </div>
+            
+            {/* Expiration */}
+            <div className="pt-4 border-t">
+              <div className="flex items-center gap-2">
+                <Label htmlFor="expires" className="whitespace-nowrap">Expires in</Label>
+                <Select value={expiresIn} onValueChange={setExpiresIn}>
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">1 day</SelectItem>
+                    <SelectItem value="3">3 days</SelectItem>
+                    <SelectItem value="7">1 week</SelectItem>
+                    <SelectItem value="14">2 weeks</SelectItem>
+                    <SelectItem value="30">1 month</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -863,40 +929,7 @@ export default function SignatureRequestPage() {
                         </div>
                       )}
                       
-                  {/* DEBUG: Test functionality */}
-                  {signatureBoxes.filter(box => box.pageNumber === currentPage).length > 0 && (
-                    <div className="absolute top-2 right-2 z-30 space-y-1">
-                      <button
-                        onClick={() => {
-                          const box = signatureBoxes.find(b => b.pageNumber === currentPage);
-                          if (box) {
-                            console.log('🧪 TEST: Manually triggering resize for box:', box.id);
-                            setSelectedBoxId(box.id);
-                            setIsResizing(true);
-                            setResizeHandle('se');
-                            setResizeStart({ x: box.x, y: box.y, width: box.width, height: box.height });
-                          }
-                        }}
-                        className="bg-red-500 text-white px-2 py-1 rounded text-xs block w-full"
-                      >
-                        🧪 Test Resize
-                      </button>
-                      <button
-                        onClick={() => {
-                          const box = signatureBoxes.find(b => b.pageNumber === currentPage);
-                          if (box) {
-                            console.log('🧪 TEST: Manually triggering drag for box:', box.id);
-                            setSelectedBoxId(box.id);
-                            setIsDragging(true);
-                            setDragOffset({ x: 10, y: 10 });
-                          }
-                        }}
-                        className="bg-orange-500 text-white px-2 py-1 rounded text-xs block w-full"
-                      >
-                        🧪 Test Drag
-                      </button>
-                          </div>
-                  )}
+
                   {!pdfUrl ? (
                     <div className="flex items-center justify-center h-full">
                       <div className="text-center text-muted-foreground">
@@ -962,7 +995,7 @@ export default function SignatureRequestPage() {
                             removeSignatureBox(box.id);
                           }}
                           className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center hover:bg-red-600"
-                          style={{ pointerEvents: 'auto' }}
+                          style={{ pointerEvents: 'auto', zIndex: 30 }}
                         >
                           ×
                         </button>
@@ -973,12 +1006,12 @@ export default function SignatureRequestPage() {
                         <>
                           {/* Top-left */}
                           <div
-                            className={`absolute w-8 h-8 bg-blue-600 border-2 border-white rounded-full cursor-nw-resize shadow-lg transition-all ${
+                            className={`absolute w-6 h-6 bg-blue-600 border-2 border-white rounded-full cursor-nw-resize shadow-lg transition-all ${
                               hoveredHandle === 'nw' || (isResizing && resizeHandle === 'nw') ? 'bg-blue-700 scale-125' : ''
                             }`}
                           style={{
-                              left: -4,
-                              top: -4,
+                              left: -3,
+                              top: -3,
                               pointerEvents: 'auto',
                               zIndex: 20
                             }}
@@ -987,12 +1020,12 @@ export default function SignatureRequestPage() {
                           />
                           {/* Top-right */}
                           <div
-                            className={`absolute w-8 h-8 bg-blue-600 border-2 border-white rounded-full cursor-ne-resize shadow-lg transition-all ${
+                            className={`absolute w-6 h-6 bg-blue-600 border-2 border-white rounded-full cursor-ne-resize shadow-lg transition-all ${
                               hoveredHandle === 'ne' || (isResizing && resizeHandle === 'ne') ? 'bg-blue-700 scale-125' : ''
                             }`}
                             style={{
-                              right: -4,
-                              top: -4,
+                              right: -3,
+                              top: -3,
                               pointerEvents: 'auto',
                               zIndex: 20
                             }}
@@ -1001,12 +1034,12 @@ export default function SignatureRequestPage() {
                           />
                           {/* Bottom-left */}
                           <div
-                            className={`absolute w-8 h-8 bg-blue-600 border-2 border-white rounded-full cursor-sw-resize shadow-lg transition-all ${
+                            className={`absolute w-6 h-6 bg-blue-600 border-2 border-white rounded-full cursor-sw-resize shadow-lg transition-all ${
                               hoveredHandle === 'sw' || (isResizing && resizeHandle === 'sw') ? 'bg-blue-700 scale-125' : ''
                             }`}
                             style={{
-                              left: -4,
-                              bottom: -4,
+                              left: -3,
+                              bottom: -3,
                               pointerEvents: 'auto',
                               zIndex: 20
                             }}
@@ -1015,12 +1048,12 @@ export default function SignatureRequestPage() {
                           />
                           {/* Bottom-right */}
                           <div
-                            className={`absolute w-8 h-8 bg-blue-600 border-2 border-white rounded-full cursor-se-resize shadow-lg transition-all ${
+                            className={`absolute w-6 h-6 bg-blue-600 border-2 border-white rounded-full cursor-se-resize shadow-lg transition-all ${
                               hoveredHandle === 'se' || (isResizing && resizeHandle === 'se') ? 'bg-blue-700 scale-125' : ''
                             }`}
                             style={{
-                              right: -4,
-                              bottom: -4,
+                              right: -3,
+                              bottom: -3,
                               pointerEvents: 'auto',
                               zIndex: 20
                             }}
@@ -1046,39 +1079,6 @@ export default function SignatureRequestPage() {
               <CardTitle className="text-lg">Add Signature Field</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-                <div>
-                <Label htmlFor="fieldLabel">Field Label</Label>
-                <Input
-                  id="fieldLabel"
-                  value={fieldLabel}
-                  onChange={(e) => setFieldLabel(e.target.value)}
-                  placeholder="Enter field label"
-                />
-              </div>
-
-              {selectedBoxId && (
-                <div>
-                  <Label htmlFor="selectedFieldLabel">Edit Selected Field</Label>
-                  <Input
-                    id="selectedFieldLabel"
-                    value={signatureBoxes.find(box => box.id === selectedBoxId)?.fieldLabel || ''}
-                    onChange={(e) => updateSelectedBoxLabel(e.target.value)}
-                    placeholder="Edit field label"
-                  />
-                </div>
-              )}
-
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="required"
-                  checked={isRequired}
-                  onChange={(e) => setIsRequired(e.target.checked)}
-                  className="rounded"
-                />
-                <Label htmlFor="required">Required field</Label>
-                </div>
-
               <div className="text-sm text-muted-foreground space-y-1">
                 <div>• Click on the PDF to place signature fields</div>
                 <div>• One signature per page maximum</div>
@@ -1087,143 +1087,19 @@ export default function SignatureRequestPage() {
                 <div>• Use zoom controls to adjust view</div>
                 <div>• Click boxes to select and edit</div>
                 <div>• Minimum size: 50×50px</div>
-                <div className="mt-2 p-2 bg-blue-50 rounded text-xs">
-                  <div className="font-medium text-blue-800">Signature Layout:</div>
-                  <div className="text-blue-700">• Top area: Signature image</div>
-                  <div className="text-blue-700">• Bottom area: Metadata (name, date, ID)</div>
+                <div className="mt-2 p-2 bg-primary/5 border border-primary/10 rounded text-xs">
+                  <div className="font-medium text-primary">Signature Layout:</div>
+                  <div className="text-primary/80">• Top area: Signature image</div>
+                  <div className="text-primary/80">• Bottom area: Metadata (name, date, ID)</div>
                 </div>
                 {isResizing && (
-                  <div className="text-blue-600 font-medium">🔄 Resizing active - drag to resize</div>
+                  <div className="text-primary font-medium">🔄 Resizing active - drag to resize</div>
                 )}
-                
-                {/* Debug information for selected box */}
-                {selectedBoxId && (() => {
-                  const selectedBox = signatureBoxes.find(box => box.id === selectedBoxId);
-                  if (!selectedBox) return null;
-                  
-                  const pdfCoords = convertToBaseScale(selectedBox.x, selectedBox.y, selectedBox.width, selectedBox.height);
-                  return (
-                    <div className="mt-4 p-3 bg-gray-100 rounded text-xs">
-                      <div className="font-medium mb-2">Debug Info:</div>
-                      <div>Viewer: ({Math.round(selectedBox.x)}, {Math.round(selectedBox.y)}) {Math.round(selectedBox.width)}×{Math.round(selectedBox.height)}</div>
-                      <div>PDF: ({Math.round(pdfCoords.x)}, {Math.round(pdfCoords.y)}) {Math.round(pdfCoords.width)}×{Math.round(pdfCoords.height)}</div>
-                      <div>Scale: {baseScale.toFixed(2)} × {zoomLevel.toFixed(2)} = {(baseScale * zoomLevel).toFixed(2)}</div>
-                      {originalPdfDimensions && (
-                        <div>PDF Size: {Math.round(originalPdfDimensions.width)}×{Math.round(originalPdfDimensions.height)}</div>
-                      )}
-                    </div>
-                  );
-                })()}
               </div>
             </CardContent>
           </Card>
 
-          {/* Recipients */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Recipients</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Recipients</Label>
-                <div className="relative mb-2">
-                <Search className="absolute left-2 top-2.5 w-4 h-4 text-muted-foreground" />
-                <Input
-                    aria-label="Search recipients"
-                  className="pl-8"
-                  placeholder="Search by name..."
-                  value={recipientSearch}
-                  onChange={e => setRecipientSearch(e.target.value)}
-                />
-              </div>
-              <ScrollArea className="h-40 border rounded-md p-2 bg-background">
-                  {connections.length === 0 ? (
-                  <div className="text-center text-muted-foreground py-8">
-                    <Users className="w-8 h-8 mx-auto mb-2" />
-                    <p>No connections found</p>
-                  </div>
-                ) : (
-                  <div className="space-y-1">
-                      {connections
-                        .filter((connection) => {
-                          if (!recipientSearch) return true;
-                          return connection.full_name?.toLowerCase().includes(recipientSearch.toLowerCase());
-                        })
-                        .map((connection) => (
-                        <div
-                          key={connection.id}
-                            className={`flex items-center gap-2 p-2 rounded-md hover:bg-muted cursor-pointer ${selectedReceiver === connection.id ? 'bg-primary/10' : ''}`}
-                            onClick={() => setSelectedReceiver(connection.id)}
-                          >
-                            <input
-                              type="radio"
-                              checked={selectedReceiver === connection.id}
-                              onChange={() => setSelectedReceiver(connection.id)}
-                              className="rounded"
-                          />
-                          <Avatar className="w-7 h-7">
-                              <AvatarImage src={connection.avatar_url || undefined} />
-                            <AvatarFallback>
-                                {connection.full_name?.charAt(0) || 'U'}
-                            </AvatarFallback>
-                          </Avatar>
-                            <span className="font-medium text-sm truncate">{connection.full_name || 'Unknown User'}</span>
-                        </div>
-                        ))}
-                  </div>
-                )}
-              </ScrollArea>
-              </div>
-            </CardContent>
-          </Card>
 
-          {/* Message */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Message (Optional)</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-1">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="message">Message (Optional)</Label>
-                  <span className={`text-xs ${message.length > 300 ? 'text-destructive' : 'text-muted-foreground'}`}>{message.length}/300</span>
-                </div>
-                <Textarea
-                  id="message"
-                  aria-label="Message"
-                  placeholder="Add a personal message to your signature request..."
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  rows={3}
-                  maxLength={310}
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Expiration */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Expiration</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-2">
-                <Label htmlFor="expires" className="whitespace-nowrap">Expires in</Label>
-                <Select value={expiresIn} onValueChange={setExpiresIn}>
-                  <SelectTrigger className="w-32">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1">1 day</SelectItem>
-                    <SelectItem value="3">3 days</SelectItem>
-                    <SelectItem value="7">1 week</SelectItem>
-                    <SelectItem value="14">2 weeks</SelectItem>
-                    <SelectItem value="30">1 month</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardContent>
-          </Card>
 
           {/* Signature Fields Summary */}
           <Card>
@@ -1241,7 +1117,7 @@ export default function SignatureRequestPage() {
                       key={box.id} 
                       className={`flex items-center justify-between p-2 rounded cursor-pointer transition-colors ${
                         selectedBoxId === box.id 
-                          ? 'bg-blue-100 border border-blue-300' 
+                          ? 'bg-primary/10 border border-primary/20' 
                           : 'bg-muted hover:bg-muted/80'
                       }`}
                       onClick={() => {
@@ -1253,7 +1129,7 @@ export default function SignatureRequestPage() {
                         <Badge variant="outline" className="text-xs">
                           {box.fieldType}
                         </Badge>
-                        <span className="text-sm">{box.fieldLabel}</span>
+                        <span className="text-sm font-medium">{box.fieldLabel}</span>
                         <span className="text-xs text-muted-foreground">
                           (Page {box.pageNumber})
                         </span>
