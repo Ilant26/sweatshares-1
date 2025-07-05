@@ -89,12 +89,27 @@ export interface SignaturePosition {
   created_at: string
 }
 
+// Type for creating signature positions (without database-generated fields)
+export interface CreateSignaturePositionData {
+  page_number: number
+  x_position: number
+  y_position: number
+  width: number
+  height: number
+  field_type: 'signature' | 'date' | 'text' | 'checkbox'
+  field_label: string | null
+  required: boolean
+  scale: number
+  original_pdf_width?: number
+  original_pdf_height?: number
+}
+
 export interface CreateSignatureRequestData {
   document_id: string
   receiver_id: string
   message?: string
   expires_at?: string
-  positions: Omit<SignaturePosition, 'id' | 'signature_request_id' | 'created_at'>[]
+  positions: CreateSignaturePositionData[]
 }
 
 // Get signature requests sent by the current user
@@ -237,8 +252,6 @@ export async function getSignatureRequest(requestId: string): Promise<SignatureR
 
   return data
 }
-
-
 
 // Decline a signature request
 export async function declineSignatureRequest(

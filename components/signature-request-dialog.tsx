@@ -159,6 +159,7 @@ export function SignatureRequestDialog({ document, onRequestCreated, open: contr
             field_type: 'signature',
             field_label: 'Signature',
             required: true,
+            scale: 1.5,
           },
         ],
       }
