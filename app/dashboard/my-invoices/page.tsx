@@ -79,6 +79,7 @@ import {
   Shield,
   AlertCircle,
   RefreshCw,
+  Loader2,
 } from 'lucide-react';
 
 // Add dynamic helpers before the return statement in MyInvoicesPage
@@ -2275,6 +2276,43 @@ export default function MyInvoicesPage() {
                           </div>
                         )}
 
+                        {stripeConnectStatus === 'checking' && (
+                          <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                            <div className="flex items-start gap-3">
+                              <div className="p-2 bg-blue-100 rounded-lg">
+                                <Loader2 className="h-5 w-5 text-blue-600 animate-spin" />
+                              </div>
+                              <div className="flex-1">
+                                <h4 className="font-semibold text-blue-900 mb-2">Checking Stripe Connect Status</h4>
+                                <p className="text-sm text-blue-700 mb-3">
+                                  Please wait while we check your Stripe Connect account status...
+                                </p>
+                                <div className="flex gap-2">
+                                  <Button 
+                                    onClick={handleStripeConnect}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                                    size="sm"
+                                    disabled={true}
+                                  >
+                                    <CreditCard className="h-4 w-4 mr-2" />
+                                    Connect Stripe Account
+                                  </Button>
+                                  <Button 
+                                    onClick={checkStripeConnectStatus}
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={true}
+                                    className="border-blue-300 text-blue-700 hover:bg-blue-100"
+                                  >
+                                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                                    Checking...
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
                         {stripeConnectStatus === 'not_connected' && (
                           <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                             <div className="flex items-start gap-3">
@@ -2291,7 +2329,7 @@ export default function MyInvoicesPage() {
                                     onClick={handleStripeConnect}
                                     className="bg-blue-600 hover:bg-blue-700 text-white"
                                     size="sm"
-                                    disabled={stripeConnectStatus === 'checking'}
+                                    disabled={false}
                                   >
                                     <CreditCard className="h-4 w-4 mr-2" />
                                     Connect Stripe Account
@@ -2300,11 +2338,11 @@ export default function MyInvoicesPage() {
                                     onClick={checkStripeConnectStatus}
                                     variant="outline"
                                     size="sm"
-                                    disabled={stripeConnectStatus === 'checking'}
+                                    disabled={false}
                                     className="border-blue-300 text-blue-700 hover:bg-blue-100"
                                   >
                                     <RefreshCw className="h-4 w-4 mr-2" />
-                                    {stripeConnectStatus === 'checking' ? 'Checking...' : 'Refresh Status'}
+                                    Refresh Status
                                   </Button>
                                 </div>
                               </div>
