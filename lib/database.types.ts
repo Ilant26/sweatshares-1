@@ -291,6 +291,46 @@ export interface Database {
           updated_at?: string
         }
       }
+      saved_profiles: {
+        Row: {
+          id: string
+          user_id: string
+          profile_id: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          profile_id: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          profile_id?: string
+          created_at?: string
+        }
+      }
+      liked_listings: {
+        Row: {
+          id: string
+          user_id: string
+          listing_id: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          listing_id: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          listing_id?: string
+          created_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never
