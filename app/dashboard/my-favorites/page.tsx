@@ -97,7 +97,7 @@ export default function MyFavoritesPage() {
     name: saved.profile.full_name || 'Unknown',
     title: saved.profile.professional_role || 'No title',
     description: saved.profile.bio || 'No description available.',
-    skills: (saved.profile.skills || []).map(skill => ({
+    skills: (saved.profile.skills || []).map((skill: string) => ({
       label: skill,
       color: getSkillColor(skill)
     })),
