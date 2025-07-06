@@ -29,6 +29,7 @@ export interface Invoice {
   subtotal: number;
   total: number;
   payment_method?: 'standard' | 'payment_link' | 'escrow';
+  escrow_transaction_id?: string;
   created_at: string;
   updated_at: string;
   external_client?: {

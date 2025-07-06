@@ -1,4 +1,7 @@
+
 'use client';
+
+
 
 import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
@@ -32,6 +35,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { format, formatDistanceToNow } from 'date-fns';
+import { safeFormatDate } from '@/lib/utils';
 import { downloadInvoicePDF, createInvoice, getInvoices, updateInvoiceStatus, editInvoice, type Invoice, type InvoiceItem } from '@/lib/invoices';
 import { useUser } from '@/lib/auth';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
@@ -43,6 +47,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { sendMessage } from '@/lib/messages';
 import { createPaymentIntent } from '@/lib/stripe';
 import Link from 'next/link';
+import { EscrowStatusBadge } from '@/components/escrow-status-badge';
+import { EscrowWorkInterface } from '@/components/escrow-work-interface';
+import { InvoiceEscrowPaymentDialog } from '@/components/invoice-escrow-payment-dialog';
 
 import {
   Search,
@@ -70,6 +77,8 @@ import {
   Building2,
   CreditCard,
   Shield,
+  AlertCircle,
+  RefreshCw,
 } from 'lucide-react';
 
 // Add dynamic helpers before the return statement in MyInvoicesPage
@@ -256,14 +265,19 @@ export default function MyInvoicesPage() {
     amount: 0,
     status: 'pending',
     description: '',
-    items: [] as InvoiceItem[],
+    items: [{ description: '', quantity: 1, unitPrice: 0, amount: 0 }] as InvoiceItem[], // Start with one empty line item
     notes: '',
     vat_enabled: false,
     vat_rate: 20,
     vat_amount: 0,
     subtotal: 0,
     total: 0,
-    paymentMethod: 'standard' as 'standard' | 'payment_link' | 'escrow'
+    paymentMethod: 'standard' as 'standard' | 'payment_link' | 'escrow',
+    // Escrow-specific fields
+    transactionType: 'work' as 'work' | 'business_sale' | 'partnership' | 'service' | 'consulting' | 'investment' | 'other',
+    completionDeadlineDays: 30,
+    reviewPeriodDays: 7,
+    escrowTerms: ''
   });
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -274,6 +288,10 @@ export default function MyInvoicesPage() {
   const { toast } = useToast();
   const [senderProfileCache, setSenderProfileCache] = useState<Record<string, { full_name: string; avatar_url: string | null; username: string }>>({});
   const [recipientProfileCache, setRecipientProfileCache] = useState<Record<string, { full_name: string; avatar_url: string | null; username: string }>>({});
+  const [escrowTransactions, setEscrowTransactions] = useState<Record<string, any>>({});
+  const [escrowPaymentDialogOpen, setEscrowPaymentDialogOpen] = useState(false);
+  const [selectedEscrowInvoice, setSelectedEscrowInvoice] = useState<Invoice | null>(null);
+  const [stripeConnectStatus, setStripeConnectStatus] = useState<'checking' | 'connected' | 'not_connected' | 'error'>('checking');
 
   const financialSummary = getFinancialSummary(invoices, user?.id);
   const userFullName = user?.full_name || user?.username || user?.email || 'You';
@@ -434,18 +452,31 @@ export default function MyInvoicesPage() {
         const fetchedInvoices = await getInvoices(user.id);
         setInvoices(fetchedInvoices);
 
-        // Fetch network contacts (connections)
-        const { data: connections } = await supabase
+        // Fetch network contacts (connections) - both sent and received
+        const { data: connections, error: connectionsError } = await supabase
           .from('connections')
-          .select('*, profiles!connections_receiver_id_fkey(*)')
-          .eq('sender_id', user.id)
-          .eq('status', 'accepted');
+          .select(`
+            *,
+            sender:sender_id(id, username, full_name, avatar_url),
+            receiver:receiver_id(id, username, full_name, avatar_url)
+          `)
+          .eq('status', 'accepted')
+          .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`);
+
+        if (connectionsError) {
+          console.error('Error fetching connections:', connectionsError);
+        }
 
         if (connections) {
-          setNetworkContacts(connections.map(conn => ({
-            id: conn.profiles.id,
-            name: conn.profiles.full_name || conn.profiles.username
-          })));
+          const networkContactsList = connections.map(conn => {
+            // Determine which user is the other person (not the current user)
+            const otherUser = conn.sender_id === user.id ? conn.receiver : conn.sender;
+            return {
+              id: otherUser.id,
+              name: otherUser.full_name || otherUser.username
+            };
+          });
+          setNetworkContacts(networkContactsList);
         }
 
         // Fetch external clients
@@ -460,6 +491,9 @@ export default function MyInvoicesPage() {
             name: client.company_name || client.contact_name
           })));
         }
+
+        // Check Stripe Connect status
+        await checkStripeConnectStatus();
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
@@ -469,6 +503,17 @@ export default function MyInvoicesPage() {
 
     fetchData();
   }, [user]);
+
+  // Set up periodic refresh of Stripe Connect status (every 30 seconds when not connected)
+  useEffect(() => {
+    if (!user || stripeConnectStatus === 'connected') return;
+
+    const interval = setInterval(() => {
+      checkStripeConnectStatus();
+    }, 30000); // Check every 30 seconds
+
+    return () => clearInterval(interval);
+  }, [user, stripeConnectStatus]);
 
   // Handle URL parameters for creating invoice from messages
   useEffect(() => {
@@ -566,7 +611,140 @@ export default function MyInvoicesPage() {
   }, [searchParams, router, supabase, networkContacts, toast]);
 
   const handleCreateInvoice = async () => {
-    if (!user || !invoiceDate || !dueDate) return;
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to create an invoice.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate required fields
+    if (!invoiceDate) {
+      toast({
+        title: "Missing Required Field",
+        description: "Please select an issue date.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!dueDate) {
+      toast({
+        title: "Missing Required Field",
+        description: "Please select a due date.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!newInvoice.client) {
+      toast({
+        title: "Missing Required Field",
+        description: "Please select a client.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (newInvoice.items.length === 0) {
+      toast({
+        title: "Missing Required Field",
+        description: "Please add at least one line item.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate line items
+    for (let i = 0; i < newInvoice.items.length; i++) {
+      const item = newInvoice.items[i];
+      if (!item.description.trim()) {
+        toast({
+          title: "Missing Required Field",
+          description: `Please enter a description for line item ${i + 1}.`,
+          variant: "destructive",
+        });
+        return;
+      }
+      if (!item.quantity || item.quantity <= 0) {
+        toast({
+          title: "Missing Required Field",
+          description: `Please enter a valid quantity for line item ${i + 1}.`,
+          variant: "destructive",
+        });
+        return;
+      }
+      if (!item.unitPrice || item.unitPrice <= 0) {
+        toast({
+          title: "Missing Required Field",
+          description: `Please enter a valid unit price for line item ${i + 1}.`,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    // Check if Stripe Connect is required for escrow invoices
+    if (newInvoice.paymentMethod === 'escrow') {
+      if (stripeConnectStatus !== 'connected') {
+        toast({
+          title: "Stripe Connect Required",
+          description: "You must connect your Stripe account to create escrow invoices. Please complete the Stripe Connect setup first.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Double-check with Stripe API to ensure account is truly active
+      try {
+        const { data: connectAccount } = await supabase
+          .from('stripe_connect_accounts')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
+          
+        if (connectAccount) {
+          const response = await fetch('/api/stripe/connect/verify-status', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              stripeAccountId: connectAccount.stripe_account_id
+            }),
+          });
+
+          if (response.ok) {
+            const { accountStatus } = await response.json();
+            if (!accountStatus.charges_enabled || !accountStatus.details_submitted) {
+              toast({
+                title: "Stripe Connect Setup Incomplete",
+                description: "Your Stripe Connect account needs to complete verification. Please finish the setup process first.",
+                variant: "destructive",
+              });
+              return;
+            }
+          } else {
+            toast({
+              title: "Stripe Connect Verification Failed",
+              description: "Unable to verify your Stripe Connect status. Please try again or contact support.",
+              variant: "destructive",
+            });
+            return;
+          }
+        }
+      } catch (error) {
+        console.error('Error verifying Stripe Connect status:', error);
+        toast({
+          title: "Stripe Connect Verification Error",
+          description: "Unable to verify your Stripe Connect status. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
 
     try {
       const invoiceData = {
@@ -590,6 +768,40 @@ export default function MyInvoicesPage() {
       };
 
       const createdInvoice = await createInvoice(invoiceData);
+
+      // If this is an escrow invoice, create the escrow transaction
+      if (newInvoice.paymentMethod === 'escrow') {
+        try {
+          const escrowResponse = await fetch('/api/escrow/create-transaction', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              invoiceId: createdInvoice.id,
+              amount: createdInvoice.total,
+              transactionType: newInvoice.transactionType,
+              payerId: clientType === 'network' ? newInvoice.client : undefined,
+              description: newInvoice.escrowTerms,
+              customTimeline: {
+                completion_deadline_days: newInvoice.completionDeadlineDays,
+                review_period_days: newInvoice.reviewPeriodDays
+              }
+            }),
+          });
+
+          if (!escrowResponse.ok) {
+            throw new Error('Failed to create escrow transaction');
+          }
+
+          const escrowData = await escrowResponse.json();
+          console.log('Escrow transaction created:', escrowData);
+        } catch (escrowError) {
+          console.error('Error creating escrow transaction:', escrowError);
+          // Continue with invoice creation even if escrow fails
+        }
+      }
+
       setInvoices(prev => [createdInvoice, ...prev]);
       setNewInvoiceDialogOpen(false);
       resetNewInvoiceForm();
@@ -604,7 +816,8 @@ export default function MyInvoicesPage() {
           due_date: createdInvoice.due_date,
           status: createdInvoice.status,
           description: createdInvoice.description,
-          invoice_id: createdInvoice.id
+          invoice_id: createdInvoice.id,
+          payment_method: newInvoice.paymentMethod
         };
         await sendMessage(invoiceData.receiver_id, JSON.stringify(invoiceMsg));
       }
@@ -613,7 +826,7 @@ export default function MyInvoicesPage() {
       const successMessages = {
         standard: 'Invoice created successfully!',
         payment_link: 'Invoice with payment link created successfully!',
-        escrow: 'Escrow invoice created successfully!'
+        escrow: 'Escrow invoice created successfully! The client will receive a secure payment link.'
       };
 
       toast({
@@ -639,14 +852,19 @@ export default function MyInvoicesPage() {
       amount: 0,
       status: 'pending',
       description: '',
-      items: [],
+      items: [{ description: '', quantity: 1, unitPrice: 0, amount: 0 }], // Start with one empty line item
       notes: '',
       vat_enabled: false,
       vat_rate: 20,
       vat_amount: 0,
       subtotal: 0,
       total: 0,
-      paymentMethod: 'standard'
+      paymentMethod: 'standard',
+      // Reset escrow fields
+      transactionType: 'work',
+      completionDeadlineDays: 30,
+      reviewPeriodDays: 7,
+      escrowTerms: ''
     });
     setInvoiceDate(undefined);
     setDueDate(undefined);
@@ -783,6 +1001,11 @@ export default function MyInvoicesPage() {
   const handleViewInvoice = (invoice: Invoice) => {
     setViewingInvoice(invoice);
     setViewDialogOpen(true);
+    
+    // Fetch escrow transaction data if it's an escrow invoice
+    if (invoice.payment_method === 'escrow') {
+      fetchEscrowTransaction(invoice.id);
+    }
   };
 
   const handleClientAdded = async () => {
@@ -836,7 +1059,17 @@ export default function MyInvoicesPage() {
     });
   };
 
+
+
   const handlePayInvoice = async (invoice: Invoice) => {
+    // Check if this is an escrow invoice
+    if (invoice.payment_method === 'escrow') {
+      // For escrow invoices, navigate to the dedicated payment page
+      router.push(`/dashboard/escrow-payment/${invoice.id}`);
+      return;
+    }
+
+    // For non-escrow invoices, use the existing payment flow
     try {
       // Create payment intent
       const paymentIntent = await createPaymentIntent(
@@ -872,6 +1105,175 @@ export default function MyInvoicesPage() {
     }
   };
 
+  const handleViewEscrow = (invoice: Invoice) => {
+    router.push(`/dashboard/escrow-work/${invoice.id}`);
+  };
+
+  const handleEscrowPaymentSuccess = async () => {
+    if (selectedEscrowInvoice) {
+      // Refresh invoices and escrow transactions
+      const updatedInvoices = await getInvoices(user?.id || '');
+      setInvoices(updatedInvoices);
+      
+      // Fetch the updated escrow transaction
+      await fetchEscrowTransaction(selectedEscrowInvoice.id);
+      
+      toast({
+        title: "Escrow Payment Successful",
+        description: `Payment for invoice ${selectedEscrowInvoice.invoice_number} has been processed and funds are held in escrow.`,
+      });
+    }
+    
+    setEscrowPaymentDialogOpen(false);
+    setSelectedEscrowInvoice(null);
+  };
+
+  const checkStripeConnectStatus = async () => {
+    if (!user) return;
+    
+    setStripeConnectStatus('checking');
+    
+    try {
+      const { data: connectAccount, error } = await supabase
+        .from('stripe_connect_accounts')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') { // PGRST116 is "not found"
+        console.error('Error checking Stripe Connect status:', error);
+        setStripeConnectStatus('error');
+        return;
+      }
+
+      if (connectAccount) {
+        // Verify the account status with Stripe's API to ensure we have the latest status
+        try {
+          const response = await fetch('/api/stripe/connect/verify-status', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              stripeAccountId: connectAccount.stripe_account_id
+            }),
+          });
+
+          if (response.ok) {
+            const { accountStatus } = await response.json();
+            
+            // Update local status based on Stripe's response
+            if (accountStatus.charges_enabled && accountStatus.details_submitted) {
+              const wasConnected = stripeConnectStatus === 'connected';
+              setStripeConnectStatus('connected');
+              
+              // Update the database with the latest status
+              await supabase
+                .from('stripe_connect_accounts')
+                .update({
+                  account_status: 'active',
+                  onboarding_completed: true,
+                  charges_enabled: true,
+                  payouts_enabled: accountStatus.payouts_enabled || false,
+                  updated_at: new Date().toISOString()
+                })
+                .eq('user_id', user.id);
+              
+              // Show success message if this is a new connection
+              if (!wasConnected) {
+                toast({
+                  title: "Stripe Connect Setup Complete!",
+                  description: "Your account is now ready to receive escrow payments.",
+                });
+              }
+            } else {
+              setStripeConnectStatus('not_connected');
+              
+              // Update the database with the current status
+              await supabase
+                .from('stripe_connect_accounts')
+                .update({
+                  account_status: accountStatus.charges_enabled ? 'pending' : 'pending',
+                  onboarding_completed: accountStatus.details_submitted || false,
+                  charges_enabled: accountStatus.charges_enabled || false,
+                  payouts_enabled: accountStatus.payouts_enabled || false,
+                  updated_at: new Date().toISOString()
+                })
+                .eq('user_id', user.id);
+            }
+          } else {
+            // Fallback to local database status if API call fails
+            if (connectAccount.charges_enabled && connectAccount.onboarding_completed) {
+              setStripeConnectStatus('connected');
+            } else {
+              setStripeConnectStatus('not_connected');
+            }
+          }
+        } catch (apiError) {
+          console.error('Error verifying with Stripe API:', apiError);
+          // Fallback to local database status
+          if (connectAccount.charges_enabled && connectAccount.onboarding_completed) {
+            setStripeConnectStatus('connected');
+          } else {
+            setStripeConnectStatus('not_connected');
+          }
+        }
+      } else {
+        setStripeConnectStatus('not_connected');
+      }
+    } catch (error) {
+      console.error('Error checking Stripe Connect status:', error);
+      setStripeConnectStatus('error');
+    }
+  };
+
+  const handleStripeConnect = async () => {
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to connect your Stripe account.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/stripe/connect/create-account', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to create Stripe Connect account');
+      }
+
+      // If account is already active, no need to redirect
+      if (data.status === 'active') {
+        setStripeConnectStatus('connected');
+        toast({
+          title: "Stripe Connect Ready",
+          description: "Your Stripe account is already connected and ready to use!",
+        });
+        return;
+      }
+
+      // Redirect to Stripe Connect onboarding
+      window.location.href = data.accountLink;
+
+    } catch (error) {
+      console.error('Error creating Stripe Connect account:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create Stripe Connect account. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Helper to fetch and cache sender profile
   async function fetchAndCacheSenderProfile(userId: string) {
     if (!userId || senderProfileCache[userId]) return;
@@ -896,6 +1298,26 @@ export default function MyInvoicesPage() {
     if (data) {
       setRecipientProfileCache(prev => ({ ...prev, [userId]: { full_name: data.full_name, avatar_url: data.avatar_url, username: data.username } }));
     }
+  }
+
+  // Helper to fetch escrow transaction data
+  async function fetchEscrowTransaction(invoiceId: string) {
+    if (escrowTransactions[invoiceId]) {
+      return escrowTransactions[invoiceId];
+    }
+
+    const { data: escrowTransaction, error } = await supabase
+      .from('escrow_transactions')
+      .select('*')
+      .eq('invoice_id', invoiceId)
+      .single();
+
+    if (escrowTransaction && !error) {
+      setEscrowTransactions(prev => ({ ...prev, [invoiceId]: escrowTransaction }));
+      return escrowTransaction;
+    }
+
+    return null;
   }
 
   // Whenever invoices change, ensure all sender profiles for received invoices are cached
@@ -941,7 +1363,32 @@ export default function MyInvoicesPage() {
   useEffect(() => {
     const tabParam = searchParams.get('tab');
     const invoiceIdParam = searchParams.get('invoiceId');
+    const paymentParam = searchParams.get('payment');
+    
     if (tabParam === 'received') setActiveTab('received');
+    
+    // Check if user returned from Stripe Connect onboarding
+    if (paymentParam === 'success') {
+      // Show success message and refresh Stripe Connect status
+      toast({
+        title: "Welcome Back!",
+        description: "Checking your Stripe Connect status...",
+      });
+      
+      // Refresh Stripe Connect status after a short delay
+      setTimeout(async () => {
+        await checkStripeConnectStatus();
+        
+        // Show success message if now connected
+        if (stripeConnectStatus === 'connected') {
+          toast({
+            title: "Stripe Connect Setup Complete!",
+            description: "Your account is now ready to receive escrow payments.",
+          });
+        }
+      }, 1000);
+    }
+    
     if (invoiceIdParam) {
       // Optionally scroll to or highlight the invoice
       setTimeout(() => {
@@ -962,7 +1409,7 @@ export default function MyInvoicesPage() {
       }, 500);
     }
     // eslint-disable-next-line
-  }, []);
+  }, [searchParams]);
 
   // Move getStatusBadgeVariant to the top, after other helpers
   const getStatusBadgeVariant = (status: string) => {
@@ -1005,6 +1452,182 @@ export default function MyInvoicesPage() {
     return <div className="flex items-center justify-center h-full">Loading...</div>;
   }
 
+  // Debug function to check escrow transaction status
+  const debugEscrowTransaction = async (escrowTransactionId: string) => {
+    try {
+      const response = await fetch('/api/debug/escrow-payment-status', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ escrowTransactionId }),
+      });
+
+      const data = await response.json();
+      
+      if (response.ok) {
+        console.log('🔍 ESCROW DEBUG INFO:', data.debugInfo);
+        
+        // Show debug info in a toast
+        toast({
+          title: 'Debug Info',
+          description: `Check console for detailed debug information. Payee has ${data.debugInfo.payeeStripeAccounts.length} Stripe accounts.`,
+        });
+        
+        return data.debugInfo;
+      } else {
+        console.error('Debug request failed:', data);
+        toast({
+          title: 'Debug Failed',
+          description: data.error || 'Failed to get debug info',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      console.error('Error calling debug endpoint:', error);
+      toast({
+        title: 'Debug Error',
+        description: 'Failed to call debug endpoint',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Add debug button to escrow payment dialog
+  const handleDebugEscrowPayment = async (invoice: Invoice) => {
+    if (invoice.escrow_transaction_id) {
+      await debugEscrowTransaction(invoice.escrow_transaction_id);
+    } else {
+      toast({
+        title: 'No Escrow Transaction',
+        description: 'This invoice does not have an escrow transaction yet.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Check current database state
+  const checkCurrentState = async () => {
+    try {
+      const response = await fetch('/api/debug/check-current-state');
+      const data = await response.json();
+      
+      if (response.ok) {
+        console.log('🔍 CURRENT DATABASE STATE:', data.currentState);
+        
+        // Show summary in toast
+        const escrowCount = data.currentState.escrowTransactions.length;
+        const stripeCount = data.currentState.stripeAccounts.length;
+        const profilesCount = data.currentState.profiles.length;
+        
+        toast({
+          title: 'Database State',
+          description: `${escrowCount} escrow transactions, ${stripeCount} Stripe accounts, ${profilesCount} profiles. Check console for details.`,
+        });
+        
+        return data.currentState;
+      } else {
+        console.error('State check failed:', data);
+        toast({
+          title: 'State Check Failed',
+          description: data.error || 'Failed to check database state',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      console.error('Error checking state:', error);
+      toast({
+        title: 'State Check Error',
+        description: 'Failed to check database state',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Manual refresh function for invoice status
+  const handleRefreshInvoiceStatus = async () => {
+    if (!user) return;
+    
+    try {
+      // Show loading state
+      toast({
+        title: "Refreshing Invoice Status",
+        description: "Checking for payment updates...",
+      });
+
+      // Get all escrow invoices that are pending
+      const escrowInvoices = invoices.filter(inv => 
+        inv.payment_method === 'escrow' && inv.status === 'pending'
+      );
+
+      if (escrowInvoices.length === 0) {
+        toast({
+          title: "No Updates Needed",
+          description: "All escrow invoices are up to date.",
+        });
+        return;
+      }
+
+      let updatedCount = 0;
+      let errorCount = 0;
+
+      // Refresh each escrow invoice status
+      for (const invoice of escrowInvoices) {
+        try {
+          const response = await fetch('/api/escrow/refresh-invoice-status', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ invoiceId: invoice.id }),
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+            if (result.newStatus && result.newStatus !== invoice.status) {
+              updatedCount++;
+            }
+          } else {
+            errorCount++;
+          }
+        } catch (error) {
+          console.error(`Error refreshing invoice ${invoice.id}:`, error);
+          errorCount++;
+        }
+      }
+
+      // Refresh the invoices list
+      const updatedInvoices = await getInvoices(user.id);
+      setInvoices(updatedInvoices);
+
+      // Show results
+      if (updatedCount > 0) {
+        toast({
+          title: "Invoice Status Updated",
+          description: `${updatedCount} invoice(s) updated to paid status.`,
+        });
+      } else if (errorCount > 0) {
+        toast({
+          title: "Refresh Completed",
+          description: `Refreshed ${escrowInvoices.length} invoices. ${errorCount} had errors.`,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "No Changes",
+          description: "All invoice statuses are current.",
+        });
+      }
+    } catch (error) {
+      console.error('Error refreshing invoice status:', error);
+      toast({
+        title: "Refresh Failed",
+        description: "Failed to refresh invoice status. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="flex-1 space-y-6 p-4 sm:p-8 pt-6">
       {/* Header Section */}
@@ -1020,6 +1643,15 @@ export default function MyInvoicesPage() {
             </div>
           </div>
           <div className="flex flex-col sm:flex-row gap-2">
+            <Button 
+              variant="outline" 
+              onClick={handleRefreshInvoiceStatus}
+              className="gap-2"
+            >
+              <RefreshCw className="h-4 w-4" />
+              <span className="hidden sm:inline">Refresh Status</span>
+              <span className="sm:hidden">Refresh</span>
+            </Button>
             <Dialog open={newInvoiceDialogOpen} onOpenChange={(open) => {
               setNewInvoiceDialogOpen(open);
               if (!open) {
@@ -1049,6 +1681,11 @@ export default function MyInvoicesPage() {
                   )}
                 </DialogHeader>
                 <div className="grid gap-4 sm:gap-6 py-4">
+                  {/* Required Fields Note */}
+                  <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-md border">
+                    <span className="text-red-500 font-medium">*</span> Required fields
+                  </div>
+                  
                   {/* Client Selection Section */}
                   <Card className="p-3 sm:p-4">
                     <div className="space-y-3 sm:space-y-4">
@@ -1081,7 +1718,9 @@ export default function MyInvoicesPage() {
                       </div>
                       <div className="grid gap-3 sm:gap-4">
                         <div className="flex flex-col gap-2">
-                          <Label htmlFor="client" className="text-xs sm:text-sm font-medium">Select Client</Label>
+                          <Label htmlFor="client" className="text-xs sm:text-sm font-medium">
+                            Select Client <span className="text-red-500">*</span>
+                          </Label>
                           {clientType === 'network' ? (
                             <div className="w-full">
                               {isLoadingUserProfile ? (
@@ -1175,7 +1814,9 @@ export default function MyInvoicesPage() {
                       </div>
                       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
                         <div className="space-y-2">
-                          <Label htmlFor="issueDate" className="text-xs sm:text-sm font-medium">Issue Date</Label>
+                          <Label htmlFor="issueDate" className="text-xs sm:text-sm font-medium">
+                            Issue Date <span className="text-red-500">*</span>
+                          </Label>
                           <Popover open={issueDatePopoverOpen} onOpenChange={setIssueDatePopoverOpen}>
                             <PopoverTrigger asChild>
                               <Button
@@ -1203,7 +1844,9 @@ export default function MyInvoicesPage() {
                           </Popover>
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="dueDate" className="text-xs sm:text-sm font-medium">Due Date</Label>
+                          <Label htmlFor="dueDate" className="text-xs sm:text-sm font-medium">
+                            Due Date <span className="text-red-500">*</span>
+                          </Label>
                           <Popover open={dueDatePopoverOpen} onOpenChange={setDueDatePopoverOpen}>
                             <PopoverTrigger asChild>
                               <Button
@@ -1255,7 +1898,9 @@ export default function MyInvoicesPage() {
                           <Card key={index} className="p-3 sm:p-4 border-2">
                             <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 sm:gap-4">
                               <div className="space-y-2">
-                                <Label htmlFor={`item-description-${index}`} className="text-xs sm:text-sm font-medium">Description</Label>
+                                <Label htmlFor={`item-description-${index}`} className="text-xs sm:text-sm font-medium">
+                                  Description <span className="text-red-500">*</span>
+                                </Label>
                                 <Input
                                   id={`item-description-${index}`}
                                   placeholder="e.g., Web Development"
@@ -1264,7 +1909,9 @@ export default function MyInvoicesPage() {
                                 />
                               </div>
                               <div className="space-y-2">
-                                <Label htmlFor={`item-quantity-${index}`} className="text-xs sm:text-sm font-medium">Quantity</Label>
+                                <Label htmlFor={`item-quantity-${index}`} className="text-xs sm:text-sm font-medium">
+                                  Quantity <span className="text-red-500">*</span>
+                                </Label>
                                 <Input
                                   id={`item-quantity-${index}`}
                                   type="number"
@@ -1275,7 +1922,9 @@ export default function MyInvoicesPage() {
                                 />
                               </div>
                               <div className="space-y-2">
-                                <Label htmlFor={`item-price-${index}`} className="text-xs sm:text-sm font-medium">Unit Price (€)</Label>
+                                <Label htmlFor={`item-price-${index}`} className="text-xs sm:text-sm font-medium">
+                                  Unit Price (€) <span className="text-red-500">*</span>
+                                </Label>
                                 <Input
                                   id={`item-price-${index}`}
                                   type="number"
@@ -1284,6 +1933,7 @@ export default function MyInvoicesPage() {
                                   placeholder="0.00"
                                   value={item.unitPrice}
                                   onChange={(e) => handleLineItemChange(index, 'unitPrice', Number(e.target.value))}
+                                  className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                 />
                               </div>
                               <div className="space-y-2">
@@ -1297,7 +1947,7 @@ export default function MyInvoicesPage() {
                                 />
                               </div>
                             </div>
-                            {index > 0 && (
+                            {newInvoice.items.length > 1 && (
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -1313,13 +1963,7 @@ export default function MyInvoicesPage() {
                             )}
                           </Card>
                         ))}
-                        {newInvoice.items.length === 0 && (
-                          <div className="text-center py-6 border-2 border-dashed rounded-lg">
-                            <FileQuestion className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                            <p className="text-sm text-muted-foreground">No line items added yet</p>
-                            <p className="text-xs text-muted-foreground mt-1">Click "Add Item" to start adding items to your invoice</p>
-                          </div>
-                        )}
+
                       </div>
                     </div>
                   </Card>
@@ -1497,6 +2141,224 @@ export default function MyInvoicesPage() {
                       </div>
                     </div>
                   </Card>
+
+                  {/* Escrow Configuration Section - Only show when escrow is selected */}
+                  {newInvoice.paymentMethod === 'escrow' && (
+                    <Card className="p-3 sm:p-4 border-primary/20 bg-primary/5">
+                      <div className="space-y-3 sm:space-y-4">
+                        <h3 className="text-base sm:text-lg font-semibold flex items-center gap-2">
+                          <Shield className="h-5 w-5 text-primary" />
+                          Escrow Configuration
+                        </h3>
+                        
+                        {/* Transaction Type Selection */}
+                        <div className="space-y-2">
+                          <Label htmlFor="transactionType" className="text-xs sm:text-sm font-medium">
+                            Transaction Type
+                          </Label>
+                          <Select
+                            value={newInvoice.transactionType || 'work'}
+                            onValueChange={(value) => setNewInvoice(prev => ({ 
+                              ...prev, 
+                              transactionType: value as 'work' | 'business_sale' | 'partnership' | 'service' | 'consulting' | 'investment' | 'other'
+                            }))}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select transaction type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="work">Work & Services</SelectItem>
+                              <SelectItem value="business_sale">Business Sale</SelectItem>
+                              <SelectItem value="partnership">Partnership</SelectItem>
+                              <SelectItem value="service">Service</SelectItem>
+                              <SelectItem value="consulting">Consulting</SelectItem>
+                              <SelectItem value="investment">Investment</SelectItem>
+                              <SelectItem value="other">Other</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {/* Timeline Configuration */}
+                        <div className="space-y-2">
+                          <Label className="text-xs sm:text-sm font-medium">Timeline Configuration</Label>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <Label htmlFor="completionDeadline" className="text-xs">Completion Deadline (days)</Label>
+                              <Input
+                                id="completionDeadline"
+                                type="number"
+                                min="7"
+                                max="180"
+                                value={newInvoice.completionDeadlineDays || 30}
+                                onChange={(e) => setNewInvoice(prev => ({ 
+                                  ...prev, 
+                                  completionDeadlineDays: parseInt(e.target.value) || 30
+                                }))}
+                                className="text-sm"
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="reviewPeriod" className="text-xs">Review Period (days)</Label>
+                              <Input
+                                id="reviewPeriod"
+                                type="number"
+                                min="3"
+                                max="30"
+                                value={newInvoice.reviewPeriodDays || 7}
+                                onChange={(e) => setNewInvoice(prev => ({ 
+                                  ...prev, 
+                                  reviewPeriodDays: parseInt(e.target.value) || 7
+                                }))}
+                                className="text-sm"
+                              />
+                            </div>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            Total escrow duration: {(newInvoice.completionDeadlineDays || 30) + (newInvoice.reviewPeriodDays || 7)} days
+                          </p>
+                        </div>
+
+                        {/* Escrow Terms */}
+                        <div className="space-y-2">
+                          <Label htmlFor="escrowTerms" className="text-xs sm:text-sm font-medium">
+                            Escrow Terms & Conditions
+                          </Label>
+                          <Textarea
+                            id="escrowTerms"
+                            placeholder="Describe the work to be completed and any specific requirements..."
+                            value={newInvoice.escrowTerms || ''}
+                            onChange={(e) => setNewInvoice(prev => ({ ...prev, escrowTerms: e.target.value }))}
+                            className="min-h-[80px] text-sm"
+                          />
+                        </div>
+
+                        {/* Platform Fee Information */}
+                        <div className="p-3 bg-muted rounded-lg">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="font-medium">Platform Fee:</span>
+                            <span className="text-primary font-semibold">5% </span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm mt-1">
+                            <span>You will receive:</span>
+                            <span className="font-semibold">
+                              €{((newInvoice.amount || 0) * 0.95).toFixed(2)}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Stripe Connect Setup */}
+                        {stripeConnectStatus === 'checking' && (
+                          <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                            <div className="flex items-center gap-3">
+                              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600" />
+                              <span className="text-sm text-blue-700 font-medium">Verifying Stripe Connect status...</span>
+                            </div>
+                            <p className="text-xs text-blue-600 mt-2">
+                              This may take a few moments while we check with Stripe.
+                            </p>
+                          </div>
+                        )}
+
+                        {stripeConnectStatus === 'connected' && (
+                          <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                            <div className="flex items-start gap-3">
+                              <div className="p-2 bg-green-100 rounded-lg">
+                                <CheckCircle className="h-5 w-5 text-green-600" />
+                              </div>
+                              <div className="flex-1">
+                                <h4 className="font-semibold text-green-900 mb-2">Stripe Connect Active</h4>
+                                <p className="text-sm text-green-700 mb-3">
+                                  Your Stripe account is connected and ready to receive escrow payments. Funds will be automatically transferred to your account when work is completed.
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {stripeConnectStatus === 'not_connected' && (
+                          <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                            <div className="flex items-start gap-3">
+                              <div className="p-2 bg-blue-100 rounded-lg">
+                                <CreditCard className="h-5 w-5 text-blue-600" />
+                              </div>
+                              <div className="flex-1">
+                                <h4 className="font-semibold text-blue-900 mb-2">Stripe Connect Required</h4>
+                                <p className="text-sm text-blue-700 mb-3">
+                                  To receive escrow payments, you need to connect your Stripe account. This allows us to securely transfer funds to your account when work is completed.
+                                </p>
+                                <div className="flex gap-2">
+                                  <Button 
+                                    onClick={handleStripeConnect}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                                    size="sm"
+                                    disabled={stripeConnectStatus === 'checking'}
+                                  >
+                                    <CreditCard className="h-4 w-4 mr-2" />
+                                    Connect Stripe Account
+                                  </Button>
+                                  <Button 
+                                    onClick={checkStripeConnectStatus}
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={stripeConnectStatus === 'checking'}
+                                    className="border-blue-300 text-blue-700 hover:bg-blue-100"
+                                  >
+                                    <RefreshCw className="h-4 w-4 mr-2" />
+                                    {stripeConnectStatus === 'checking' ? 'Checking...' : 'Refresh Status'}
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {stripeConnectStatus === 'connected' && (
+                          <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                            <div className="flex items-start gap-3">
+                              <div className="p-2 bg-green-100 rounded-lg">
+                                <CheckCircle className="h-5 w-5 text-green-600" />
+                              </div>
+                              <div className="flex-1">
+                                <h4 className="font-semibold text-green-900 mb-2">Stripe Connect Active</h4>
+                                <p className="text-sm text-green-700 mb-3">
+                                  Your Stripe account is connected and ready to receive escrow payments. You can now create escrow invoices.
+                                </p>
+                                <div className="flex items-center gap-2 text-xs text-green-600">
+                                  <CheckCircle className="h-3 w-3" />
+                                  <span>Account verified and ready for payments</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {stripeConnectStatus === 'error' && (
+                          <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                            <div className="flex items-start gap-3">
+                              <div className="p-2 bg-red-100 rounded-lg">
+                                <AlertCircle className="h-5 w-5 text-red-600" />
+                              </div>
+                              <div className="flex-1">
+                                <h4 className="font-semibold text-red-900 mb-2">Connection Error</h4>
+                                <p className="text-sm text-red-700 mb-3">
+                                  There was an error checking your Stripe Connect status. Please try again or contact support.
+                                </p>
+                                <Button 
+                                  onClick={checkStripeConnectStatus}
+                                  variant="outline"
+                                  size="sm"
+                                  className="border-red-300 text-red-700 hover:bg-red-100"
+                                >
+                                  <AlertCircle className="h-4 w-4 mr-2" />
+                                  Retry
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </Card>
+                  )}
                 </div>
                 <DialogFooter className="gap-2 sm:gap-0">
                   <Button variant="outline" onClick={() => setNewInvoiceDialogOpen(false)}>Cancel</Button>
@@ -1590,9 +2452,14 @@ export default function MyInvoicesPage() {
                         <FileText className="h-4 w-4 text-muted-foreground" />
                         <span className="font-medium text-sm">{invoice.invoice_number}</span>
                       </div>
+                      <div className="flex items-center gap-1">
                       <Badge variant={getStatusBadgeVariant(invoice.status)} className="text-xs">
                         {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
                       </Badge>
+                        {invoice.payment_method === 'escrow' && (
+                          <EscrowStatusBadge invoiceId={invoice.id} />
+                        )}
+                      </div>
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-sm">
                       <div>
@@ -1640,6 +2507,7 @@ export default function MyInvoicesPage() {
                     </div>
                     <div className="flex items-center justify-end gap-2 pt-2 border-t">
                       {activeTab === 'received' && invoice.status === 'pending' && (
+                        <div className="flex gap-1">
                         <Button 
                           variant="default" 
                           size="sm" 
@@ -1648,6 +2516,29 @@ export default function MyInvoicesPage() {
                         >
                           <CreditCard className="h-4 w-4 mr-1" />
                           Pay
+                          </Button>
+                          {invoice.payment_method === 'escrow' && (
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => handleDebugEscrowPayment(invoice)}
+                              className="text-xs"
+                              title="Debug escrow transaction"
+                            >
+                              🐛
+                        </Button>
+                          )}
+                        </div>
+                      )}
+                      {invoice.payment_method === 'escrow' && invoice.status === 'paid' && (
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => handleViewEscrow(invoice)}
+                          className="border-blue-300 text-blue-700 hover:bg-blue-50"
+                        >
+                          <Shield className="h-4 w-4 mr-1" />
+                          View Escrow
                         </Button>
                       )}
                       <Button variant="ghost" size="sm" onClick={() => handleDownloadPDF(invoice)}>
@@ -1719,14 +2610,20 @@ export default function MyInvoicesPage() {
                         )}
                       </TableCell>
                       <TableCell>
+                        <div className="flex items-center gap-2">
                         <Badge variant={getStatusBadgeVariant(invoice.status)}>
                           {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
                         </Badge>
+                          {invoice.payment_method === 'escrow' && (
+                            <EscrowStatusBadge invoiceId={invoice.id} />
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell className="text-right">
                         {/* Desktop view: Icons + Dropdown */}
                         <div className="hidden md:flex items-center justify-end gap-1">
                           {activeTab === 'received' && invoice.status === 'pending' && (
+                            <div className="flex gap-1">
                             <Button
                               variant="default"
                               size="sm"
@@ -1738,6 +2635,35 @@ export default function MyInvoicesPage() {
                             >
                               <CreditCard className="h-4 w-4 mr-1" />
                               Pay
+                              </Button>
+                              {invoice.payment_method === 'escrow' && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDebugEscrowPayment(invoice);
+                                  }}
+                                  className="text-xs"
+                                  title="Debug escrow transaction"
+                                >
+                                  🐛
+                            </Button>
+                              )}
+                            </div>
+                          )}
+                          {invoice.payment_method === 'escrow' && invoice.status === 'paid' && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleViewEscrow(invoice);
+                              }}
+                              className="border-blue-300 text-blue-700 hover:bg-blue-50"
+                            >
+                              <Shield className="h-4 w-4 mr-1" />
+                              View Escrow
                             </Button>
                           )}
                           <Button
@@ -1799,6 +2725,12 @@ export default function MyInvoicesPage() {
                                 <DropdownMenuItem onClick={() => handlePayInvoice(invoice)}>
                                   <CreditCard className="mr-2 h-4 w-4" />
                                   <span>Pay</span>
+                                </DropdownMenuItem>
+                              )}
+                              {invoice.payment_method === 'escrow' && invoice.status === 'paid' && (
+                                <DropdownMenuItem onClick={() => handleViewEscrow(invoice)}>
+                                  <Shield className="mr-2 h-4 w-4" />
+                                  <span>View Escrow</span>
                                 </DropdownMenuItem>
                               )}
                               <DropdownMenuItem onClick={() => handleStartEdit(invoice)}>
@@ -1973,6 +2905,17 @@ export default function MyInvoicesPage() {
                           Pay
                         </Button>
                       )}
+                      {invoice.payment_method === 'escrow' && invoice.status === 'paid' && (
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => handleViewEscrow(invoice)}
+                          className="border-blue-300 text-blue-700 hover:bg-blue-50"
+                        >
+                          <Shield className="h-4 w-4 mr-1" />
+                          View Escrow
+                        </Button>
+                      )}
                       <Button variant="ghost" size="sm" onClick={() => handleDownloadPDF(invoice)}>
                         <Download className="h-4 w-4" />
                       </Button>
@@ -2058,6 +3001,20 @@ export default function MyInvoicesPage() {
                               Pay
                             </Button>
                           )}
+                          {invoice.payment_method === 'escrow' && invoice.status === 'paid' && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleViewEscrow(invoice);
+                              }}
+                              className="border-blue-300 text-blue-700 hover:bg-blue-50"
+                            >
+                              <Shield className="h-4 w-4 mr-1" />
+                              View Escrow
+                            </Button>
+                          )}
                           <Button
                             variant="ghost"
                             size="icon"
@@ -2117,6 +3074,12 @@ export default function MyInvoicesPage() {
                                 <DropdownMenuItem onClick={() => handlePayInvoice(invoice)}>
                                   <CreditCard className="mr-2 h-4 w-4" />
                                   <span>Pay</span>
+                                </DropdownMenuItem>
+                              )}
+                              {invoice.payment_method === 'escrow' && invoice.status === 'paid' && (
+                                <DropdownMenuItem onClick={() => handleViewEscrow(invoice)}>
+                                  <Shield className="mr-2 h-4 w-4" />
+                                  <span>View Escrow</span>
                                 </DropdownMenuItem>
                               )}
                               <DropdownMenuItem onClick={() => handleStartEdit(invoice)}>
@@ -2230,7 +3193,7 @@ export default function MyInvoicesPage() {
         </div>
 
             {/* Secondary Stats */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <Card className="relative overflow-hidden border-0 shadow-md bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 hover:shadow-lg transition-all duration-300 group animate-in slide-in-from-bottom-2 delay-200">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between mb-3">
@@ -2252,6 +3215,52 @@ export default function MyInvoicesPage() {
                     <p className="text-xs font-medium text-red-600 dark:text-red-400 uppercase tracking-wide">Cancelled</p>
                   </div>
                   <p className="text-lg font-bold text-red-700 dark:text-red-300">€{financialSummary.cancelled}</p>
+                </CardContent>
+              </Card>
+
+              <Card className={`relative overflow-hidden border-0 shadow-md hover:shadow-lg transition-all duration-300 group animate-in slide-in-from-bottom-2 delay-400 ${
+                stripeConnectStatus === 'connected' 
+                  ? 'bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20' 
+                  : 'bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/20 dark:to-cyan-950/20'
+              }`}>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className={`p-1.5 rounded-lg group-hover:scale-110 transition-transform duration-300 ${
+                      stripeConnectStatus === 'connected' 
+                        ? 'bg-green-100 dark:bg-green-900/30' 
+                        : 'bg-blue-100 dark:bg-blue-900/30'
+                    }`}>
+                      {stripeConnectStatus === 'connected' ? (
+                        <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+                      ) : (
+                        <CreditCard className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                      )}
+                    </div>
+                    <p className={`text-xs font-medium uppercase tracking-wide ${
+                      stripeConnectStatus === 'connected' 
+                        ? 'text-green-600 dark:text-green-400' 
+                        : 'text-blue-600 dark:text-blue-400'
+                    }`}>
+                      Stripe Connect
+                    </p>
+                  </div>
+                  <p className={`text-lg font-bold ${
+                    stripeConnectStatus === 'connected' 
+                      ? 'text-green-700 dark:text-green-300' 
+                      : 'text-blue-700 dark:text-blue-300'
+                  }`}>
+                    {stripeConnectStatus === 'connected' ? 'Active' : 'Required'}
+                  </p>
+                  <p className={`text-xs ${
+                    stripeConnectStatus === 'connected' 
+                      ? 'text-green-600 dark:text-green-400' 
+                      : 'text-blue-600 dark:text-blue-400'
+                  }`}>
+                    {stripeConnectStatus === 'connected' 
+                      ? 'Ready for escrow' 
+                      : 'Connect for escrow'
+                    }
+                  </p>
                 </CardContent>
               </Card>
             </div>
@@ -2834,10 +3843,40 @@ export default function MyInvoicesPage() {
                   </div>
                 </div>
               )}
+
+              {/* Escrow Work Interface */}
+              {viewingInvoice.payment_method === 'escrow' && (
+                <div className="border-t pt-6">
+                  <EscrowWorkInterface
+                    invoiceId={viewingInvoice.id}
+                    escrowTransaction={escrowTransactions[viewingInvoice.id] || null}
+                    userRole={viewingInvoice.sender_id === user?.id ? 'payee' : 'payer'}
+                    onUpdate={async () => {
+                      // Refresh invoice data and escrow transactions
+                      if (user) {
+                        const fetchedInvoices = await getInvoices(user.id);
+                        setInvoices(fetchedInvoices);
+                      }
+                      await fetchEscrowTransaction(viewingInvoice.id);
+                    }}
+                    onPaymentRequest={() => {
+                      // Open the payment dialog for this invoice
+                      setSelectedEscrowInvoice(viewingInvoice);
+                      setEscrowPaymentDialogOpen(true);
+                    }}
+                  />
+                </div>
+              )}
             </div>
           )}
         </DialogContent>
       </Dialog>
+              <InvoiceEscrowPaymentDialog
+          open={escrowPaymentDialogOpen}
+          onOpenChange={setEscrowPaymentDialogOpen}
+          invoice={selectedEscrowInvoice}
+          onSuccess={handleEscrowPaymentSuccess}
+        />
     </div>
   );
 }

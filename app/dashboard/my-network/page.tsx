@@ -8,11 +8,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Users, UserPlus, Mail, Send, Settings2, Filter, ArrowUpDown, MessageCircle, UserX, Trash2, ChevronDown, Check, X, Globe2, MapPin, Briefcase } from 'lucide-react';
+import { Search, Users, UserPlus, Mail, Send, Settings2, Filter, ArrowUpDown, MessageCircle, UserX, Trash2, ChevronDown, Check, X, Globe2, MapPin, Briefcase, Loader2, AlertCircle } from 'lucide-react';
 import Link from "next/link";
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { Badge } from '@/components/ui/badge';
+import { toast } from '@/components/ui/use-toast';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 interface Profile {
     id: string;
@@ -41,6 +43,10 @@ interface ConnectionStatus {
     [key: string]: 'none' | 'pending' | 'accepted' | 'rejected';
 }
 
+interface LoadingStates {
+    [key: string]: boolean;
+}
+
 export default function MyNetworkPage() {
     const [currentUser, setCurrentUser] = useState<string | null>(null);
     const [connections, setConnections] = useState<Connection[]>([]);
@@ -51,7 +57,25 @@ export default function MyNetworkPage() {
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [activeTab, setActiveTab] = useState('all-users');
+    const [loadingStates, setLoadingStates] = useState<LoadingStates>({});
     const router = useRouter();
+
+    // Helper function to update loading state
+    const setLoadingState = (key: string, isLoading: boolean) => {
+        setLoadingStates(prev => ({
+            ...prev,
+            [key]: isLoading
+        }));
+    };
+
+    // Helper function to show toast messages
+    const showToast = (title: string, description?: string, variant: 'default' | 'destructive' = 'default') => {
+        toast({
+            title,
+            description,
+            variant,
+        });
+    };
 
     useEffect(() => {
         const fetchCurrentUser = async () => {
@@ -74,6 +98,7 @@ export default function MyNetworkPage() {
 
                 if (profilesError) {
                     console.error('Error fetching profiles:', JSON.stringify(profilesError, null, 2));
+                    showToast('Error', 'Failed to load users', 'destructive');
                     return;
                 }
 
@@ -92,6 +117,7 @@ export default function MyNetworkPage() {
 
                 if (connectionsError) {
                     console.error('Error fetching connections:', JSON.stringify(connectionsError, null, 2));
+                    showToast('Error', 'Failed to load connections', 'destructive');
                     return;
                 }
 
@@ -107,6 +133,7 @@ export default function MyNetworkPage() {
 
                 if (receivedError) {
                     console.error('Error fetching received invitations:', JSON.stringify(receivedError, null, 2));
+                    showToast('Error', 'Failed to load received invitations', 'destructive');
                     return;
                 }
 
@@ -122,6 +149,7 @@ export default function MyNetworkPage() {
 
                 if (sentError) {
                     console.error('Error fetching sent invitations:', JSON.stringify(sentError, null, 2));
+                    showToast('Error', 'Failed to load sent invitations', 'destructive');
                     return;
                 }
 
@@ -151,6 +179,7 @@ export default function MyNetworkPage() {
 
             } catch (error) {
                 console.error('Error in fetchAllData:', error);
+                showToast('Error', 'Failed to load network data', 'destructive');
             } finally {
                 setLoading(false);
             }
@@ -164,100 +193,216 @@ export default function MyNetworkPage() {
     }, []);
 
     const handleAcceptInvitation = async (connectionId: string) => {
-        const { error } = await supabase
-            .from('connections')
-            .update({ status: 'accepted' })
-            .eq('id', connectionId);
-
-        if (error) {
-            console.error('Error accepting invitation:', error);
-            return;
-        }
-
-        // Refresh the connections
-        if (currentUser) {
-            const { data: connection } = await supabase
+        setLoadingState(`accept-${connectionId}`, true);
+        
+        try {
+            const { error } = await supabase
                 .from('connections')
-                .select(`
-                    *,
-                    sender:sender_id(id, username, full_name, avatar_url, professional_role)
-                `)
-                .eq('id', connectionId)
-                .single();
+                .update({ status: 'accepted' })
+                .eq('id', connectionId);
 
-            if (connection) {
-                setConnections(prev => [...prev, connection]);
-                setReceivedInvitations(prev => prev.filter(inv => inv.id !== connectionId));
-                setConnectionStatus(prev => ({
-                    ...prev,
-                    [connection.sender_id]: 'accepted'
-                }));
+            if (error) {
+                console.error('Error accepting invitation:', error);
+                showToast('Error', 'Failed to accept invitation', 'destructive');
+                return;
             }
+
+            // Refresh the connections
+            if (currentUser) {
+                const { data: connection } = await supabase
+                    .from('connections')
+                    .select(`
+                        *,
+                        sender:sender_id(id, username, full_name, avatar_url, professional_role)
+                    `)
+                    .eq('id', connectionId)
+                    .single();
+
+                if (connection) {
+                    setConnections(prev => [...prev, connection]);
+                    setReceivedInvitations(prev => prev.filter(inv => inv.id !== connectionId));
+                    setConnectionStatus(prev => ({
+                        ...prev,
+                        [connection.sender_id]: 'accepted'
+                    }));
+                    
+                    showToast('Success', 'Connection request accepted');
+                }
+            }
+        } catch (error) {
+            console.error('Error accepting invitation:', error);
+            showToast('Error', 'Failed to accept invitation', 'destructive');
+        } finally {
+            setLoadingState(`accept-${connectionId}`, false);
         }
     };
 
     const handleRejectInvitation = async (connectionId: string) => {
-        const { error } = await supabase
-            .from('connections')
-            .update({ status: 'rejected' })
-            .eq('id', connectionId);
+        setLoadingState(`reject-${connectionId}`, true);
+        
+        try {
+            const { error } = await supabase
+                .from('connections')
+                .update({ status: 'rejected' })
+                .eq('id', connectionId);
 
-        if (error) {
+            if (error) {
+                console.error('Error rejecting invitation:', error);
+                showToast('Error', 'Failed to reject invitation', 'destructive');
+                return;
+            }
+
+            setReceivedInvitations(prev => prev.filter(inv => inv.id !== connectionId));
+            showToast('Success', 'Connection request rejected');
+        } catch (error) {
             console.error('Error rejecting invitation:', error);
-            return;
+            showToast('Error', 'Failed to reject invitation', 'destructive');
+        } finally {
+            setLoadingState(`reject-${connectionId}`, false);
         }
-
-        setReceivedInvitations(prev => prev.filter(inv => inv.id !== connectionId));
     };
 
-    const handleRemoveConnection = async (connectionId: string) => {
-        const { error } = await supabase
-            .from('connections')
-            .delete()
-            .eq('id', connectionId);
+    const handleRemoveConnection = async (connectionId: string, otherUserId: string) => {
+        setLoadingState(`remove-${connectionId}`, true);
+        
+        try {
+            const { error } = await supabase
+                .from('connections')
+                .delete()
+                .eq('id', connectionId);
 
-        if (error) {
+            if (error) {
+                console.error('Error removing connection:', error);
+                showToast('Error', 'Failed to remove connection', 'destructive');
+                return;
+            }
+
+            // Update all relevant state
+            setConnections(prev => prev.filter(conn => conn.id !== connectionId));
+            setConnectionStatus(prev => ({
+                ...prev,
+                [otherUserId]: 'none'
+            }));
+            
+            showToast('Success', 'Connection removed');
+        } catch (error) {
             console.error('Error removing connection:', error);
-            return;
+            showToast('Error', 'Failed to remove connection', 'destructive');
+        } finally {
+            setLoadingState(`remove-${connectionId}`, false);
         }
-
-        setConnections(prev => prev.filter(conn => conn.id !== connectionId));
     };
 
     const handleConnect = async (profileId: string) => {
         if (!currentUser) return;
 
-        const { data, error } = await supabase
-            .from('connections')
-            .insert({
-                sender_id: currentUser,
-                receiver_id: profileId,
-                status: 'pending'
-            })
-            .select()
-            .single();
+        // Prevent multiple requests
+        if (loadingStates[`connect-${profileId}`]) return;
 
-        if (error) {
+        setLoadingState(`connect-${profileId}`, true);
+        
+        try {
+            // Check if connection already exists
+            const { data: existingConnection } = await supabase
+                .from('connections')
+                .select('*')
+                .or(`and(sender_id.eq.${currentUser},receiver_id.eq.${profileId}),and(sender_id.eq.${profileId},receiver_id.eq.${currentUser})`)
+                .single();
+
+            if (existingConnection) {
+                showToast('Info', 'Connection request already exists', 'destructive');
+                return;
+            }
+
+            const { data, error } = await supabase
+                .from('connections')
+                .insert({
+                    sender_id: currentUser,
+                    receiver_id: profileId,
+                    status: 'pending'
+                })
+                .select()
+                .single();
+
+            if (error) {
+                console.error('Error sending connection request:', error);
+                showToast('Error', 'Failed to send connection request', 'destructive');
+                return;
+            }
+
+            // Update local state
+            setConnectionStatus(prev => ({
+                ...prev,
+                [profileId]: 'pending'
+            }));
+
+            // Add to sent invitations
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('id, username, full_name, avatar_url, professional_role')
+                .eq('id', profileId)
+                .single();
+
+            if (profile) {
+                const newInvitation: Connection = {
+                    id: data.id,
+                    sender_id: currentUser,
+                    receiver_id: profileId,
+                    status: 'pending',
+                    created_at: data.created_at,
+                    receiver: profile
+                };
+                setSentInvitations(prev => [...prev, newInvitation]);
+            }
+
+            // Create notification for the receiver
+            await supabase
+                .from('notifications')
+                .insert({
+                    user_id: profileId,
+                    type: 'connection_request',
+                    content: 'sent you a connection request',
+                    sender_id: currentUser,
+                    read: false
+                });
+
+            showToast('Success', 'Connection request sent');
+        } catch (error) {
             console.error('Error sending connection request:', error);
-            return;
+            showToast('Error', 'Failed to send connection request', 'destructive');
+        } finally {
+            setLoadingState(`connect-${profileId}`, false);
         }
+    };
 
-        // Update local state
-        setConnectionStatus(prev => ({
-            ...prev,
-            [profileId]: 'pending'
-        }));
+    const handleCancelInvitation = async (connectionId: string, receiverId: string) => {
+        setLoadingState(`cancel-${connectionId}`, true);
+        
+        try {
+            const { error } = await supabase
+                .from('connections')
+                .delete()
+                .eq('id', connectionId);
 
-        // Create notification for the receiver
-        await supabase
-            .from('notifications')
-            .insert({
-                user_id: profileId,
-                type: 'connection_request',
-                content: 'sent you a connection request',
-                sender_id: currentUser,
-                read: false
-            });
+            if (error) {
+                console.error('Error canceling invitation:', error);
+                showToast('Error', 'Failed to cancel invitation', 'destructive');
+                return;
+            }
+
+            setSentInvitations(prev => prev.filter(inv => inv.id !== connectionId));
+            setConnectionStatus(prev => ({
+                ...prev,
+                [receiverId]: 'none'
+            }));
+            
+            showToast('Success', 'Invitation canceled');
+        } catch (error) {
+            console.error('Error canceling invitation:', error);
+            showToast('Error', 'Failed to cancel invitation', 'destructive');
+        } finally {
+            setLoadingState(`cancel-${connectionId}`, false);
+        }
     };
 
     const handleMessage = (userId: string) => {
@@ -275,6 +420,16 @@ export default function MyNetworkPage() {
 
     const getConnectionButton = (profile: Profile) => {
         const status = connectionStatus[profile.id] || 'none';
+        const isLoading = loadingStates[`connect-${profile.id}`];
+
+        if (isLoading) {
+            return (
+                <Button variant="outline" size="sm" disabled>
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                    Sending...
+                </Button>
+            );
+        }
 
         if (status === 'pending') {
             return (
@@ -293,7 +448,12 @@ export default function MyNetworkPage() {
             );
         }
         if (status === 'rejected') {
-            return null;
+            return (
+                <Button variant="outline" size="sm" onClick={() => handleConnect(profile.id)}>
+                    <UserPlus className="h-4 w-4 mr-1" />
+                    Connect Again
+                </Button>
+            );
         }
         return (
             <Button variant="outline" size="sm" onClick={() => handleConnect(profile.id)}>
@@ -380,6 +540,8 @@ export default function MyNetworkPage() {
                 const otherUser = getOtherUser(connection);
                 if (!otherUser) return null;
 
+                const isLoading = loadingStates[`remove-${connection.id}`];
+
                 return (
                     <Card key={connection.id}>
                         <CardHeader className="flex flex-row items-center gap-3 sm:gap-4 space-y-0 pb-2">
@@ -408,9 +570,40 @@ export default function MyNetworkPage() {
                                 <Button variant="outline" size="sm" onClick={() => handleMessage(otherUser.id)} className="w-full sm:w-auto">
                                     <MessageCircle className="h-4 w-4 mr-2" /> Message
                                 </Button>
-                                <Button variant="ghost" size="sm" onClick={() => handleRemoveConnection(connection.id)} className="w-full sm:w-auto">
-                                    <Trash2 className="h-4 w-4" />
-                                </Button>
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button 
+                                            variant="ghost" 
+                                            size="sm" 
+                                            disabled={isLoading}
+                                            className="w-full sm:w-auto"
+                                        >
+                                            {isLoading ? (
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                            ) : (
+                                                <UserX className="h-4 w-4" />
+                                            )}
+                                            {isLoading ? 'Removing...' : 'Remove'}
+                                        </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>Remove Connection</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                                Are you sure you want to remove {otherUser.full_name || otherUser.username} from your network? This action cannot be undone.
+                                            </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                            <AlertDialogAction
+                                                onClick={() => handleRemoveConnection(connection.id, otherUser.id)}
+                                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                            >
+                                                Remove Connection
+                                            </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
                             </div>
                         </CardContent>
                     </Card>
@@ -424,6 +617,10 @@ export default function MyNetworkPage() {
             {data.map(invitation => {
                 const user = type === 'received' ? invitation.sender : invitation.receiver;
                 if (!user) return null;
+
+                const acceptLoading = loadingStates[`accept-${invitation.id}`];
+                const rejectLoading = loadingStates[`reject-${invitation.id}`];
+                const cancelLoading = loadingStates[`cancel-${invitation.id}`];
 
                 return (
                     <Card key={invitation.id}>
@@ -454,17 +651,80 @@ export default function MyNetworkPage() {
                             <div className="flex flex-col sm:flex-row gap-2 sm:justify-end">
                                 {type === 'received' ? (
                                     <>
-                                        <Button variant="outline" size="sm" onClick={() => handleAcceptInvitation(invitation.id)} className="w-full sm:w-auto">
-                                            <Check className="h-4 w-4 mr-2" /> Accept
+                                        <Button 
+                                            variant="outline" 
+                                            size="sm" 
+                                            onClick={() => handleAcceptInvitation(invitation.id)} 
+                                            disabled={acceptLoading || rejectLoading}
+                                            className="w-full sm:w-auto"
+                                        >
+                                            {acceptLoading ? (
+                                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                            ) : (
+                                                <Check className="h-4 w-4 mr-2" />
+                                            )}
+                                            {acceptLoading ? 'Accepting...' : 'Accept'}
                                         </Button>
-                                        <Button variant="ghost" size="sm" onClick={() => handleRejectInvitation(invitation.id)} className="w-full sm:w-auto">
-                                            <X className="h-4 w-4" />
+                                        <Button 
+                                            variant="ghost" 
+                                            size="sm" 
+                                            onClick={() => handleRejectInvitation(invitation.id)} 
+                                            disabled={acceptLoading || rejectLoading}
+                                            className="w-full sm:w-auto"
+                                        >
+                                            {rejectLoading ? (
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                            ) : (
+                                                <X className="h-4 w-4" />
+                                            )}
+                                            {rejectLoading ? 'Rejecting...' : 'Reject'}
                                         </Button>
                                     </>
                                 ) : (
-                                    <Button variant="outline" size="sm" disabled className="w-full sm:w-auto">
-                                        <UserPlus className="h-4 w-4 mr-2" /> Pending
-                                    </Button>
+                                    <>
+                                        <Button 
+                                            variant="outline" 
+                                            size="sm" 
+                                            disabled 
+                                            className="w-full sm:w-auto"
+                                        >
+                                            <UserPlus className="h-4 w-4 mr-2" /> Pending
+                                        </Button>
+                                        <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                                <Button 
+                                                    variant="ghost" 
+                                                    size="sm" 
+                                                    disabled={cancelLoading}
+                                                    className="w-full sm:w-auto"
+                                                >
+                                                    {cancelLoading ? (
+                                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                                    ) : (
+                                                        <X className="h-4 w-4" />
+                                                    )}
+                                                    {cancelLoading ? 'Canceling...' : 'Cancel'}
+                                                </Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>Cancel Invitation</AlertDialogTitle>
+                                                    <AlertDialogDescription>
+                                                        Are you sure you want to cancel the connection request to {user.full_name || user.username}?
+                                                    </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Keep Request</AlertDialogCancel>
+                                                    <AlertDialogAction
+                                                        onClick={() => handleCancelInvitation(invitation.id, user.id)}
+                                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                                    >
+                                                        Cancel Request
+                                                    </AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                    </>
                                 )}
                             </div>
                         </CardContent>
@@ -530,10 +790,12 @@ export default function MyNetworkPage() {
                 <TabsContent value="all-users">
                     {loading ? (
                         <div className="text-center py-8">
+                            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-muted-foreground" />
                             <p className="text-muted-foreground">Loading users...</p>
                         </div>
                     ) : filteredProfiles.length === 0 ? (
                         <div className="text-center py-8">
+                            <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                             <p className="text-muted-foreground">No users found.</p>
                             {searchQuery && (
                                 <p className="text-sm text-muted-foreground mt-1">
@@ -549,10 +811,12 @@ export default function MyNetworkPage() {
                 <TabsContent value="connections">
                     {loading ? (
                         <div className="text-center py-8">
+                            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-muted-foreground" />
                             <p className="text-muted-foreground">Loading connections...</p>
                         </div>
                     ) : connections.length === 0 ? (
                         <div className="text-center py-8">
+                            <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                             <p className="text-muted-foreground">No connections yet.</p>
                             <p className="text-sm text-muted-foreground mt-1">
                                 Start connecting with other professionals to grow your network.
@@ -566,10 +830,12 @@ export default function MyNetworkPage() {
                 <TabsContent value="received-invitations">
                     {loading ? (
                         <div className="text-center py-8">
+                            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-muted-foreground" />
                             <p className="text-muted-foreground">Loading invitations...</p>
                         </div>
                     ) : receivedInvitations.length === 0 ? (
                         <div className="text-center py-8">
+                            <Mail className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                             <p className="text-muted-foreground">No received invitations.</p>
                         </div>
                     ) : (
@@ -580,10 +846,12 @@ export default function MyNetworkPage() {
                 <TabsContent value="sent-invitations">
                     {loading ? (
                         <div className="text-center py-8">
+                            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-muted-foreground" />
                             <p className="text-muted-foreground">Loading invitations...</p>
                         </div>
                     ) : sentInvitations.length === 0 ? (
                         <div className="text-center py-8">
+                            <Send className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                             <p className="text-muted-foreground">No sent invitations.</p>
                         </div>
                     ) : (

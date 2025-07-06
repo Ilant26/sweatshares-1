@@ -45,7 +45,7 @@ function DashboardHeader() {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user } = useSession();
+  const { user, signOut } = useSession();
   const isMobile = useIsMobile();
   
   const segments = pathname.split('/').filter(Boolean);
@@ -368,9 +368,7 @@ function DashboardHeader() {
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={async () => {
-              const { signOut } = useSession();
               await signOut();
-              router.push('/');
             }}>
               Log out
             </DropdownMenuItem>
