@@ -30,6 +30,33 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 
+// Type definitions for posts and comments
+type PostAttachment = {
+  id: string;
+  post_id: string;
+  file_path: string;
+  file_name: string;
+  file_size: number;
+  content_type: string;
+  type: 'image' | 'video' | 'document';
+  created_at: string;
+};
+
+type PostComment = {
+  id: string;
+  content: string;
+  created_at: string;
+  parent_id: string | null;
+  author: {
+    id: string;
+    full_name: string | null;
+    avatar_url: string | null;
+  };
+  likes_count: number;
+  has_liked: boolean;
+  replies: PostComment[];
+};
+
 const cardVariants: Variants = {
   hidden: { opacity: 0, y: 20 },
   visible: {
@@ -524,7 +551,7 @@ export default function ProfilePage() {
                       <p className="mb-4">{post.content}</p>
                       {post.attachments.length > 0 && (
                         <div className="grid gap-4 mb-4">
-                          {post.attachments.map((attachment) => (
+                          {post.attachments.map((attachment: PostAttachment) => (
                             <div key={attachment.id}>
                               {getFilePreview(attachment)}
                             </div>
@@ -533,7 +560,7 @@ export default function ProfilePage() {
                       )}
                       {post.tags.length > 0 && (
                         <div className="flex flex-wrap gap-2 mb-4">
-                          {post.tags.map((tag, idx) => (
+                          {post.tags.map((tag: string, idx: number) => (
                             <Badge key={idx} variant="secondary">{tag}</Badge>
                           ))}
                         </div>
@@ -568,7 +595,7 @@ export default function ProfilePage() {
                         </div>
                       </div>
                       <Separator className="my-4" />
-                      {post.comments.map((comment) => (
+                      {post.comments.map((comment: PostComment) => (
                         <div key={comment.id} className="space-y-3">
                           {/* Main Comment */}
                           <div className="flex items-start space-x-2">
@@ -680,7 +707,7 @@ export default function ProfilePage() {
                           {/* Replies */}
                           {comment.replies.length > 0 && (
                             <div className="ml-9 space-y-2">
-                              {comment.replies.map((reply) => (
+                              {comment.replies.map((reply: PostComment) => (
                                 <div key={reply.id} className="flex items-start space-x-2">
                                   <Avatar className="h-6 w-6">
                                     <AvatarImage src={reply.author.avatar_url || undefined} alt={reply.author.full_name || undefined} />
