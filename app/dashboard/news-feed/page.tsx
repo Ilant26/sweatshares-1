@@ -54,6 +54,33 @@ import {
 
 import { supabase } from "@/lib/supabase";
 
+// Import types from use-posts hook
+type PostAttachment = {
+  id: string;
+  post_id: string;
+  file_path: string;
+  file_name: string;
+  file_size: number;
+  content_type: string;
+  type: 'image' | 'video' | 'document';
+  created_at: string;
+};
+
+type PostComment = {
+  id: string;
+  content: string;
+  created_at: string;
+  parent_id: string | null;
+  author: {
+    id: string;
+    full_name: string | null;
+    avatar_url: string | null;
+  };
+  likes_count: number;
+  has_liked: boolean;
+  replies: PostComment[];
+};
+
 const pageVariants: Variants = {
   hidden: { opacity: 0 },
   visible: {
@@ -777,8 +804,8 @@ export default function NewsFeedPage() {
                       {editingPost?.id === post.id ? (
                         <div className="space-y-4">
                           <Textarea
-                            value={editingPost.content}
-                            onChange={(e) => setEditingPost({ ...editingPost, content: e.target.value })}
+                            value={editingPost?.content || ''}
+                            onChange={(e) => setEditingPost(editingPost ? { ...editingPost, content: e.target.value } : null)}
                             className="min-h-[100px]"
                           />
                           <div className="flex justify-end space-x-2">
@@ -789,7 +816,7 @@ export default function NewsFeedPage() {
                               Cancel
                             </Button>
                             <Button
-                              onClick={() => handleEditPost(post.id, editingPost.content)}
+                              onClick={() => editingPost && handleEditPost(post.id, editingPost.content)}
                             >
                               Save Changes
                             </Button>
@@ -800,7 +827,7 @@ export default function NewsFeedPage() {
                       )}
                       {post.attachments.length > 0 && (
                         <div className="grid gap-4 mb-4">
-                          {post.attachments.map((attachment) => (
+                          {post.attachments.map((attachment: PostAttachment) => (
                             <div key={attachment.id}>
                               {getFilePreview(attachment)}
                             </div>
@@ -837,7 +864,7 @@ export default function NewsFeedPage() {
                         </div>
                       </div>
                       <Separator className="my-4" />
-                      {post.comments.map((comment) => (
+                      {post.comments.map((comment: PostComment) => (
                         <div key={comment.id} className="space-y-3">
                           {/* Main Comment */}
                           <div className="flex items-start space-x-2">
@@ -949,7 +976,7 @@ export default function NewsFeedPage() {
                           {/* Replies */}
                           {comment.replies.length > 0 && (
                             <div className="ml-9 space-y-2">
-                              {comment.replies.map((reply) => (
+                              {comment.replies.map((reply: PostComment) => (
                                 <div key={reply.id} className="flex items-start space-x-2">
                                   <Avatar className="h-6 w-6">
                                     <AvatarImage src={reply.author.avatar_url || undefined} alt={reply.author.full_name || undefined} />
