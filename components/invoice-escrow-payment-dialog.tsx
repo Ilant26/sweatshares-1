@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { EscrowPaymentForm } from '@/components/escrow-payment-form';
+import EscrowPaymentForm from '@/components/escrow-payment-form';
 import { useToast } from '@/components/ui/use-toast';
 import { Shield, CreditCard, CheckCircle, AlertCircle } from 'lucide-react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';

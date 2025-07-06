@@ -51,7 +51,7 @@ import {
   MapPin,
   DollarSign,
 } from "lucide-react";
-import { AttachmentType } from "@/lib/database.types";
+
 import { supabase } from "@/lib/supabase";
 
 const pageVariants: Variants = {

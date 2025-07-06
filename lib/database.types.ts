@@ -6,6 +6,8 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
+export type AttachmentType = 'image' | 'video' | 'document'
+
 export interface Database {
   public: {
     Tables: {
