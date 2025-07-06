@@ -331,6 +331,38 @@ export interface Database {
           created_at?: string
         }
       }
+      post_attachments: {
+        Row: {
+          id: string
+          post_id: string
+          file_path: string
+          file_name: string
+          file_size: number
+          content_type: string
+          type: 'image' | 'video' | 'document'
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          post_id: string
+          file_path: string
+          file_name: string
+          file_size: number
+          content_type: string
+          type: 'image' | 'video' | 'document'
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          post_id?: string
+          file_path?: string
+          file_name?: string
+          file_size?: number
+          content_type?: string
+          type?: 'image' | 'video' | 'document'
+          created_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never
