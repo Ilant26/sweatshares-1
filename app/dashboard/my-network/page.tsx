@@ -109,8 +109,8 @@ export default function MyNetworkPage() {
                     .from('connections')
                     .select(`
                         *,
-                        sender:sender_id(id, username, full_name, avatar_url, professional_role),
-                        receiver:receiver_id(id, username, full_name, avatar_url, professional_role)
+                        sender:sender_id(id, username, full_name, avatar_url, professional_role, bio, country, is_online, last_seen),
+                        receiver:receiver_id(id, username, full_name, avatar_url, professional_role, bio, country, is_online, last_seen)
                     `)
                     .eq('status', 'accepted')
                     .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`);
@@ -126,7 +126,7 @@ export default function MyNetworkPage() {
                     .from('connections')
                     .select(`
                         *,
-                        sender:sender_id(id, username, full_name, avatar_url, professional_role)
+                        sender:sender_id(id, username, full_name, avatar_url, professional_role, bio, country, is_online, last_seen)
                     `)
                     .eq('receiver_id', userId)
                     .eq('status', 'pending');
@@ -142,7 +142,7 @@ export default function MyNetworkPage() {
                     .from('connections')
                     .select(`
                         *,
-                        receiver:receiver_id(id, username, full_name, avatar_url, professional_role)
+                        receiver:receiver_id(id, username, full_name, avatar_url, professional_role, bio, country, is_online, last_seen)
                     `)
                     .eq('sender_id', userId)
                     .eq('status', 'pending');
@@ -213,7 +213,7 @@ export default function MyNetworkPage() {
                     .from('connections')
                     .select(`
                         *,
-                        sender:sender_id(id, username, full_name, avatar_url, professional_role)
+                        sender:sender_id(id, username, full_name, avatar_url, professional_role, bio, country, is_online, last_seen)
                     `)
                     .eq('id', connectionId)
                     .single();
@@ -339,7 +339,7 @@ export default function MyNetworkPage() {
             // Add to sent invitations
             const { data: profile } = await supabase
                 .from('profiles')
-                .select('id, username, full_name, avatar_url, professional_role')
+                .select('id, username, full_name, avatar_url, professional_role, bio, country, is_online, last_seen')
                 .eq('id', profileId)
                 .single();
 
