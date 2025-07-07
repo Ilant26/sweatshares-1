@@ -387,9 +387,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <ProtectedRoute>
       <NotificationsProvider>
-        <UnreadMessagesProvider>
-          <UnreadInvitationsProvider>
-            <SidebarProvider>
+      <UnreadMessagesProvider>
+        <UnreadInvitationsProvider>
+          <SidebarProvider>
             <AppSidebar />
             <SidebarInset>
               <Suspense fallback={
@@ -457,9 +457,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </div>
               {!isMobile && <ChatInterface />}
             </SidebarInset>
-            </SidebarProvider>
-          </UnreadInvitationsProvider>
-        </UnreadMessagesProvider>
+          </SidebarProvider>
+        </UnreadInvitationsProvider>
+      </UnreadMessagesProvider>
       </NotificationsProvider>
       <Toaster />
     </ProtectedRoute>
