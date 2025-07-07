@@ -420,21 +420,21 @@ export default function MyAlertsPage() {
     );
   }
 
-  return (
-    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-      {/* Header Section */}
-      <div className="flex flex-col space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 bg-primary/10 rounded-lg">
-              <BellRing className="h-6 w-6 text-primary" />
-            </div>
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">My Alerts</h1>
+      return (
+        <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+            {/* Header Section */}
+            <div className="flex flex-col space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+                    <div className="flex items-center space-x-3">
+                        <div className="p-2 bg-primary/10 rounded-lg">
+                            <BellRing className="h-6 w-6 text-primary" />
+                        </div>
+                        <div>
+                            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">My Alerts</h1>
               <p className="text-sm text-muted-foreground">Get notified instantly when new profiles or listings match your criteria</p>
-            </div>
-          </div>
-          <div className="flex items-center space-x-2">
+                        </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
             {/* Delete Confirmation Dialog */}
             <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
               <DialogContent className="sm:max-w-[425px]">
@@ -474,24 +474,24 @@ export default function MyAlertsPage() {
             </Dialog>
 
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" /> New Alert
-                </Button>
-              </DialogTrigger>
+                            <DialogTrigger asChild>
+                                <Button>
+                                    <Plus className="mr-2 h-4 w-4" /> New Alert
+                                </Button>
+                            </DialogTrigger>
               <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>Create New Alert</DialogTitle>
-                  <DialogDescription>
+              <DialogHeader>
+                <DialogTitle>Create New Alert</DialogTitle>
+                <DialogDescription>
                     Set up criteria to get notified when new profiles or listings match your requirements.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
                   {/* Alert Name */}
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="alertName" className="text-right">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="alertName" className="text-right">
                       Alert Name <span className="text-destructive">*</span>
-                    </Label>
+                  </Label>
                     <Input 
                       id="alertName" 
                       placeholder="e.g., Senior Software Engineers in Paris" 
@@ -499,13 +499,13 @@ export default function MyAlertsPage() {
                       value={alertName}
                       onChange={(e) => setAlertName(e.target.value)}
                     />
-                  </div>
+                </div>
 
                   {/* Alert Type */}
-                  <div className="grid grid-cols-4 items-center gap-4">
+                <div className="grid grid-cols-4 items-center gap-4">
                     <Label className="text-right">
                       Alert Type <span className="text-destructive">*</span>
-                    </Label>
+                  </Label>
                     <Select value={alertType} onValueChange={(value: 'profile' | 'listing') => setAlertType(value)}>
                       <SelectTrigger className="col-span-3">
                         <SelectValue />
@@ -515,19 +515,19 @@ export default function MyAlertsPage() {
                         <SelectItem value="listing">Listing Alerts (Get notified of new listings)</SelectItem>
                       </SelectContent>
                     </Select>
-                  </div>
+                </div>
 
                   {/* Frequency */}
-                  <div className="grid grid-cols-4 items-center gap-4">
+                <div className="grid grid-cols-4 items-center gap-4">
                     <Label className="text-right">Frequency</Label>
                     <Select value={frequency} onValueChange={(value: 'instant' | 'daily' | 'weekly') => setFrequency(value)}>
-                      <SelectTrigger className="col-span-3">
+                    <SelectTrigger className="col-span-3">
                         <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
+                    </SelectTrigger>
+                    <SelectContent>
                         <SelectItem value="instant">Instant</SelectItem>
-                        <SelectItem value="daily">Daily</SelectItem>
-                        <SelectItem value="weekly">Weekly</SelectItem>
+                      <SelectItem value="daily">Daily</SelectItem>
+                      <SelectItem value="weekly">Weekly</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -773,12 +773,12 @@ export default function MyAlertsPage() {
                               {country}
                             </SelectItem>
                           ))}
-                        </SelectContent>
-                      </Select>
+                    </SelectContent>
+                  </Select>
                     </div>
-                  </div>
                 </div>
-                <DialogFooter>
+              </div>
+              <DialogFooter>
                   <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
                     Cancel
                   </Button>
@@ -792,12 +792,12 @@ export default function MyAlertsPage() {
                       'Create Alert'
                     )}
                   </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          </div>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
+    </div>
 
       <Tabs defaultValue="active" onValueChange={setActiveTab} className="space-y-4">
         <TabsList>
@@ -852,60 +852,60 @@ export default function MyAlertsPage() {
                     const lastNotification = getLastNotificationText(alert);
                     
                     return (
-                      <TableRow key={alert.id}>
-                        <TableCell className="font-medium">
-                          <div className='flex items-center gap-2'>
-                            <BellRing className='h-4 w-4 text-muted-foreground' />
-                            {alert.name}
-                          </div>
-                        </TableCell>
+                  <TableRow key={alert.id}>
+                    <TableCell className="font-medium">
+                      <div className='flex items-center gap-2'>
+                        <BellRing className='h-4 w-4 text-muted-foreground' />
+                        {alert.name}
+                      </div>
+                    </TableCell>
                         <TableCell>
                           <Badge variant="outline">
                             {alert.alert_type === 'profile' ? 'Profile' : 'Listing'}
                           </Badge>
                         </TableCell>
-                        <TableCell>
-                          <div className="flex flex-wrap gap-2">
+                    <TableCell>
+                      <div className="flex flex-wrap gap-2">
                             {criteriaFormatted.map((c, index) => (
-                              <Badge key={index} className={c.color}>
-                                {c.label}
-                              </Badge>
-                            ))}
-                          </div>
-                        </TableCell>
-                        <TableCell>
+                          <Badge key={index} className={c.color}>
+                            {c.label}
+                          </Badge>
+                        ))}
+                      </div>
+                    </TableCell>
+                    <TableCell>
                           {lastNotification.text} <br/>
                           <span className="text-muted-foreground text-sm">{lastNotification.subtext}</span>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-2">
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
                             <Switch 
                               checked={alert.is_active} 
                               onCheckedChange={() => toggleAlertStatus(alert.id, alert.is_active)}
                             />
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8">
-                                  <User className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <User className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
                                 <DropdownMenuItem onClick={() => viewMatches(alert.id)}>
                                   View Matches
                                 </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                             <Button 
                               variant="ghost" 
                               size="icon" 
                               className="h-8 w-8"
                               onClick={() => handleDeleteClick(alert)}
                             >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
                     );
                   })
                 )}

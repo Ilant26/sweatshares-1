@@ -5,8 +5,9 @@ import type { Database } from '@/lib/database.types'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const supabase = createRouteHandlerClient<Database>({ cookies })
     
@@ -20,7 +21,7 @@ export async function GET(
     const { data: alert, error: alertError } = await supabase
       .from('alerts')
       .select('id, alert_type')
-      .eq('id', params.id)
+      .eq('id', id)
       .eq('user_id', user.id)
       .single()
 
@@ -36,7 +37,7 @@ export async function GET(
     const { data: matches, error: matchesError } = await supabase
       .from('alert_matches')
       .select('*')
-      .eq('alert_id', params.id)
+      .eq('alert_id', id)
       .order('created_at', { ascending: false })
 
     if (matchesError) {
@@ -112,7 +113,7 @@ export async function GET(
       await supabase
         .from('alert_matches')
         .update({ notified: true })
-        .eq('alert_id', params.id)
+        .eq('alert_id', id)
         .eq('notified', false)
     }
 
