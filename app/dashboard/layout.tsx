@@ -12,6 +12,7 @@ import { ThemeSwitcher } from "@/components/theme-switcher"
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { ProtectedRoute } from '@/components/protected-route'
 import { useSession, UnreadMessagesProvider, UnreadInvitationsProvider } from '@/components/providers/session-provider'
+import { NotificationsProvider } from '@/components/providers/notifications-provider'
 import { Toaster } from "@/components/ui/toaster"
 import Link from "next/link"
 import { supabase } from "@/lib/supabase"
@@ -385,9 +386,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <ProtectedRoute>
-      <UnreadMessagesProvider>
-        <UnreadInvitationsProvider>
-          <SidebarProvider>
+      <NotificationsProvider>
+        <UnreadMessagesProvider>
+          <UnreadInvitationsProvider>
+            <SidebarProvider>
             <AppSidebar />
             <SidebarInset>
               <Suspense fallback={
@@ -455,9 +457,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </div>
               {!isMobile && <ChatInterface />}
             </SidebarInset>
-          </SidebarProvider>
-        </UnreadInvitationsProvider>
-      </UnreadMessagesProvider>
+            </SidebarProvider>
+          </UnreadInvitationsProvider>
+        </UnreadMessagesProvider>
+      </NotificationsProvider>
       <Toaster />
     </ProtectedRoute>
   );

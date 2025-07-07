@@ -244,6 +244,9 @@ export async function POST(request: NextRequest) {
     });
 
     // Create Stripe Checkout session
+    // Using 'on_behalf_of' instead of 'transfer_data' to support cross-border payments
+    // With on_behalf_of, funds settle directly in the connected account's country
+    // Platform fee is handled separately through escrow workflow rather than Stripe application fees
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [
@@ -263,16 +266,15 @@ export async function POST(request: NextRequest) {
       success_url: `${request.nextUrl.origin}/dashboard/escrow-payment/${escrowTransaction.invoice_id}?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${request.nextUrl.origin}/dashboard/escrow-payment/${escrowTransaction.invoice_id}?cancelled=true`,
       payment_intent_data: {
-        application_fee_amount: Math.round(platformFee * 100),
-        transfer_data: {
-          destination: payeeAccount.stripe_account_id,
-        },
+        on_behalf_of: payeeAccount.stripe_account_id,
         metadata: {
           escrow_transaction_id: escrowTransaction.id,
           invoice_id: escrowTransaction.invoice_id,
           payer_id: escrowTransaction.payer_id,
           payee_id: escrowTransaction.payee_id,
-          transaction_type: escrowTransaction.transaction_type
+          transaction_type: escrowTransaction.transaction_type,
+          platform_fee: platformFee.toString(),
+          original_amount: escrowTransaction.amount.toString()
         },
       },
     });

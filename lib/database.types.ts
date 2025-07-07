@@ -269,6 +269,11 @@ export interface Database {
           avatar_url: string | null
           username: string | null
           email: string
+          professional_role: string | null
+          bio: string | null
+          country: string | null
+          is_online: boolean
+          last_seen: string | null
           created_at: string
           updated_at: string
         }
@@ -278,6 +283,11 @@ export interface Database {
           avatar_url?: string | null
           username?: string | null
           email: string
+          professional_role?: string | null
+          bio?: string | null
+          country?: string | null
+          is_online?: boolean
+          last_seen?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -287,6 +297,11 @@ export interface Database {
           avatar_url?: string | null
           username?: string | null
           email?: string
+          professional_role?: string | null
+          bio?: string | null
+          country?: string | null
+          is_online?: boolean
+          last_seen?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -574,12 +589,180 @@ export interface Database {
           created_at?: string
         }
       }
+      connections: {
+        Row: {
+          id: string
+          sender_id: string
+          receiver_id: string
+          status: 'pending' | 'accepted' | 'rejected'
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          sender_id: string
+          receiver_id: string
+          status?: 'pending' | 'accepted' | 'rejected'
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          sender_id?: string
+          receiver_id?: string
+          status?: 'pending' | 'accepted' | 'rejected'
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      messages: {
+        Row: {
+          id: string
+          sender_id: string
+          receiver_id: string
+          content: string
+          read: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          sender_id: string
+          receiver_id: string
+          content: string
+          read?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          sender_id?: string
+          receiver_id?: string
+          content?: string
+          read?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      signatures: {
+        Row: {
+          id: string
+          created_by: string
+          signer_id: string
+          document_name: string
+          document_url: string
+          status: 'pending' | 'signed' | 'completed'
+          signed_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          created_by: string
+          signer_id: string
+          document_name: string
+          document_url: string
+          status?: 'pending' | 'signed' | 'completed'
+          signed_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          created_by?: string
+          signer_id?: string
+          document_name?: string
+          document_url?: string
+          status?: 'pending' | 'signed' | 'completed'
+          signed_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      notifications: {
+        Row: {
+          id: string
+          user_id: string
+          type: 'message' | 'connection_request' | 'connection_accepted' | 'invoice_request' | 'escrow_payment' | 'vault_share' | 'signature_request' | 'alert_match'
+          title: string
+          description: string
+          data: Json
+          read: boolean
+          created_at: string
+          updated_at: string
+          message_id: string | null
+          connection_id: string | null
+          invoice_id: string | null
+          signature_id: string | null
+          alert_id: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          type: 'message' | 'connection_request' | 'connection_accepted' | 'invoice_request' | 'escrow_payment' | 'vault_share' | 'signature_request' | 'alert_match'
+          title: string
+          description: string
+          data?: Json
+          read?: boolean
+          created_at?: string
+          updated_at?: string
+          message_id?: string | null
+          connection_id?: string | null
+          invoice_id?: string | null
+          signature_id?: string | null
+          alert_id?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          type?: 'message' | 'connection_request' | 'connection_accepted' | 'invoice_request' | 'escrow_payment' | 'vault_share' | 'signature_request' | 'alert_match'
+          title?: string
+          description?: string
+          data?: Json
+          read?: boolean
+          created_at?: string
+          updated_at?: string
+          message_id?: string | null
+          connection_id?: string | null
+          invoice_id?: string | null
+          signature_id?: string | null
+          alert_id?: string | null
+        }
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_unread_notification_count: {
+        Args: {
+          p_user_id: string
+        }
+        Returns: number
+      }
+      mark_notifications_read: {
+        Args: {
+          p_user_id: string
+          p_notification_ids?: string[]
+          p_type?: string
+        }
+        Returns: number
+      }
+      create_notification: {
+        Args: {
+          p_user_id: string
+          p_type: string
+          p_title: string
+          p_description: string
+          p_data?: Json
+          p_message_id?: string
+          p_connection_id?: string
+          p_invoice_id?: string
+          p_signature_id?: string
+          p_alert_id?: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never

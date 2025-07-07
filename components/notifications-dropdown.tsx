@@ -12,38 +12,35 @@ import {
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { useUnreadMessages, useUnreadInvitations } from '@/components/providers/session-provider'
 import { useRouter } from 'next/navigation'
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import type { Database } from '@/lib/database.types'
+import { useNotifications } from '@/components/providers/notifications-provider'
 
 type NotificationType = {
   id: string
-  type: 'message' | 'post_like' | 'comment' | 'comment_like' | 'connection' | 'vault_share' | 'invoice_share' | 'alert_match'
+  type: 'message' | 'connection_request' | 'connection_accepted' | 'invoice_request' | 'escrow_payment' | 'vault_share' | 'signature_request' | 'alert_match'
   title: string
   description: string
-  timestamp: string
+  data: any
   read: boolean
-  avatar?: string
-  link: string
+  created_at: string
+  message_id?: string
+  connection_id?: string
+  invoice_id?: string
+  signature_id?: string
   alert_id?: string
-  matches_count?: number
 }
 
 export function NotificationsDropdown() {
   const router = useRouter()
   const supabase = createClientComponentClient<Database>()
-  const { unreadCount: unreadMessages } = useUnreadMessages()
-  const { unreadInvitations } = useUnreadInvitations()
+  const { unreadCount, refreshUnreadCount } = useNotifications()
   const [notifications, setNotifications] = React.useState<NotificationType[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
   const [open, setOpen] = React.useState(false)
-
-  const totalUnread = React.useMemo(() => {
-    return notifications.filter(n => !n.read).length + unreadMessages + unreadInvitations
-  }, [notifications, unreadMessages, unreadInvitations])
 
   // Fetch notifications when dropdown opens
   React.useEffect(() => {
@@ -52,91 +49,102 @@ export function NotificationsDropdown() {
     }
   }, [open])
 
+  // The notifications provider handles polling for unread count
+
   const fetchNotifications = async () => {
     try {
       setIsLoading(true)
-      
-      // Fetch alert notifications
-      const { data: alertNotifications, error } = await supabase
-        .from('alert_notifications')
-        .select(`
-          *,
-          alerts(name, alert_type)
-        `)
-        .eq('notification_type', 'new_matches')
-        .gt('matches_count', 0)
-        .order('created_at', { ascending: false })
-        .limit(10)
-
-      const alertNotifs: NotificationType[] = []
-      
-      if (alertNotifications && !error) {
-        for (const notification of alertNotifications) {
-          const alert = notification.alerts as any
-          alertNotifs.push({
-            id: notification.id,
-            type: 'alert_match',
-            title: 'New Alert Match',
-            description: `${notification.matches_count} new ${alert.alert_type === 'profile' ? 'profile' : 'listing'} match${notification.matches_count > 1 ? 'es' : ''} for "${alert.name}"`,
-            timestamp: formatTimestamp(notification.created_at),
-            read: false, // Alert notifications are always unread until viewed
-            avatar: undefined,
-            link: `/dashboard/my-alerts/${notification.alert_id}/matches`,
-            alert_id: notification.alert_id,
-            matches_count: notification.matches_count
-          })
+              const response = await fetch('/api/notifications?limit=20')
+        if (response.ok) {
+          const data = await response.json()
+          setNotifications(data.notifications || [])
         }
-      }
-
-      // Add mock notifications for other types (replace with real data when available)
-      const mockNotifications: NotificationType[] = [
-        {
-          id: 'mock-1',
-          type: 'message',
-          title: 'New message',
-          description: 'John Doe sent you a message',
-          timestamp: '5m ago',
-          read: false,
-          avatar: 'https://github.com/shadcn.png',
-          link: '/dashboard/messages'
-        },
-        {
-          id: 'mock-2',
-          type: 'post_like',
-          title: 'Post liked',
-          description: 'Jane Smith liked your post',
-          timestamp: '10m ago',
-          read: false,
-          avatar: 'https://github.com/shadcn.png',
-          link: '/dashboard/news-feed'
-        },
-        {
-          id: 'mock-3',
-          type: 'connection',
-          title: 'Connection request',
-          description: 'Mike Johnson wants to connect',
-          timestamp: '1h ago',
-          read: false,
-          avatar: 'https://github.com/shadcn.png',
-          link: '/dashboard/my-network'
-        },
-      ]
-
-      // Combine and sort notifications
-      const allNotifications = [...alertNotifs, ...mockNotifications]
-        .sort((a, b) => {
-          // Sort by timestamp (newest first)
-          if (a.timestamp.includes('m ago') && b.timestamp.includes('h ago')) return -1
-          if (a.timestamp.includes('h ago') && b.timestamp.includes('m ago')) return 1
-          return 0
-        })
-
-      setNotifications(allNotifications)
     } catch (error) {
       console.error('Error fetching notifications:', error)
     } finally {
       setIsLoading(false)
     }
+  }
+
+
+
+  const markAsRead = async (notificationIds: string[]) => {
+    try {
+      const response = await fetch('/api/notifications', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ notification_ids: notificationIds }),
+      })
+      
+      if (response.ok) {
+        // Update local state
+    setNotifications(prev => 
+          prev.map(n => 
+            notificationIds.includes(n.id) ? { ...n, read: true } : n
+          )
+    )
+        await refreshUnreadCount()
+      }
+    } catch (error) {
+      console.error('Error marking notifications as read:', error)
+    }
+  }
+
+  const handleNotificationClick = async (notification: NotificationType) => {
+    // Mark as read if unread
+    if (!notification.read) {
+      await markAsRead([notification.id])
+    }
+    
+    // Navigate based on notification type
+    let targetUrl = '/dashboard'
+    
+    switch (notification.type) {
+      case 'message':
+        targetUrl = '/dashboard/messages'
+        break
+      case 'connection_request':
+      case 'connection_accepted':
+        targetUrl = '/dashboard/my-network'
+        break
+      case 'invoice_request':
+      case 'escrow_payment':
+        if (notification.invoice_id) {
+          // Check if it's an escrow payment that needs action
+          if (notification.type === 'escrow_payment' && notification.data?.escrow_status === 'pending_payment') {
+            targetUrl = `/dashboard/escrow-payment/${notification.invoice_id}`
+          } else {
+            targetUrl = '/dashboard/my-invoices'
+          }
+        } else {
+          targetUrl = '/dashboard/my-invoices'
+        }
+        break
+      case 'signature_request':
+        if (notification.signature_id) {
+          targetUrl = `/dashboard/signature/${notification.signature_id}`
+        } else {
+          targetUrl = '/dashboard/my-vault'
+        }
+        break
+      case 'vault_share':
+        targetUrl = '/dashboard/my-vault'
+        break
+      case 'alert_match':
+        if (notification.alert_id) {
+          targetUrl = `/dashboard/my-alerts/${notification.alert_id}/matches`
+        } else {
+          targetUrl = '/dashboard/my-alerts'
+        }
+        break
+      default:
+        targetUrl = '/dashboard'
+    }
+    
+    router.push(targetUrl)
+    setOpen(false)
   }
 
   const formatTimestamp = (dateString: string) => {
@@ -150,29 +158,58 @@ export function NotificationsDropdown() {
     return `${Math.floor(diffInMinutes / 1440)}d ago`
   }
 
-  const handleNotificationClick = (notification: NotificationType) => {
-    // Mark as read
-    setNotifications(prev => 
-      prev.map(n => n.id === notification.id ? { ...n, read: true } : n)
-    )
-    
-    // Navigate to the relevant page
-    router.push(notification.link)
-    setOpen(false)
-  }
-
   const getNotificationIcon = (type: string) => {
     switch (type) {
-      case 'alert_match':
-        return '🔔'
       case 'message':
         return '💬'
-      case 'post_like':
-        return '❤️'
-      case 'connection':
+      case 'connection_request':
         return '🤝'
+      case 'connection_accepted':
+        return '✅'
+      case 'invoice_request':
+        return '📄'
+      case 'escrow_payment':
+        return '💰'
+      case 'vault_share':
+        return '📁'
+      case 'signature_request':
+        return '✍️'
+      case 'alert_match':
+        return '🔔'
       default:
         return '📢'
+    }
+  }
+
+  const getAvatarFromData = (notification: NotificationType) => {
+    const data = notification.data || {}
+    // Try to get avatar from various sources in the data, prioritizing the standardized fields
+    return data.sender_avatar_url || data.payer_avatar_url || data.sharer_avatar_url || data.receiver_avatar_url || 
+           data.sender_avatar || data.requester_avatar || data.client_avatar || data.freelancer_avatar
+  }
+
+  const getSenderName = (notification: NotificationType) => {
+    const data = notification.data || {}
+    // Get the sender's full name from notification data, with fallbacks
+    return data.sender_name || data.payer_name || data.sharer_name || data.receiver_name || 'Someone'
+  }
+
+  const markAllAsRead = async () => {
+    try {
+      const response = await fetch('/api/notifications', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ mark_all_read: true }),
+      })
+      
+      if (response.ok) {
+        setNotifications(prev => prev.map(n => ({ ...n, read: true })))
+        await refreshUnreadCount()
+      }
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error)
     }
   }
 
@@ -181,9 +218,9 @@ export function NotificationsDropdown() {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-5 w-5" />
-          {totalUnread > 0 && (
+          {unreadCount > 0 && (
             <span className="absolute -right-1 -top-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-destructive px-1 text-xs font-medium text-destructive-foreground">
-              {totalUnread > 99 ? '99+' : totalUnread}
+              {unreadCount > 99 ? '99+' : unreadCount}
             </span>
           )}
         </Button>
@@ -191,9 +228,24 @@ export function NotificationsDropdown() {
       <DropdownMenuContent className="w-80" align="end" sideOffset={5}>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
+            <div className="flex items-center justify-between">
             <p className="text-sm font-medium leading-none">Notifications</p>
+              {unreadCount > 0 && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-auto p-0 text-xs text-primary hover:text-primary/80"
+                  onClick={markAllAsRead}
+                >
+                  Mark all read
+                </Button>
+              )}
+            </div>
             <p className="text-xs leading-none text-muted-foreground">
-              You have {totalUnread} unread notifications
+              {unreadCount > 0 
+                ? `You have ${unreadCount} unread notification${unreadCount > 1 ? 's' : ''}`
+                : 'All caught up!'
+              }
             </p>
           </div>
         </DropdownMenuLabel>
@@ -219,11 +271,11 @@ export function NotificationsDropdown() {
                   onClick={() => handleNotificationClick(notification)}
                 >
                   <div className="flex-shrink-0 mt-1">
-                    {notification.avatar ? (
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={notification.avatar} />
-                        <AvatarFallback>UN</AvatarFallback>
-                      </Avatar>
+                    {getAvatarFromData(notification) ? (
+                  <Avatar className="h-8 w-8">
+                        <AvatarImage src={getAvatarFromData(notification)} />
+                    <AvatarFallback>UN</AvatarFallback>
+                  </Avatar>
                     ) : (
                       <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-sm">
                         {getNotificationIcon(notification.type)}
@@ -231,9 +283,12 @@ export function NotificationsDropdown() {
                     )}
                   </div>
                   <div className="flex flex-col space-y-1 flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
                     <p className="text-sm font-medium leading-none">{notification.title}</p>
+                      <span className="text-xs font-medium text-primary">{getSenderName(notification)}</span>
+                    </div>
                     <p className="text-xs text-muted-foreground line-clamp-2">{notification.description}</p>
-                    <p className="text-xs text-muted-foreground">{notification.timestamp}</p>
+                    <p className="text-xs text-muted-foreground">{formatTimestamp(notification.created_at)}</p>
                   </div>
                   {!notification.read && (
                     <div className="flex-shrink-0 h-2 w-2 rounded-full bg-primary mt-2" />
@@ -246,7 +301,7 @@ export function NotificationsDropdown() {
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild className="cursor-pointer">
           <Link href="/dashboard/my-alerts" className="w-full text-center text-sm">
-            View all alerts
+            View all notifications
           </Link>
         </DropdownMenuItem>
       </DropdownMenuContent>

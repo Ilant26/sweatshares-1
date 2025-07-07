@@ -1,4 +1,3 @@
-
 'use client';
 
 
@@ -136,14 +135,31 @@ function getRecentActivities(
   externalClients: any[],
   networkContacts: any[]
 ) {
+  // Remove duplicates by ID first, keeping the latest version
+  const uniqueInvoices = invoices.reduce((acc, current) => {
+    const existing = acc.find(item => item.id === current.id);
+    if (!existing) {
+      acc.push(current);
+    } else {
+      // Keep the one with the most recent updated_at/created_at
+      const currentDate = new Date(current.updated_at || current.created_at).getTime();
+      const existingDate = new Date(existing.updated_at || existing.created_at).getTime();
+      if (currentDate > existingDate) {
+        const index = acc.indexOf(existing);
+        acc[index] = current;
+      }
+    }
+    return acc;
+  }, [] as Invoice[]);
+
   // Sort by updated_at or created_at descending
-  const sorted = [...invoices].sort((a, b) => {
+  const sorted = [...uniqueInvoices].sort((a, b) => {
     const aDate = new Date(a.updated_at || a.created_at).getTime();
     const bDate = new Date(b.updated_at || b.created_at).getTime();
     return bDate - aDate;
   });
   
-  return sorted.slice(0, 6).map(inv => {
+  return sorted.slice(0, 6).map((inv, index) => {
     // Helper function to get proper full name
     const getProperFullName = (invoice: Invoice, isReceiver: boolean) => {
       if (isReceiver) {
@@ -199,7 +215,7 @@ function getRecentActivities(
 
     if (inv.status === 'paid' && inv.updated_at) {
       return {
-        id: inv.id + '-paid',
+        id: `${inv.id}-paid-${index}`,
         action: 'paid',
         user: inv.receiver_id === userId ? userFullName : getProperFullName(inv, true),
         document: `invoice ${inv.invoice_number}`,
@@ -210,7 +226,7 @@ function getRecentActivities(
     }
     if (inv.status === 'cancelled') {
       return {
-        id: inv.id + '-cancelled',
+        id: `${inv.id}-cancelled-${index}`,
         action: 'cancelled',
         document: `Invoice ${inv.invoice_number}`,
         client: getProperFullName(inv, inv.sender_id === userId),
@@ -219,7 +235,7 @@ function getRecentActivities(
     }
     if (inv.status === 'pending' && inv.created_at) {
       return {
-        id: inv.id + '-created',
+        id: `${inv.id}-created-${index}`,
         action: 'created',
         user: userFullName, // Always use current user's full name
         document: `new invoice ${inv.invoice_number}`,
@@ -515,6 +531,50 @@ export default function MyInvoicesPage() {
 
     return () => clearInterval(interval);
   }, [user, stripeConnectStatus]);
+
+  // Refresh invoice data when window gains focus (useful when returning from escrow payment)
+  useEffect(() => {
+    const handleFocus = async () => {
+      if (!user) return;
+      
+      console.log('Window focused, refreshing invoice data...');
+      try {
+        // Refresh invoices data
+        const refreshedInvoices = await getInvoices(user.id);
+        setInvoices(refreshedInvoices);
+        
+        // Refresh invoice statuses for escrow invoices
+        for (const invoice of refreshedInvoices) {
+          if (invoice.payment_method === 'escrow') {
+            try {
+              await fetch('/api/escrow/refresh-invoice-status', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ invoiceId: invoice.id }),
+              });
+            } catch (error) {
+              console.error('Error refreshing status for invoice:', invoice.id, error);
+            }
+          }
+        }
+        
+        // Fetch refreshed invoices again after status updates
+        const finalInvoices = await getInvoices(user.id);
+        setInvoices(finalInvoices);
+        
+      } catch (error) {
+        console.error('Error refreshing invoice data on focus:', error);
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [user]);
 
   // Handle URL parameters for creating invoice from messages
   useEffect(() => {
@@ -1652,6 +1712,46 @@ export default function MyInvoicesPage() {
               <RefreshCw className="h-4 w-4" />
               <span className="hidden sm:inline">Refresh Status</span>
               <span className="sm:hidden">Refresh</span>
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={async () => {
+                if (!user) return;
+                
+                // Get all escrow invoices for debugging
+                const escrowInvoices = invoices.filter(inv => inv.payment_method === 'escrow');
+                console.log('🔍 ESCROW INVOICES DEBUG:', escrowInvoices);
+                
+                for (const invoice of escrowInvoices) {
+                  console.log(`📋 Invoice ${invoice.invoice_number}:`, {
+                    id: invoice.id,
+                    status: invoice.status,
+                    payment_method: invoice.payment_method,
+                    escrow_transaction_id: invoice.escrow_transaction_id
+                  });
+                  
+                  if (invoice.escrow_transaction_id) {
+                    // Get escrow transaction details
+                    const { data: escrowData } = await supabase
+                      .from('escrow_transactions')
+                      .select('*')
+                      .eq('id', invoice.escrow_transaction_id)
+                      .single();
+                    
+                    console.log(`🔒 Escrow Transaction for ${invoice.invoice_number}:`, escrowData);
+                  }
+                }
+                
+                toast({
+                  title: "Debug Info",
+                  description: `Found ${escrowInvoices.length} escrow invoices. Check console for details.`,
+                });
+              }}
+              className="gap-2"
+            >
+              <Eye className="h-4 w-4" />
+              <span className="hidden sm:inline">Debug Escrow</span>
+              <span className="sm:hidden">Debug</span>
             </Button>
             <Dialog open={newInvoiceDialogOpen} onOpenChange={(open) => {
               setNewInvoiceDialogOpen(open);

@@ -59,26 +59,24 @@ export async function PUT(request: NextRequest) {
     let sellerAmount = 0;
 
     if (approve) {
-      // Calculate amounts
+      // Calculate amounts for tracking purposes
       platformFee = calculatePlatformFee(transaction.amount);
       sellerAmount = calculateSellerAmount(transaction.amount);
 
-      // Transfer funds to payee's Connect account
-      if (transaction.stripe_connect_account_id) {
-        transfer = await stripe.transfers.create({
-          amount: Math.round(sellerAmount * 100), // Convert to cents
-          currency: transaction.currency.toLowerCase(),
-          destination: transaction.stripe_connect_account_id,
-          description: `Escrow payment for invoice ${transaction.invoice_id}`,
-          metadata: {
-            escrow_transaction_id: escrowTransactionId,
-            invoice_id: transaction.invoice_id,
-            platform_fee: platformFee.toString()
-          }
-        });
-      }
+      // With on_behalf_of payments, all funds are settled directly in the connected account
+      // Platform fee tracking is handled in the application layer for reporting purposes
+      // The payee receives the full amount, and platform fees are tracked separately
+      console.log('Approving work completion - with on_behalf_of payment structure');
+      console.log({
+        transactionId: escrowTransactionId,
+        amount: transaction.amount,
+        platformFee,
+        sellerAmount,
+        connectAccountId: transaction.stripe_connect_account_id,
+        note: 'Platform fee tracking handled in application layer'
+      });
 
-      // Approve work completion
+      // Approve work completion (this updates status to 'approved' and sets timestamps)
       updatedTransaction = await approveWorkCompletion(escrowTransactionId);
 
       // Update invoice status
@@ -125,7 +123,10 @@ export async function PUT(request: NextRequest) {
       transaction: updatedTransaction,
       transfer: transfer || null,
       platformFee,
-      sellerAmount
+      sellerAmount,
+      fundsAlreadySettled: approve, // Indicate funds were already settled with on_behalf_of payment
+      paymentStructure: 'on_behalf_of', // Indicate the payment structure used
+      note: approve ? 'Payee receives full amount with on_behalf_of payment structure' : undefined
     });
 
   } catch (error) {

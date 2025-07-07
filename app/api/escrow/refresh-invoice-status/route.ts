@@ -34,17 +34,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get the invoice and its escrow transaction
+    // Get the invoice first
     const { data: invoice, error: invoiceError } = await supabase
       .from('invoices')
-      .select(`
-        *,
-        escrow_transactions (
-          id,
-          status,
-          stripe_payment_intent_id
-        )
-      `)
+      .select('*')
       .eq('id', invoiceId)
       .single();
 
@@ -57,20 +50,45 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('Current invoice status:', invoice.status);
-    console.log('Escrow transaction status:', invoice.escrow_transactions?.status);
+    console.log('Invoice payment method:', invoice.payment_method);
+    console.log('Invoice escrow_transaction_id:', invoice.escrow_transaction_id);
 
     // Check if this is an escrow invoice
-    if (invoice.payment_method === 'escrow' && invoice.escrow_transactions) {
-      const escrowStatus = invoice.escrow_transactions.status;
+    if (invoice.payment_method === 'escrow' && invoice.escrow_transaction_id) {
+      // Get the escrow transaction separately
+      const { data: escrowTransaction, error: escrowError } = await supabase
+        .from('escrow_transactions')
+        .select('id, status, stripe_payment_intent_id')
+        .eq('id', invoice.escrow_transaction_id)
+        .single();
+      
+      if (escrowError || !escrowTransaction) {
+        console.log('No escrow transaction found for escrow invoice:', escrowError);
+        return NextResponse.json({
+          success: false,
+          message: 'Escrow transaction not found for escrow invoice',
+          currentStatus: invoice.status,
+          paymentMethod: invoice.payment_method
+        });
+      }
+      
+      console.log('Escrow transaction status:', escrowTransaction.status);
+      
+      const escrowStatus = escrowTransaction.status;
       let newStatus = invoice.status;
 
+      // Define escrow statuses that indicate payment has been completed
+      const paidEscrowStatuses = ['funded', 'work_completed', 'approved', 'released'];
+      const pendingEscrowStatuses = ['pending', 'pending_payment'];
+      const failedEscrowStatuses = ['payment_failed', 'refunded'];
+
       // Update invoice status based on escrow transaction status
-      if (escrowStatus === 'funded' && invoice.status !== 'paid') {
+      if (paidEscrowStatuses.includes(escrowStatus) && invoice.status !== 'paid') {
         newStatus = 'paid';
-      } else if (escrowStatus === 'pending' && invoice.status !== 'pending') {
+      } else if (pendingEscrowStatuses.includes(escrowStatus) && invoice.status !== 'pending') {
         newStatus = 'pending';
-      } else if (escrowStatus === 'payment_failed' && invoice.status !== 'payment_failed') {
-        newStatus = 'payment_failed';
+      } else if (failedEscrowStatuses.includes(escrowStatus) && invoice.status !== 'cancelled') {
+        newStatus = 'cancelled';
       }
 
       // Update the invoice if status needs to change
@@ -100,7 +118,8 @@ export async function POST(request: NextRequest) {
           message: 'Invoice status refreshed',
           previousStatus: invoice.status,
           newStatus: newStatus,
-          escrowStatus: escrowStatus
+          escrowStatus: escrowStatus,
+          escrowTransactionId: escrowTransaction.id
         });
       } else {
         console.log('Invoice status is already up to date');
@@ -109,7 +128,8 @@ export async function POST(request: NextRequest) {
           success: true,
           message: 'Invoice status is up to date',
           currentStatus: invoice.status,
-          escrowStatus: escrowStatus
+          escrowStatus: escrowStatus,
+          escrowTransactionId: escrowTransaction.id
         });
       }
     } else {

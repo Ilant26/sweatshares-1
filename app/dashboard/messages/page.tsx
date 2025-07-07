@@ -416,14 +416,7 @@ export default function MessagesPage() {
                     content: messageInput,
                     read: false
                 })
-                .select(`
-                    *,
-                    sender:profiles!sender_id (
-                        username,
-                        full_name,
-                        avatar_url
-                    )
-                `)
+                .select('*')
                 .single();
 
             if (error) {

@@ -863,7 +863,7 @@ export default function MyAlertsPage() {
                           <Badge variant="outline">
                             {alert.alert_type === 'profile' ? 'Profile' : 'Listing'}
                           </Badge>
-                        </TableCell>
+                    </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-2">
                             {criteriaFormatted.map((c, index) => (

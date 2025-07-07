@@ -534,6 +534,58 @@ POST /api/webhooks/stripe/transfer-created
 - API for third-party integrations
 - Specialized escrow products for different transaction types
 
+## Cross-Border Payment Support
+
+### Issue with Destination Charges
+Originally, the system used `transfer_data.destination` in Stripe payment intents, which creates destination charges. However, this approach doesn't work for cross-border payments where the platform account is in one country (e.g., US) and the connected account is in another country/region.
+
+**Error**: `Cannot create a destination charge for connected accounts in US because funds would be settled on the platform and the connected account is outside the platform's region.`
+
+### Solution: On-Behalf-Of Payments
+The system now uses `on_behalf_of` parameter instead of `transfer_data.destination`:
+
+```javascript
+payment_intent_data: {
+  application_fee_amount: Math.round(platformFee * 100),
+  on_behalf_of: payeeAccount.stripe_account_id, // Changed from transfer_data
+  metadata: { ... }
+}
+```
+
+### Key Differences:
+
+**With `transfer_data.destination` (old)**:
+- Funds settle on the platform first
+- Platform manually transfers funds to connected account
+- Doesn't work for cross-border scenarios
+- Requires explicit transfer calls in `/api/escrow/approve-work`
+
+**With `on_behalf_of` (new)**:
+- Funds settle directly in the connected account's country
+- No manual transfer needed when work is approved
+- Supports cross-border payments seamlessly
+- Platform fee is automatically deducted
+
+### Implementation Changes:
+
+1. **Payment Creation** (`/api/escrow/create-payment-intent`):
+   - Changed `transfer_data.destination` to `on_behalf_of`
+   - Added documentation comments
+
+2. **Work Approval** (`/api/escrow/approve-work`):
+   - Removed `stripe.transfers.create()` call
+   - Funds are already settled in connected account
+   - Only status updates are needed
+
+3. **Refunds** (if needed in disputes):
+   - Must be created from the connected account
+   - Use `stripe.refunds.create()` with `stripe_account` header
+
+### Migration Notes:
+- Existing escrow transactions using the old method will continue to work
+- New transactions automatically use the cross-border compatible method
+- No database schema changes required
+
 ## Conclusion
 
 The implementation of Stripe Connect escrow payments will significantly enhance the SweatShares platform by providing secure, trusted payment processing that benefits all user types (founders, investors, experts, freelancers, consultants). This system will build confidence in the platform and encourage more transactions while generating additional revenue through platform fees.

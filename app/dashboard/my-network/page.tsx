@@ -15,6 +15,7 @@ import { supabase } from '@/lib/supabase';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/components/ui/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { useNotifications } from '@/components/providers/notifications-provider';
 
 interface Profile {
     id: string;
@@ -59,6 +60,7 @@ export default function MyNetworkPage() {
     const [activeTab, setActiveTab] = useState('all-users');
     const [loadingStates, setLoadingStates] = useState<LoadingStates>({});
     const router = useRouter();
+    const { refreshUnreadCount } = useNotifications();
 
     // Helper function to update loading state
     const setLoadingState = (key: string, isLoading: boolean) => {
@@ -75,6 +77,24 @@ export default function MyNetworkPage() {
             description,
             variant,
         });
+    };
+
+    // Function to mark connection notifications as read
+    const markConnectionNotificationsAsRead = async () => {
+        try {
+            await fetch('/api/notifications', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ 
+                    type: 'connection_request'
+                }),
+            });
+            await refreshUnreadCount();
+        } catch (error) {
+            console.error('Error marking connection notifications as read:', error);
+        }
     };
 
     useEffect(() => {
@@ -188,6 +208,8 @@ export default function MyNetworkPage() {
         fetchCurrentUser().then(userId => {
             if (userId) {
                 fetchAllData(userId);
+                // Mark connection notifications as read when visiting the page
+                markConnectionNotificationsAsRead();
             }
         });
     }, []);
@@ -227,6 +249,8 @@ export default function MyNetworkPage() {
                     }));
                     
                     showToast('Success', 'Connection request accepted');
+                    // Refresh notification count after accepting connection
+                    await refreshUnreadCount();
                 }
             }
         } catch (error) {
@@ -254,6 +278,8 @@ export default function MyNetworkPage() {
 
             setReceivedInvitations(prev => prev.filter(inv => inv.id !== connectionId));
             showToast('Success', 'Connection request rejected');
+            // Refresh notification count after rejecting connection
+            await refreshUnreadCount();
         } catch (error) {
             console.error('Error rejecting invitation:', error);
             showToast('Error', 'Failed to reject invitation', 'destructive');
