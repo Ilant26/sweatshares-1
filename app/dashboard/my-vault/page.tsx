@@ -699,7 +699,7 @@ export default function MyVaultPage() {
                 <div className="space-y-2 text-sm text-blue-700 dark:text-blue-200">
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                    <span>1. Select a document from your Personal Documents below</span>
+                    <span>1. Select a document from your "My Documents" below</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 bg-blue-500 rounded-full"></div>

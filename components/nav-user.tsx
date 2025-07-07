@@ -133,14 +133,22 @@ export function NavUser({
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="#">
+                <Link href="/dashboard/pricing">
                   <div className="flex items-center">
                     <CreditCard className="size-4" />
-                    <span className="ml-2">Billing</span>
+                    <span className="ml-2">My Current Plan</span>
                   </div>
                 </Link>
               </DropdownMenuItem>
             </DropdownMenuGroup>
+            <DropdownMenuItem asChild>
+              <Link href="#">
+                <div className="flex items-center">
+                  <CreditCard className="size-4" />
+                  <span className="ml-2">Billing</span>
+                </div>
+              </Link>
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout}>
               <LogOut className="size-4" />

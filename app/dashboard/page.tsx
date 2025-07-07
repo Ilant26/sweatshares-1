@@ -716,39 +716,39 @@ export default function Page() {
               </div>
             ) : (
               myFavorites.map((item) => (
-                <div key={item.id} className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <Avatar>
-                      <AvatarImage src={item.avatar ?? undefined} />
-                      <AvatarFallback>{item.name?.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      {item.type === 'profile' ? (
-                        <p className="text-sm font-medium leading-none">
-                          <Link
-                            href={`/dashboard/profile/${item.id}`}
-                            className="hover:underline text-primary"
-                            legacyBehavior>
-                            {item.name}
-                          </Link>
-                        </p>
-                      ) : item.type === 'listing' ? (
-                        <p className="text-sm font-medium leading-none">
-                          <Link
-                            href={`/dashboard/listings/${item.id}?source=dashboard`}
-                            className="hover:underline text-primary"
-                            legacyBehavior>
-                            {item.name}
-                          </Link>
-                        </p>
-                      ) : (
-                        <p className="text-sm font-medium leading-none">{item.name}</p>
-                      )}
-                      <p className="text-sm text-muted-foreground">{item.role}</p>
-                    </div>
+              <div key={item.id} className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <Avatar>
+                    <AvatarImage src={item.avatar ?? undefined} />
+                    <AvatarFallback>{item.name?.charAt(0)}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    {item.type === 'profile' ? (
+                      <p className="text-sm font-medium leading-none">
+                        <Link
+                          href={`/dashboard/profile/${item.id}`}
+                          className="hover:underline text-primary"
+                          legacyBehavior>
+                          {item.name}
+                        </Link>
+                      </p>
+                    ) : item.type === 'listing' ? (
+                      <p className="text-sm font-medium leading-none">
+                        <Link
+                          href={`/dashboard/listings/${item.id}?source=dashboard`}
+                          className="hover:underline text-primary"
+                          legacyBehavior>
+                          {item.name}
+                        </Link>
+                      </p>
+                    ) : (
+                      <p className="text-sm font-medium leading-none">{item.name}</p>
+                    )}
+                    <p className="text-sm text-muted-foreground">{item.role}</p>
                   </div>
-                  {item.starred && <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />}
                 </div>
+                {item.starred && <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />}
+              </div>
               ))
             )}
           </CardContent>
@@ -777,21 +777,21 @@ export default function Page() {
               </div>
             ) : (
               alerts.slice(0, 3).map((alert) => (
-                <div key={alert.id} className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <BellRing className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm font-medium leading-none">{alert.name}</p>
+              <div key={alert.id} className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <BellRing className="h-4 w-4 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm font-medium leading-none">{alert.name}</p>
                       <p className="text-sm text-muted-foreground">
                         {alert.alert_type === 'profile' ? 'Profile Alert' : 'Listing Alert'} • {alert.frequency}
                       </p>
-                    </div>
                   </div>
+                </div>
                   <Switch 
                     checked={alert.is_active} 
                     onCheckedChange={() => handleAlertToggle(alert.id, alert.is_active)}
                   />
-                </div>
+              </div>
               ))
             )}
           </CardContent>
@@ -812,22 +812,22 @@ export default function Page() {
               </div>
             ) : suggestions.opportunities && suggestions.opportunities.length > 0 ? (
               suggestions.opportunities.map((item: any) => (
-                <div key={item.id} className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
+              <div key={item.id} className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
                     {item.type === 'profiles' && <UserPlus className="h-4 w-4 text-purple-500" />}
                     {item.type === 'listings' && <Lightbulb className="h-4 w-4 text-orange-500" />}
                     {item.type === 'networking' && <Users className="h-4 w-4 text-blue-500" />}
-                    <div>
-                      <p className="text-sm font-medium leading-none">{item.title}</p>
-                      <p className="text-sm text-muted-foreground">{item.description}</p>
-                    </div>
+                  <div>
+                    <p className="text-sm font-medium leading-none">{item.title}</p>
+                    <p className="text-sm text-muted-foreground">{item.description}</p>
                   </div>
-                  <Link href={item.href} passHref legacyBehavior>
-                    <Button variant="link" size="sm">
-                      {item.action}
-                    </Button>
-                  </Link>
                 </div>
+                  <Link href={item.href} passHref legacyBehavior>
+                <Button variant="link" size="sm">
+                  {item.action}
+                </Button>
+                  </Link>
+              </div>
               ))
             ) : (
               <div className="text-center py-4 text-muted-foreground">

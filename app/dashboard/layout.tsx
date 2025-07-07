@@ -362,6 +362,11 @@ function DashboardHeader() {
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
+                <Link href="/dashboard/pricing">
+                  My Current Plan
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
                 <Link href="#">
                   Billing
                 </Link>
