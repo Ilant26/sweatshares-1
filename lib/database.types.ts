@@ -475,6 +475,105 @@ export interface Database {
           created_at?: string
         }
       }
+      alerts: {
+        Row: {
+          id: string
+          user_id: string
+          name: string
+          alert_type: 'profile' | 'listing'
+          criteria: Json
+          frequency: 'instant' | 'daily' | 'weekly'
+          is_active: boolean
+          last_checked_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          name: string
+          alert_type: 'profile' | 'listing'
+          criteria: Json
+          frequency?: 'instant' | 'daily' | 'weekly'
+          is_active?: boolean
+          last_checked_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          name?: string
+          alert_type?: 'profile' | 'listing'
+          criteria?: Json
+          frequency?: 'instant' | 'daily' | 'weekly'
+          is_active?: boolean
+          last_checked_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      alert_matches: {
+        Row: {
+          id: string
+          alert_id: string
+          matched_entity_id: string
+          matched_entity_type: 'profile' | 'listing'
+          match_score: number
+          notified: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          alert_id: string
+          matched_entity_id: string
+          matched_entity_type: 'profile' | 'listing'
+          match_score?: number
+          notified?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          alert_id?: string
+          matched_entity_id?: string
+          matched_entity_type?: 'profile' | 'listing'
+          match_score?: number
+          notified?: boolean
+          created_at?: string
+        }
+      }
+      alert_notifications: {
+        Row: {
+          id: string
+          alert_id: string
+          user_id: string
+          notification_type: 'new_matches' | 'no_matches' | 'alert_created'
+          matches_count: number
+          email_sent: boolean
+          email_sent_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          alert_id: string
+          user_id: string
+          notification_type: 'new_matches' | 'no_matches' | 'alert_created'
+          matches_count?: number
+          email_sent?: boolean
+          email_sent_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          alert_id?: string
+          user_id?: string
+          notification_type?: 'new_matches' | 'no_matches' | 'alert_created'
+          matches_count?: number
+          email_sent?: boolean
+          email_sent_at?: string | null
+          created_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never

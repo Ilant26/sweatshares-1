@@ -2260,21 +2260,7 @@ export default function MyInvoicesPage() {
                           </div>
                         )}
 
-                        {stripeConnectStatus === 'connected' && (
-                          <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                            <div className="flex items-start gap-3">
-                              <div className="p-2 bg-green-100 rounded-lg">
-                                <CheckCircle className="h-5 w-5 text-green-600" />
-                              </div>
-                              <div className="flex-1">
-                                <h4 className="font-semibold text-green-900 mb-2">Stripe Connect Active</h4>
-                                <p className="text-sm text-green-700 mb-3">
-                                  Your Stripe account is connected and ready to receive escrow payments. Funds will be automatically transferred to your account when work is completed.
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        )}
+
 
                         {stripeConnectStatus === 'checking' && (
                           <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
@@ -2350,25 +2336,7 @@ export default function MyInvoicesPage() {
                           </div>
                         )}
 
-                        {stripeConnectStatus === 'connected' && (
-                          <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                            <div className="flex items-start gap-3">
-                              <div className="p-2 bg-green-100 rounded-lg">
-                                <CheckCircle className="h-5 w-5 text-green-600" />
-                              </div>
-                              <div className="flex-1">
-                                <h4 className="font-semibold text-green-900 mb-2">Stripe Connect Active</h4>
-                                <p className="text-sm text-green-700 mb-3">
-                                  Your Stripe account is connected and ready to receive escrow payments. You can now create escrow invoices.
-                                </p>
-                                <div className="flex items-center gap-2 text-xs text-green-600">
-                                  <CheckCircle className="h-3 w-3" />
-                                  <span>Account verified and ready for payments</span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        )}
+
 
                         {stripeConnectStatus === 'error' && (
                           <div className="p-4 bg-red-50 border border-red-200 rounded-lg">

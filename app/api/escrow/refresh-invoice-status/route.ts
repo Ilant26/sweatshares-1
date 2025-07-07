@@ -2,6 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 
+// Add GET method for testing
+export async function GET(request: NextRequest) {
+  return NextResponse.json({
+    message: 'Refresh invoice status API is working',
+    method: 'GET',
+    timestamp: new Date().toISOString()
+  });
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { invoiceId } = await request.json();

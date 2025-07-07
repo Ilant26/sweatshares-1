@@ -27,6 +27,7 @@ import {
   FileText,
   CreditCard,
   Lightbulb,
+  Loader2,
 } from "lucide-react";
 
 import { useUser } from "@/hooks/use-user";
@@ -94,62 +95,6 @@ const recentMessages = [
   },
 ];
 
-const myFavorites = [
-  {
-    id: "1",
-    name: "Sophia Dubois",
-    role: "Expert Digital Marketing",
-    avatar: "https://randomuser.me/api/portraits/women/1.jpg",
-    starred: true,
-    type: 'profile'
-  },
-  {
-    id: "2",
-    name: "Developer React.js Senior",
-    role: "Freelancer - TechInnov",
-    avatar: "/avatars/01.png", // Placeholder for a listing image
-    starred: true,
-    type: 'listing'
-  },
-  {
-    id: "3",
-    name: "GreenTech Solutions",
-    role: "Startup - Renewable Energy",
-    avatar: "/avatars/02.png", // Placeholder for a listing image
-    starred: true,
-    type: 'listing'
-  },
-  {
-    id: "4",
-    name: "Philippe Laurent",
-    role: "Investor, Business Angel",
-    avatar: "https://randomuser.me/api/portraits/men/2.jpg",
-    starred: true,
-    type: 'profile'
-  },
-];
-
-const activeAlertsData = [
-  {
-    id: "1",
-    name: "Expert Digital Marketing",
-    criteria: "Paris - Template, 3 criteria",
-    status: true,
-  },
-  {
-    id: "2",
-    name: "Investor Seed",
-    criteria: "France - Fintech, 5 criteria",
-    status: true,
-  },
-  {
-    id: "3",
-    name: "Full-stack Developer",
-    criteria: "Remote - Equity, 4 criteria",
-    status: false,
-  },
-];
-
 const chartData = [
   { date: "Mar 01", views: 300, messages: 150, connections: 80 },
   { date: "Mar 08", views: 320, messages: 160, connections: 85 },
@@ -183,25 +128,6 @@ const pendingItems = [
     description: "2 invoices to pay",
     action: "Register",
     icon: <CreditCard className="h-4 w-4 text-green-500" />,
-  },
-];
-
-const suggestions = [
-  {
-    id: "1",
-    type: "recommendedProfiles",
-    title: "Recommended Profiles",
-    description: "9 new profiles matching your criteria",
-    action: "Explore",
-    icon: <UserPlus className="h-4 w-4 text-purple-500" />,
-  },
-  {
-    id: "2",
-    type: "opportunities",
-    title: "Opportunities",
-    description: "2 new opportunities correspond to your criteria",
-    action: "Discover",
-    icon: <Lightbulb className="h-4 w-4 text-orange-500" />,
   },
 ];
 
@@ -248,6 +174,12 @@ export default function Page() {
   const [listings, setListings] = useState<any[]>([]);
   const [listingsLoading, setListingsLoading] = useState(true);
   const [isCreateListingOpen, setIsCreateListingOpen] = useState(false);
+
+  // New state for alerts, favorites, and suggestions
+  const [alerts, setAlerts] = useState<any[]>([]);
+  const [alertsLoading, setAlertsLoading] = useState(true);
+  const [suggestions, setSuggestions] = useState<any>({});
+  const [suggestionsLoading, setSuggestionsLoading] = useState(true);
 
   // --- Listing Modal State (copied/adapted from my-listings) ---
   const [profileType, setProfileType] = useState("");
@@ -435,6 +367,83 @@ export default function Page() {
     }
   }, [user]);
 
+  // Fetch alerts
+  useEffect(() => {
+    if (user) {
+      setAlertsLoading(true);
+      (async () => {
+        try {
+          const response = await fetch('/api/alerts?status=active');
+          if (response.ok) {
+            const data = await response.json();
+            setAlerts(data.alerts || []);
+          }
+        } catch (error) {
+          console.error('Error fetching alerts:', error);
+          setAlerts([]);
+        } finally {
+          setAlertsLoading(false);
+        }
+      })();
+    }
+  }, [user]);
+
+  // Fetch suggestions
+  useEffect(() => {
+    if (user) {
+      setSuggestionsLoading(true);
+      (async () => {
+        try {
+          const response = await fetch('/api/suggestions?type=all&limit=5');
+          if (response.ok) {
+            const data = await response.json();
+            setSuggestions(data.suggestions || {});
+          }
+        } catch (error) {
+          console.error('Error fetching suggestions:', error);
+          setSuggestions({});
+        } finally {
+          setSuggestionsLoading(false);
+        }
+      })();
+    }
+  }, [user]);
+
+  // Handle alert toggle
+  const handleAlertToggle = async (alertId: string, currentStatus: boolean) => {
+    try {
+      const response = await fetch(`/api/alerts/${alertId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ is_active: !currentStatus }),
+      });
+
+      if (response.ok) {
+        // Update local state
+        setAlerts(alerts.map(alert => 
+          alert.id === alertId 
+            ? { ...alert, is_active: !currentStatus }
+            : alert
+        ));
+        toast({
+          title: !currentStatus ? 'Alert activated' : 'Alert deactivated',
+          description: !currentStatus ? 'You will now receive notifications for this alert.' : 'You will no longer receive notifications for this alert.',
+        });
+      } else {
+        throw new Error('Failed to update alert');
+      }
+    } catch (error) {
+      console.error('Error updating alert:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update alert. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   // Unread messages count
   const unreadMessages = messages.filter(
     (msg) => msg.receiver_id === user?.id && !msg.read
@@ -480,6 +489,9 @@ export default function Page() {
       type: 'listing'
     })),
   ];
+
+  // Active alerts count
+  const activeAlertsCount = alerts.filter(alert => alert.is_active).length;
 
   // Loading state
   if (userLoading || favoritesLoading || connectionsLoading || messagesLoading || listingsLoading) {
@@ -545,8 +557,10 @@ export default function Page() {
             <BellRing className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">-</div>
-            <p className="text-xs text-muted-foreground">Coming soon</p>
+            <div className="text-2xl font-bold">{alertsLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : activeAlertsCount}</div>
+            <p className="text-xs text-muted-foreground">
+              {alertsLoading ? "Loading..." : activeAlertsCount > 0 ? `${activeAlertsCount} active` : "No active alerts"}
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -690,41 +704,53 @@ export default function Page() {
             </Link>
           </CardHeader>
           <CardContent className="grid gap-4">
-            {myFavorites.map((item) => (
-              <div key={item.id} className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <Avatar>
-                    <AvatarImage src={item.avatar ?? undefined} />
-                    <AvatarFallback>{item.name?.charAt(0)}</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    {item.type === 'profile' ? (
-                      <p className="text-sm font-medium leading-none">
-                        <Link
-                          href={`/dashboard/profile/${item.id}`}
-                          className="hover:underline text-primary"
-                          legacyBehavior>
-                          {item.name}
-                        </Link>
-                      </p>
-                    ) : item.type === 'listing' ? (
-                      <p className="text-sm font-medium leading-none">
-                        <Link
-                          href={`/dashboard/listings/${item.id}?source=dashboard`}
-                          className="hover:underline text-primary"
-                          legacyBehavior>
-                          {item.name}
-                        </Link>
-                      </p>
-                    ) : (
-                      <p className="text-sm font-medium leading-none">{item.name}</p>
-                    )}
-                    <p className="text-sm text-muted-foreground">{item.role}</p>
-                  </div>
-                </div>
-                {item.starred && <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />}
+            {favoritesLoading ? (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="h-4 w-4 animate-spin" />
               </div>
-            ))}
+            ) : myFavorites.length === 0 ? (
+              <div className="text-center py-4 text-muted-foreground">
+                <Star className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">No favorites yet</p>
+                <p className="text-xs">Start exploring to save your favorites</p>
+              </div>
+            ) : (
+              myFavorites.map((item) => (
+                <div key={item.id} className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <Avatar>
+                      <AvatarImage src={item.avatar ?? undefined} />
+                      <AvatarFallback>{item.name?.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      {item.type === 'profile' ? (
+                        <p className="text-sm font-medium leading-none">
+                          <Link
+                            href={`/dashboard/profile/${item.id}`}
+                            className="hover:underline text-primary"
+                            legacyBehavior>
+                            {item.name}
+                          </Link>
+                        </p>
+                      ) : item.type === 'listing' ? (
+                        <p className="text-sm font-medium leading-none">
+                          <Link
+                            href={`/dashboard/listings/${item.id}?source=dashboard`}
+                            className="hover:underline text-primary"
+                            legacyBehavior>
+                            {item.name}
+                          </Link>
+                        </p>
+                      ) : (
+                        <p className="text-sm font-medium leading-none">{item.name}</p>
+                      )}
+                      <p className="text-sm text-muted-foreground">{item.role}</p>
+                    </div>
+                  </div>
+                  {item.starred && <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />}
+                </div>
+              ))
+            )}
           </CardContent>
         </Card>
 
@@ -739,18 +765,35 @@ export default function Page() {
             </Link>
           </CardHeader>
           <CardContent className="grid gap-4">
-            {activeAlertsData.map((alert) => (
-              <div key={alert.id} className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <BellRing className="h-4 w-4 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm font-medium leading-none">{alert.name}</p>
-                    <p className="text-sm text-muted-foreground">{alert.criteria}</p>
-                  </div>
-                </div>
-                <Switch checked={alert.status} />
+            {alertsLoading ? (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="h-4 w-4 animate-spin" />
               </div>
-            ))}
+            ) : alerts.length === 0 ? (
+              <div className="text-center py-4 text-muted-foreground">
+                <BellRing className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">No alerts yet</p>
+                <p className="text-xs">Create alerts to get notified of new matches</p>
+              </div>
+            ) : (
+              alerts.slice(0, 3).map((alert) => (
+                <div key={alert.id} className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <BellRing className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm font-medium leading-none">{alert.name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {alert.alert_type === 'profile' ? 'Profile Alert' : 'Listing Alert'} • {alert.frequency}
+                      </p>
+                    </div>
+                  </div>
+                  <Switch 
+                    checked={alert.is_active} 
+                    onCheckedChange={() => handleAlertToggle(alert.id, alert.is_active)}
+                  />
+                </div>
+              ))
+            )}
           </CardContent>
         </Card>
 
@@ -763,20 +806,36 @@ export default function Page() {
             </Button>
           </CardHeader>
           <CardContent className="grid gap-4">
-            {suggestions.map((item) => (
-              <div key={item.id} className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  {item.icon}
-                  <div>
-                    <p className="text-sm font-medium leading-none">{item.title}</p>
-                    <p className="text-sm text-muted-foreground">{item.description}</p>
-                  </div>
-                </div>
-                <Button variant="link" size="sm">
-                  {item.action}
-                </Button>
+            {suggestionsLoading ? (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="h-4 w-4 animate-spin" />
               </div>
-            ))}
+            ) : suggestions.opportunities && suggestions.opportunities.length > 0 ? (
+              suggestions.opportunities.map((item: any) => (
+                <div key={item.id} className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    {item.type === 'profiles' && <UserPlus className="h-4 w-4 text-purple-500" />}
+                    {item.type === 'listings' && <Lightbulb className="h-4 w-4 text-orange-500" />}
+                    {item.type === 'networking' && <Users className="h-4 w-4 text-blue-500" />}
+                    <div>
+                      <p className="text-sm font-medium leading-none">{item.title}</p>
+                      <p className="text-sm text-muted-foreground">{item.description}</p>
+                    </div>
+                  </div>
+                  <Link href={item.href} passHref legacyBehavior>
+                    <Button variant="link" size="sm">
+                      {item.action}
+                    </Button>
+                  </Link>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-4 text-muted-foreground">
+                <Lightbulb className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">No suggestions yet</p>
+                <p className="text-xs">Complete your profile to get personalized suggestions</p>
+              </div>
+            )}
           </CardContent>
         </Card>
 

@@ -418,38 +418,209 @@ export default function ProfileSettingsPage() {
                                     value={userProfile.professional_role || ''}
                                     onValueChange={handleSelectChange('professional_role')}
                                 >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select your professional role (e.g., Software Engineer, Founder)" />
+                                    <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="Select your professional role" />
                                     </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="Founder">Founder</SelectItem>
-                                        <SelectItem value="Startup Owner">Startup Owner</SelectItem>
-                                        <SelectItem value="CEO">CEO</SelectItem>
-                                        <SelectItem value="CTO">CTO</SelectItem>
-                                        <SelectItem value="COO">COO</SelectItem>
-                                        <SelectItem value="CFO">CFO</SelectItem>
-                                        <SelectItem value="Product Manager">Product Manager</SelectItem>
-                                        <SelectItem value="Software Engineer">Software Engineer</SelectItem>
-                                        <SelectItem value="Frontend Developer">Frontend Developer</SelectItem>
-                                        <SelectItem value="Backend Developer">Backend Developer</SelectItem>
-                                        <SelectItem value="Full Stack Developer">Full Stack Developer</SelectItem>
-                                        <SelectItem value="DevOps Engineer">DevOps Engineer</SelectItem>
-                                        <SelectItem value="Data Scientist">Data Scientist</SelectItem>
-                                        <SelectItem value="UI/UX Designer">UI/UX Designer</SelectItem>
-                                        <SelectItem value="Graphic Designer">Graphic Designer</SelectItem>
-                                        <SelectItem value="Marketing Manager">Marketing Manager</SelectItem>
-                                        <SelectItem value="Sales Manager">Sales Manager</SelectItem>
-                                        <SelectItem value="Business Development">Business Development</SelectItem>
-                                        <SelectItem value="Investor">Investor</SelectItem>
-                                        <SelectItem value="Angel Investor">Angel Investor</SelectItem>
-                                        <SelectItem value="Venture Capitalist">Venture Capitalist</SelectItem>
-                                        <SelectItem value="Freelancer">Freelancer</SelectItem>
-                                        <SelectItem value="Consultant">Consultant</SelectItem>
-                                        <SelectItem value="Expert">Expert</SelectItem>
-                                        <SelectItem value="Advisor">Advisor</SelectItem>
-                                        <SelectItem value="Mentor">Mentor</SelectItem>
-                                        <SelectItem value="Coach">Coach</SelectItem>
-                                        <SelectItem value="Other">Other</SelectItem>
+                                    <SelectContent className="max-h-[400px] w-[400px]">
+                                        
+                                        {/* Product & Design */}
+                                        <div className="px-3 py-2 bg-muted/30">
+                                            <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                                                Product & Design
+                                            </div>
+                                        </div>
+                                        <SelectItem value="Product Designer" className="pl-6">Product Designer</SelectItem>
+                                        <SelectItem value="UX/UI Designer" className="pl-6">UX/UI Designer</SelectItem>
+                                        <SelectItem value="UX/UI Researcher" className="pl-6">UX/UI Researcher</SelectItem>
+                                        <SelectItem value="Graphic Designer" className="pl-6">Graphic Designer</SelectItem>
+                                        <SelectItem value="Social Media Manager" className="pl-6">Social Media Manager</SelectItem>
+                                        <SelectItem value="Brand Designer" className="pl-6">Brand Designer</SelectItem>
+                                        <SelectItem value="Content Manager" className="pl-6">Content Manager</SelectItem>
+                                        <SelectItem value="Digital Designer" className="pl-6">Digital Designer</SelectItem>
+                                        <SelectItem value="Interaction Designer" className="pl-6">Interaction Designer</SelectItem>
+                                        <SelectItem value="Web Designer" className="pl-6">Web Designer</SelectItem>
+                                        
+                                        {/* Tech & Development */}
+                                        <div className="px-3 py-2 bg-muted/30">
+                                            <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                                                Tech & Development
+                                            </div>
+                                        </div>
+                                        <SelectItem value="CEO (Operational Tech Role)" className="pl-6">CEO (Operational Tech Role)</SelectItem>
+                                        <SelectItem value="CTO" className="pl-6">CTO</SelectItem>
+                                        <SelectItem value="Backend Developer" className="pl-6">Backend Developer</SelectItem>
+                                        <SelectItem value="Frontend Developer" className="pl-6">Frontend Developer</SelectItem>
+                                        <SelectItem value="Full-stack Developer" className="pl-6">Full-stack Developer</SelectItem>
+                                        <SelectItem value="Mobile Developer (iOS, Android)" className="pl-6">Mobile Developer (iOS, Android)</SelectItem>
+                                        <SelectItem value="No-code Developer" className="pl-6">No-code Developer</SelectItem>
+                                        <SelectItem value="DevOps Engineer" className="pl-6">DevOps Engineer</SelectItem>
+                                        <SelectItem value="QA Tester" className="pl-6">QA Tester</SelectItem>
+                                        <SelectItem value="Security Engineer" className="pl-6">Security Engineer</SelectItem>
+                                        <SelectItem value="Cloud Architect" className="pl-6">Cloud Architect</SelectItem>
+                                        <SelectItem value="Blockchain Developer" className="pl-6">Blockchain Developer</SelectItem>
+                                        <SelectItem value="AI/ML Engineer" className="pl-6">AI/ML Engineer</SelectItem>
+                                        <SelectItem value="Performance Engineer" className="pl-6">Performance Engineer</SelectItem>
+                                        <SelectItem value="Database Administrator (DBA)" className="pl-6">Database Administrator (DBA)</SelectItem>
+                                        <SelectItem value="Systems Architect" className="pl-6">Systems Architect</SelectItem>
+                                        
+                                        {/* Growth & Marketing */}
+                                        <div className="px-3 py-2 bg-muted/30">
+                                            <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                                                Growth & Marketing
+                                            </div>
+                                        </div>
+                                        <SelectItem value="Growth Hacker" className="pl-6">Growth Hacker</SelectItem>
+                                        <SelectItem value="Marketing Specialist" className="pl-6">Marketing Specialist</SelectItem>
+                                        <SelectItem value="Performance Marketing Manager" className="pl-6">Performance Marketing Manager</SelectItem>
+                                        <SelectItem value="Customer Acquisition Manager" className="pl-6">Customer Acquisition Manager</SelectItem>
+                                        <SelectItem value="Growth Manager" className="pl-6">Growth Manager</SelectItem>
+                                        <SelectItem value="Digital Marketing Specialist" className="pl-6">Digital Marketing Specialist</SelectItem>
+                                        <SelectItem value="Event Manager" className="pl-6">Event Manager</SelectItem>
+                                        <SelectItem value="Email Marketing Specialist" className="pl-6">Email Marketing Specialist</SelectItem>
+                                        <SelectItem value="Influencer Relations Manager" className="pl-6">Influencer Relations Manager</SelectItem>
+                                        <SelectItem value="PR Specialist" className="pl-6">PR Specialist</SelectItem>
+                                        <SelectItem value="Community Manager" className="pl-6">Community Manager</SelectItem>
+                                        <SelectItem value="Content Strategist" className="pl-6">Content Strategist</SelectItem>
+                                        <SelectItem value="SEO/SEM Specialist" className="pl-6">SEO/SEM Specialist</SelectItem>
+                                        <SelectItem value="Affiliate Marketing Manager" className="pl-6">Affiliate Marketing Manager</SelectItem>
+                                        <SelectItem value="Product Marketing Manager" className="pl-6">Product Marketing Manager</SelectItem>
+                                        <SelectItem value="Brand Marketing Manager" className="pl-6">Brand Marketing Manager</SelectItem>
+                                        <SelectItem value="Partnership Manager" className="pl-6">Partnership Manager</SelectItem>
+                                        
+                                        {/* Operations */}
+                                        <div className="px-3 py-2 bg-muted/30">
+                                            <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                                                Operations
+                                            </div>
+                                        </div>
+                                        <SelectItem value="Customer Support" className="pl-6">Customer Support</SelectItem>
+                                        <SelectItem value="Customer Success Manager" className="pl-6">Customer Success Manager</SelectItem>
+                                        <SelectItem value="Operations Manager" className="pl-6">Operations Manager</SelectItem>
+                                        <SelectItem value="Supply Chain Manager" className="pl-6">Supply Chain Manager</SelectItem>
+                                        <SelectItem value="Procurement Manager" className="pl-6">Procurement Manager</SelectItem>
+                                        <SelectItem value="Logistics Manager" className="pl-6">Logistics Manager</SelectItem>
+                                        <SelectItem value="Business Operations Analyst" className="pl-6">Business Operations Analyst</SelectItem>
+                                        <SelectItem value="Facilities Manager" className="pl-6">Facilities Manager</SelectItem>
+                                        <SelectItem value="Data Entry Specialist" className="pl-6">Data Entry Specialist</SelectItem>
+                                        <SelectItem value="Business Process Analyst" className="pl-6">Business Process Analyst</SelectItem>
+                                        
+                                        {/* Legal, Finance & Operations */}
+                                        <div className="px-3 py-2 bg-muted/30">
+                                            <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                                                Legal, Finance & Operations
+                                            </div>
+                                        </div>
+                                        <SelectItem value="Legal Counsel" className="pl-6">Legal Counsel</SelectItem>
+                                        <SelectItem value="Business Lawyer" className="pl-6">Business Lawyer</SelectItem>
+                                        <SelectItem value="Tax Lawyer" className="pl-6">Tax Lawyer</SelectItem>
+                                        <SelectItem value="IP Lawyer (Intellectual Property)" className="pl-6">IP Lawyer (Intellectual Property)</SelectItem>
+                                        <SelectItem value="Financial Analyst" className="pl-6">Financial Analyst</SelectItem>
+                                        <SelectItem value="Accountant" className="pl-6">Accountant</SelectItem>
+                                        <SelectItem value="Bookkeeper" className="pl-6">Bookkeeper</SelectItem>
+                                        <SelectItem value="Tax Consultant" className="pl-6">Tax Consultant</SelectItem>
+                                        <SelectItem value="Fundraiser" className="pl-6">Fundraiser</SelectItem>
+                                        <SelectItem value="IP Agent (Intellectual Property Agent)" className="pl-6">IP Agent (Intellectual Property Agent)</SelectItem>
+                                        <SelectItem value="Regulatory Affairs Specialist" className="pl-6">Regulatory Affairs Specialist</SelectItem>
+                                        <SelectItem value="Compliance Officer" className="pl-6">Compliance Officer</SelectItem>
+                                        <SelectItem value="Sustainability Manager" className="pl-6">Sustainability Manager</SelectItem>
+                                        <SelectItem value="Risk Manager" className="pl-6">Risk Manager</SelectItem>
+                                        <SelectItem value="Insurance Manager" className="pl-6">Insurance Manager</SelectItem>
+                                        <SelectItem value="Corporate Treasurer" className="pl-6">Corporate Treasurer</SelectItem>
+                                        <SelectItem value="Investment Analyst" className="pl-6">Investment Analyst</SelectItem>
+                                        <SelectItem value="Investor Relations Manager" className="pl-6">Investor Relations Manager</SelectItem>
+                                        
+                                        {/* Human Resources & Recruiting */}
+                                        <div className="px-3 py-2 bg-muted/30">
+                                            <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                                                Human Resources & Recruiting
+                                            </div>
+                                        </div>
+                                        <SelectItem value="HR Manager" className="pl-6">HR Manager</SelectItem>
+                                        <SelectItem value="Recruiter" className="pl-6">Recruiter</SelectItem>
+                                        <SelectItem value="Talent Acquisition Specialist" className="pl-6">Talent Acquisition Specialist</SelectItem>
+                                        <SelectItem value="HR Generalist" className="pl-6">HR Generalist</SelectItem>
+                                        <SelectItem value="Compensation and Benefits Manager" className="pl-6">Compensation and Benefits Manager</SelectItem>
+                                        <SelectItem value="Training and Development Manager" className="pl-6">Training and Development Manager</SelectItem>
+                                        <SelectItem value="Employee Engagement Manager" className="pl-6">Employee Engagement Manager</SelectItem>
+                                        <SelectItem value="HR Business Partner" className="pl-6">HR Business Partner</SelectItem>
+                                        <SelectItem value="Learning and Development Specialist" className="pl-6">Learning and Development Specialist</SelectItem>
+                                        <SelectItem value="HR Coordinator" className="pl-6">HR Coordinator</SelectItem>
+                                        
+                                        {/* Mentorship & Advisory */}
+                                        <div className="px-3 py-2 bg-muted/30">
+                                            <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                                                Mentorship & Advisory
+                                            </div>
+                                        </div>
+                                        <SelectItem value="Mentor" className="pl-6">Mentor</SelectItem>
+                                        <SelectItem value="Advisor" className="pl-6">Advisor</SelectItem>
+                                        <SelectItem value="Venture Partner" className="pl-6">Venture Partner</SelectItem>
+                                        <SelectItem value="Portfolio Manager" className="pl-6">Portfolio Manager</SelectItem>
+                                        <SelectItem value="Investment Advisor" className="pl-6">Investment Advisor</SelectItem>
+                                        <SelectItem value="Business Consultant" className="pl-6">Business Consultant</SelectItem>
+                                        <SelectItem value="Startup Mentor" className="pl-6">Startup Mentor</SelectItem>
+                                        <SelectItem value="Growth Advisor" className="pl-6">Growth Advisor</SelectItem>
+                                        
+                                        {/* Individual Investors */}
+                                        <div className="px-3 py-2 bg-muted/30">
+                                            <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                                                Individual Investors
+                                            </div>
+                                        </div>
+                                        <SelectItem value="Business Angel" className="pl-6">Business Angel</SelectItem>
+                                        <SelectItem value="Advisor (Investor + Advisor)" className="pl-6">Advisor (Investor + Advisor)</SelectItem>
+                                        <SelectItem value="Crowdfunding Contributor" className="pl-6">Crowdfunding Contributor</SelectItem>
+                                        
+                                        {/* Private Investment Structures */}
+                                        <div className="px-3 py-2 bg-muted/30">
+                                            <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                                                Private Investment Structures
+                                            </div>
+                                        </div>
+                                        <SelectItem value="Venture Capitalists (VC)" className="pl-6">Venture Capitalists (VC)</SelectItem>
+                                        <SelectItem value="Family Office" className="pl-6">Family Office</SelectItem>
+                                        <SelectItem value="Private Equity Firms" className="pl-6">Private Equity Firms</SelectItem>
+                                        
+                                        {/* Public Structures */}
+                                        <div className="px-3 py-2 bg-muted/30">
+                                            <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                                                Public Structures
+                                            </div>
+                                        </div>
+                                        <SelectItem value="BPI (Business Public Investment)" className="pl-6">BPI (Business Public Investment)</SelectItem>
+                                        <SelectItem value="Government-backed Funds" className="pl-6">Government-backed Funds</SelectItem>
+                                        <SelectItem value="Incubators / Accelerators" className="pl-6">Incubators / Accelerators</SelectItem>
+                                        
+                                        {/* Specialized Investment Funds */}
+                                        <div className="px-3 py-2 bg-muted/30">
+                                            <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                                                Specialized Investment Funds
+                                            </div>
+                                        </div>
+                                        <SelectItem value="Crowdfunding" className="pl-6">Crowdfunding</SelectItem>
+                                        <SelectItem value="Impact Funds" className="pl-6">Impact Funds</SelectItem>
+                                        <SelectItem value="Sector-Specific Funds" className="pl-6">Sector-Specific Funds</SelectItem>
+                                        
+                                        <SelectItem value="Founder" className="pl-6">Founder</SelectItem>
+                                        <SelectItem value="Startup Owner" className="pl-6">Startup Owner</SelectItem>
+                                        <SelectItem value="CEO" className="pl-6">CEO</SelectItem>
+                                        <SelectItem value="COO" className="pl-6">COO</SelectItem>
+                                        <SelectItem value="CFO" className="pl-6">CFO</SelectItem>
+                                        <SelectItem value="Product Manager" className="pl-6">Product Manager</SelectItem>
+                                        <SelectItem value="Software Engineer" className="pl-6">Software Engineer</SelectItem>
+                                        <SelectItem value="Data Scientist" className="pl-6">Data Scientist</SelectItem>
+                                        <SelectItem value="UI/UX Designer" className="pl-6">UI/UX Designer</SelectItem>
+                                        <SelectItem value="Marketing Manager" className="pl-6">Marketing Manager</SelectItem>
+                                        <SelectItem value="Sales Manager" className="pl-6">Sales Manager</SelectItem>
+                                        <SelectItem value="Business Development" className="pl-6">Business Development</SelectItem>
+                                        <SelectItem value="Investor" className="pl-6">Investor</SelectItem>
+                                        <SelectItem value="Angel Investor" className="pl-6">Angel Investor</SelectItem>
+                                        <SelectItem value="Venture Capitalist" className="pl-6">Venture Capitalist</SelectItem>
+                                        <SelectItem value="Freelancer" className="pl-6">Freelancer</SelectItem>
+                                        <SelectItem value="Consultant" className="pl-6">Consultant</SelectItem>
+                                        <SelectItem value="Expert" className="pl-6">Expert</SelectItem>
+                                        <SelectItem value="Coach" className="pl-6">Coach</SelectItem>
+                                        <SelectItem value="Other" className="pl-6">Other</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
