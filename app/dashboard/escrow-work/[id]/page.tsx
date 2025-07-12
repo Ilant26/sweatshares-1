@@ -41,7 +41,10 @@ import {
   Video as FileVideo,
   Music as FileAudio,
   File,
-  FolderOpen
+  FolderOpen,
+  CheckSquare,
+  XSquare,
+  ExternalLink
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -74,12 +77,13 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { format, formatDistanceToNow, addDays } from 'date-fns';
+import { EscrowNotificationStatus } from '@/components/escrow-notification-status';
 
 interface EscrowTransaction {
   id: string;
   amount: number;
   currency: string;
-  status: 'pending' | 'paid_in_escrow' | 'work_completed' | 'approved' | 'revision_requested' | 'disputed' | 'released' | 'refunded';
+  status: 'pending' | 'paid_in_escrow' | 'funded' | 'work_completed' | 'approved' | 'revision_requested' | 'disputed' | 'released' | 'refunded';
   payer_id: string;
   payee_id: string;
   invoice_id: string;
@@ -171,6 +175,22 @@ export default function EscrowWorkPage() {
     file: null as File | null
   });
   const documentFileRef = useRef<HTMLInputElement>(null);
+
+  // Work completion submission state
+  const [showWorkCompletionDialog, setShowWorkCompletionDialog] = useState(false);
+  const [submittingWork, setSubmittingWork] = useState(false);
+  const [workCompletionData, setWorkCompletionData] = useState({
+    description: '',
+    notes: '',
+    links: [''],
+    files: [] as File[]
+  });
+  const workCompletionFileRef = useRef<HTMLInputElement>(null);
+
+  // Work approval state
+  const [showApprovalDialog, setShowApprovalDialog] = useState(false);
+  const [approvingWork, setApprovingWork] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState('');
 
   const invoiceId = params.id as string;
 
@@ -434,6 +454,152 @@ export default function EscrowWorkPage() {
     }
   };
 
+  // Work completion submission handler
+  const handleSubmitWorkCompletion = async () => {
+    if (!escrowTransaction) return;
+
+    setSubmittingWork(true);
+    try {
+      // Upload files if any
+      const uploadedFiles: string[] = [];
+      for (const file of workCompletionData.files) {
+        const fileName = `work-completion/${escrowTransaction.id}/${Date.now()}-${file.name}`;
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('escrow-documents')
+          .upload(fileName, file);
+
+        if (uploadError) {
+          throw uploadError;
+        }
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('escrow-documents')
+          .getPublicUrl(fileName);
+
+        uploadedFiles.push(publicUrl);
+      }
+
+      // Filter out empty links
+      const validLinks = workCompletionData.links.filter(link => link.trim() !== '');
+
+      const completionProof = {
+        files: uploadedFiles.map(url => ({ name: '', url, type: 'file' })),
+        links: validLinks,
+        notes: workCompletionData.notes,
+        description: workCompletionData.description
+      };
+
+      const response = await fetch('/api/escrow/submit-work-completion', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          escrowTransactionId: escrowTransaction.id,
+          description: workCompletionData.description,
+          notes: workCompletionData.notes,
+          links: validLinks,
+          files: uploadedFiles
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to submit work completion');
+      }
+
+      const result = await response.json();
+
+      // Update local state
+      setEscrowTransaction(prev => prev ? {
+        ...prev,
+        status: 'work_completed',
+        completion_proof: {
+          ...completionProof,
+          files: uploadedFiles.map(url => ({ name: '', url, type: 'file' }))
+        },
+        completion_submitted_at: new Date().toISOString(),
+        dispute_reason: undefined // Clear any previous revision request
+      } : null);
+
+      setShowWorkCompletionDialog(false);
+      setWorkCompletionData({
+        description: '',
+        notes: '',
+        links: [''],
+        files: []
+      });
+
+      toast({
+        title: "Work submitted successfully",
+        description: "Your work has been submitted for client review.",
+      });
+    } catch (error) {
+      console.error('Error submitting work completion:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to submit work completion. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setSubmittingWork(false);
+    }
+  };
+
+  // Work approval handler
+  const handleApproveWork = async (approve: boolean) => {
+    if (!escrowTransaction) return;
+
+    setApprovingWork(true);
+    try {
+      const response = await fetch('/api/escrow/approve-work', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          escrowTransactionId: escrowTransaction.id,
+          approve,
+          rejectionReason: approve ? undefined : rejectionReason
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to process work approval');
+      }
+
+      const result = await response.json();
+
+      // Update local state
+      setEscrowTransaction(prev => prev ? {
+        ...prev,
+        status: approve ? 'approved' : 'revision_requested',
+        completion_approved_at: approve ? new Date().toISOString() : undefined,
+        dispute_reason: approve ? undefined : rejectionReason
+      } : null);
+
+      setShowApprovalDialog(false);
+      setRejectionReason('');
+
+      toast({
+        title: approve ? "Work approved" : "Revision requested",
+        description: approve 
+          ? "Payment has been released to the service provider." 
+          : "The service provider has been notified to make revisions.",
+      });
+    } catch (error) {
+      console.error('Error processing work approval:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to process work approval. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setApprovingWork(false);
+    }
+  };
+
   const getFileIcon = (filename: string) => {
     const extension = filename.split('.').pop()?.toLowerCase();
     
@@ -485,6 +651,12 @@ export default function EscrowWorkPage() {
           color: 'bg-blue-100 dark:bg-blue-950/50 text-blue-800 dark:text-blue-200 border-blue-200 dark:border-blue-800',
           icon: Shield
         };
+      case 'funded':
+        return {
+          label: 'Funded',
+          color: 'bg-blue-100 dark:bg-blue-950/50 text-blue-800 dark:text-blue-200 border-blue-200 dark:border-blue-800',
+          icon: Shield
+        };
       case 'work_completed':
         return {
           label: 'Work Submitted',
@@ -509,6 +681,18 @@ export default function EscrowWorkPage() {
           color: 'bg-red-100 dark:bg-red-950/50 text-red-800 dark:text-red-200 border-red-200 dark:border-red-800',
           icon: AlertTriangle
         };
+      case 'released':
+        return {
+          label: 'Payment Released',
+          color: 'bg-green-100 dark:bg-green-950/50 text-green-800 dark:text-green-200 border-green-200 dark:border-green-800',
+          icon: CheckCircle
+        };
+      case 'refunded':
+        return {
+          label: 'Payment Refunded',
+          color: 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-200 dark:border-gray-700',
+          icon: AlertCircle
+        };
       default:
         return {
           label: 'Unknown',
@@ -524,10 +708,13 @@ export default function EscrowWorkPage() {
     switch (escrowTransaction.status) {
       case 'pending': return 10;
       case 'paid_in_escrow': return 30;
+      case 'funded': return 30;
       case 'work_completed': return 70;
       case 'approved': return 100;
+      case 'released': return 100;
       case 'revision_requested': return 50;
       case 'disputed': return 0;
+      case 'refunded': return 0;
       default: return 0;
     }
   };
@@ -687,6 +874,19 @@ export default function EscrowWorkPage() {
                     <span>{timeRemaining}</span>
                   </div>
                 )}
+
+                {/* Debug Information */}
+                <div className="mt-4 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                  <p className="text-xs text-gray-600 dark:text-gray-400">
+                    <strong>Debug Info:</strong><br />
+                    Status: {escrowTransaction.status}<br />
+                    User Role: {userRole}<br />
+                    Payer ID: {escrowTransaction.payer_id}<br />
+                    Payee ID: {escrowTransaction.payee_id}<br />
+                    Has Completion Proof: {escrowTransaction.completion_proof ? 'Yes' : 'No'}<br />
+                    Completion Submitted: {escrowTransaction.completion_submitted_at ? 'Yes' : 'No'}
+                  </p>
+                </div>
               </CardContent>
             </Card>
 
@@ -734,6 +934,439 @@ export default function EscrowWorkPage() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Work Completion Section - For Payee */}
+            {userRole === 'payee' && escrowTransaction.status === 'paid_in_escrow' && (
+              <Card className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/50">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
+                    <CheckSquare className="h-5 w-5" />
+                    Submit Work Completion
+                  </CardTitle>
+                  <CardDescription className="text-blue-600 dark:text-blue-400">
+                    Upload your completed work and deliverables for client review.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button 
+                    onClick={() => setShowWorkCompletionDialog(true)}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Submit Work for Review
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Work Review Section - For Payer */}
+            {userRole === 'payer' && (escrowTransaction.status === 'work_completed' || escrowTransaction.status === 'funded') && (
+              <Card className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/50">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-green-700 dark:text-green-300">
+                    <Eye className="h-5 w-5" />
+                    Review Submitted Work
+                  </CardTitle>
+                  <CardDescription className="text-green-600 dark:text-green-400">
+                    Review the submitted work and approve or request changes.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Display completion proof if available */}
+                  {escrowTransaction.completion_proof && (
+                    <div className="space-y-3">
+                      {escrowTransaction.completion_proof.description && (
+                        <div>
+                          <Label className="text-sm font-medium text-green-800 dark:text-green-200">Description</Label>
+                          <p className="text-sm text-green-700 dark:text-green-300 mt-1">
+                            {escrowTransaction.completion_proof.description}
+                          </p>
+                        </div>
+                      )}
+                      
+                      {escrowTransaction.completion_proof.notes && (
+                        <div>
+                          <Label className="text-sm font-medium text-green-800 dark:text-green-200">Notes</Label>
+                          <p className="text-sm text-green-700 dark:text-green-300 mt-1">
+                            {escrowTransaction.completion_proof.notes}
+                          </p>
+                        </div>
+                      )}
+
+                      {escrowTransaction.completion_proof.files && escrowTransaction.completion_proof.files.length > 0 && (
+                        <div>
+                          <Label className="text-sm font-medium text-green-800 dark:text-green-200">Submitted Files</Label>
+                          <div className="mt-2 space-y-2">
+                            {escrowTransaction.completion_proof.files.map((file, index) => (
+                              <div key={index} className="flex items-center gap-2 p-2 bg-white dark:bg-gray-800 rounded border">
+                                <FileText className="h-4 w-4 text-gray-500" />
+                                <span className="text-sm text-green-700 dark:text-green-300">{file.name || `File ${index + 1}`}</span>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => window.open(file.url, '_blank')}
+                                  className="ml-auto"
+                                >
+                                  <ExternalLink className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {escrowTransaction.completion_proof.links && escrowTransaction.completion_proof.links.length > 0 && (
+                        <div>
+                          <Label className="text-sm font-medium text-green-800 dark:text-green-200">Submitted Links</Label>
+                          <div className="mt-2 space-y-2">
+                            {escrowTransaction.completion_proof.links.map((link, index) => (
+                              <div key={index} className="flex items-center gap-2 p-2 bg-white dark:bg-gray-800 rounded border">
+                                <LinkIcon className="h-4 w-4 text-gray-500" />
+                                <span className="text-sm text-green-700 dark:text-green-300 truncate">{link}</span>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => window.open(link, '_blank')}
+                                  className="ml-auto"
+                                >
+                                  <ExternalLink className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="flex gap-3 pt-4">
+                    <Button 
+                      onClick={() => handleApproveWork(true)}
+                      disabled={approvingWork}
+                      className="bg-green-600 hover:bg-green-700 flex-1"
+                    >
+                      {approvingWork ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          <ThumbsUp className="h-4 w-4 mr-2" />
+                          Approve & Release Payment
+                        </>
+                      )}
+                    </Button>
+                    <Button 
+                      onClick={() => setShowApprovalDialog(true)}
+                      disabled={approvingWork}
+                      variant="outline"
+                      className="flex-1"
+                    >
+                      <ThumbsDown className="h-4 w-4 mr-2" />
+                      Request Changes
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Payer Status Information */}
+            {userRole === 'payer' && (
+              <Card className="border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-950/50">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-orange-700 dark:text-orange-300">
+                    <Building2 className="h-5 w-5" />
+                    Your Action Required
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {escrowTransaction.status === 'paid_in_escrow' && (
+                    <div className="text-sm text-orange-700 dark:text-orange-300">
+                      <p>• Waiting for service provider to complete and submit work</p>
+                      <p>• You will be notified when work is ready for review</p>
+                      <p>• Current status: <strong>Payment in Escrow</strong></p>
+                    </div>
+                  )}
+                  
+                  {escrowTransaction.status === 'funded' && escrowTransaction.completion_proof && (
+                    <div className="text-sm text-orange-700 dark:text-orange-300">
+                      <p>• Work has been submitted and is ready for your review</p>
+                      <p>• Please review the submitted work above</p>
+                      <p>• Current status: <strong>Funded - Work Ready for Review</strong></p>
+                    </div>
+                  )}
+                  
+                  {escrowTransaction.status === 'funded' && !escrowTransaction.completion_proof && (
+                    <div className="text-sm text-orange-700 dark:text-orange-300">
+                      <p>• Payment is funded and waiting for work completion</p>
+                      <p>• Service provider will submit work when ready</p>
+                      <p>• Current status: <strong>Funded - Awaiting Work</strong></p>
+                    </div>
+                  )}
+                  
+                  {escrowTransaction.status === 'work_completed' && (
+                    <div className="text-sm text-orange-700 dark:text-orange-300">
+                      <p>• Work has been submitted and is ready for your review</p>
+                      <p>• Please review the submitted work above</p>
+                      <p>• Current status: <strong>Work Submitted for Review</strong></p>
+                    </div>
+                  )}
+                  
+                  {escrowTransaction.status === 'approved' && (
+                    <div className="text-sm text-green-700 dark:text-green-300">
+                      <p>• Work has been approved and payment has been released</p>
+                      <p>• Transaction completed successfully</p>
+                      <p>• Current status: <strong>Approved</strong></p>
+                    </div>
+                  )}
+                  
+                  {escrowTransaction.status === 'revision_requested' && (
+                    <div className="text-sm text-orange-700 dark:text-orange-300">
+                      <p>• Changes have been requested from the service provider</p>
+                      <p>• Waiting for revised work to be submitted</p>
+                      <p>• Current status: <strong>Revision Requested</strong></p>
+                    </div>
+                  )}
+                  
+                  {escrowTransaction.status === 'pending' && (
+                    <div className="text-sm text-orange-700 dark:text-orange-300">
+                      <p>• Waiting for payment to be processed</p>
+                      <p>• Once payment is confirmed, work can begin</p>
+                      <p>• Current status: <strong>Pending Payment</strong></p>
+                    </div>
+                  )}
+                  
+                  {escrowTransaction.status === 'released' && (
+                    <div className="text-sm text-green-700 dark:text-green-300">
+                      <p>• Payment has been released to the service provider</p>
+                      <p>• Transaction completed successfully</p>
+                      <p>• Current status: <strong>Payment Released</strong></p>
+                    </div>
+                  )}
+                  
+                  {escrowTransaction.status === 'refunded' && (
+                    <div className="text-sm text-gray-700 dark:text-gray-300">
+                      <p>• Payment has been refunded</p>
+                      <p>• Transaction has been cancelled</p>
+                      <p>• Current status: <strong>Payment Refunded</strong></p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Work Completion Status - For Payee */}
+            {userRole === 'payee' && escrowTransaction.status === 'work_completed' && (
+              <Card className="border-purple-200 bg-purple-50 dark:border-purple-800 dark:bg-purple-950/50">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-purple-700 dark:text-purple-300">
+                    <Clock className="h-5 w-5" />
+                    Work Submitted for Review
+                  </CardTitle>
+                  <CardDescription className="text-purple-600 dark:text-purple-400">
+                    Your work has been submitted and is awaiting client approval.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-sm text-purple-700 dark:text-purple-300">
+                    <p>• Client will review your submitted work</p>
+                    <p>• Payment will be released upon approval</p>
+                    <p>• You may be asked to make revisions if needed</p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Work Approved - For Payee */}
+            {userRole === 'payee' && (escrowTransaction.status === 'approved' || escrowTransaction.status === 'released') && (
+              <Card className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/50">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-green-700 dark:text-green-300">
+                    <CheckCircle className="h-5 w-5" />
+                    Work Approved & Payment Released
+                  </CardTitle>
+                  <CardDescription className="text-green-600 dark:text-green-400">
+                    Congratulations! Your work has been approved and payment has been released.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div className="p-3 bg-white dark:bg-gray-800 rounded-lg border border-green-200 dark:border-green-800">
+                      <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
+                        <Euro className="h-4 w-4" />
+                        <span className="font-medium">Payment Amount: €{escrowTransaction.amount.toFixed(2)}</span>
+                      </div>
+                      <p className="text-sm text-green-600 dark:text-green-400 mt-1">
+                        Payment has been transferred to your connected account
+                      </p>
+                    </div>
+                    
+                    <div className="text-sm text-green-700 dark:text-green-300">
+                      <p>• Your work has been successfully approved by the client</p>
+                      <p>• Payment has been released to your Stripe Connect account</p>
+                      <p>• Transaction completed successfully</p>
+                      {escrowTransaction.completion_approved_at && (
+                        <p>• Approved on: {format(new Date(escrowTransaction.completion_approved_at), 'PPP')}</p>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Work Completed - For Payer */}
+            {userRole === 'payer' && (escrowTransaction.status === 'approved' || escrowTransaction.status === 'released') && (
+              <Card className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/50">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-green-700 dark:text-green-300">
+                    <CheckCircle className="h-5 w-5" />
+                    Transaction Completed
+                  </CardTitle>
+                  <CardDescription className="text-green-600 dark:text-green-400">
+                    Work has been approved and payment has been released to the service provider.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div className="p-3 bg-white dark:bg-gray-800 rounded-lg border border-green-200 dark:border-green-800">
+                      <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
+                        <Euro className="h-4 w-4" />
+                        <span className="font-medium">Payment Released: €{escrowTransaction.amount.toFixed(2)}</span>
+                      </div>
+                      <p className="text-sm text-green-600 dark:text-green-400 mt-1">
+                        Payment has been transferred to the service provider's account
+                      </p>
+                    </div>
+                    
+                    <div className="text-sm text-green-700 dark:text-green-300">
+                      <p>• Work has been successfully approved</p>
+                      <p>• Payment has been released to the service provider</p>
+                      <p>• Transaction completed successfully</p>
+                      {escrowTransaction.completion_approved_at && (
+                        <p>• Approved on: {format(new Date(escrowTransaction.completion_approved_at), 'PPP')}</p>
+                      )}
+                      {escrowTransaction.funds_released_at && (
+                        <p>• Payment released on: {format(new Date(escrowTransaction.funds_released_at), 'PPP')}</p>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Revision Requested - For Payee */}
+            {userRole === 'payee' && escrowTransaction.status === 'revision_requested' && (
+              <Card className="border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-950/50">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-orange-700 dark:text-orange-300">
+                    <AlertTriangle className="h-5 w-5" />
+                    Revision Requested
+                  </CardTitle>
+                  <CardDescription className="text-orange-600 dark:text-orange-400">
+                    The client has requested changes to your submitted work.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Show revision feedback */}
+                  {escrowTransaction.dispute_reason && (
+                    <div className="p-3 bg-white dark:bg-gray-800 rounded-lg border border-orange-200 dark:border-orange-800">
+                      <Label className="text-sm font-medium text-orange-800 dark:text-orange-200">Client Feedback:</Label>
+                      <p className="text-sm text-orange-700 dark:text-orange-300 mt-1">
+                        {escrowTransaction.dispute_reason}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Show previous submission */}
+                  {escrowTransaction.completion_proof && (
+                    <div className="space-y-3">
+                      <Label className="text-sm font-medium text-orange-800 dark:text-orange-200">Previous Submission:</Label>
+                      
+                      {escrowTransaction.completion_proof.description && (
+                        <div className="p-2 bg-white dark:bg-gray-800 rounded border">
+                          <p className="text-xs text-orange-600 dark:text-orange-400 font-medium">Description:</p>
+                          <p className="text-sm text-orange-700 dark:text-orange-300 mt-1">
+                            {escrowTransaction.completion_proof.description}
+                          </p>
+                        </div>
+                      )}
+                      
+                      {escrowTransaction.completion_proof.notes && (
+                        <div className="p-2 bg-white dark:bg-gray-800 rounded border">
+                          <p className="text-xs text-orange-600 dark:text-orange-400 font-medium">Notes:</p>
+                          <p className="text-sm text-orange-700 dark:text-orange-300 mt-1">
+                            {escrowTransaction.completion_proof.notes}
+                          </p>
+                        </div>
+                      )}
+
+                      {escrowTransaction.completion_proof.files && escrowTransaction.completion_proof.files.length > 0 && (
+                        <div className="p-2 bg-white dark:bg-gray-800 rounded border">
+                          <p className="text-xs text-orange-600 dark:text-orange-400 font-medium mb-2">Previous Files:</p>
+                          <div className="space-y-1">
+                            {escrowTransaction.completion_proof.files.map((file, index) => (
+                              <div key={index} className="flex items-center gap-2 text-sm">
+                                <FileText className="h-3 w-3 text-orange-500" />
+                                <span className="text-orange-700 dark:text-orange-300">{file.name || `File ${index + 1}`}</span>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => window.open(file.url, '_blank')}
+                                  className="ml-auto h-6 px-2 text-xs"
+                                >
+                                  <ExternalLink className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {escrowTransaction.completion_proof.links && escrowTransaction.completion_proof.links.length > 0 && (
+                        <div className="p-2 bg-white dark:bg-gray-800 rounded border">
+                          <p className="text-xs text-orange-600 dark:text-orange-400 font-medium mb-2">Previous Links:</p>
+                          <div className="space-y-1">
+                            {escrowTransaction.completion_proof.links.map((link, index) => (
+                              <div key={index} className="flex items-center gap-2 text-sm">
+                                <LinkIcon className="h-3 w-3 text-orange-500" />
+                                <span className="text-orange-700 dark:text-orange-300 truncate">{link}</span>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => window.open(link, '_blank')}
+                                  className="ml-auto h-6 px-2 text-xs"
+                                >
+                                  <ExternalLink className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Action buttons */}
+                  <div className="flex gap-3 pt-4">
+                    <Button 
+                      onClick={() => setShowWorkCompletionDialog(true)}
+                      className="bg-orange-600 hover:bg-orange-700 flex-1"
+                    >
+                      <Upload className="h-4 w-4 mr-2" />
+                      Submit Revised Work
+                    </Button>
+                  </div>
+
+                  <div className="text-sm text-orange-700 dark:text-orange-300">
+                    <p>• Review the client's feedback above</p>
+                    <p>• Make the requested changes to your work</p>
+                    <p>• Submit the revised work for review</p>
+                    <p>• Payment will be released upon approval</p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Project Documents Section */}
             <Card>
@@ -974,6 +1607,9 @@ export default function EscrowWorkPage() {
 
           {/* Sidebar */}
           <div className="space-y-6">
+            {/* Transaction Notifications */}
+            <EscrowNotificationStatus invoiceId={invoiceId} />
+
             {/* User Information */}
             <Card>
               <CardHeader>
@@ -1195,6 +1831,235 @@ export default function EscrowWorkPage() {
                 <>
                   <Upload className="h-4 w-4 mr-2" />
                   Upload Document
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Work Completion Submission Dialog */}
+      <Dialog open={showWorkCompletionDialog} onOpenChange={setShowWorkCompletionDialog}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckSquare className="h-5 w-5" />
+              Submit Work Completion
+            </DialogTitle>
+            <DialogDescription>
+              Upload your completed work, deliverables, and any supporting materials for client review.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-6">
+            {/* Work Description */}
+            <div className="space-y-2">
+              <Label htmlFor="work-description">Work Description *</Label>
+              <Textarea
+                id="work-description"
+                placeholder="Describe the work you've completed..."
+                value={workCompletionData.description}
+                onChange={(e) => setWorkCompletionData(prev => ({ ...prev, description: e.target.value }))}
+                rows={4}
+                required
+              />
+            </div>
+
+            {/* Work Notes */}
+            <div className="space-y-2">
+              <Label htmlFor="work-notes">Additional Notes (Optional)</Label>
+              <Textarea
+                id="work-notes"
+                placeholder="Any additional notes or instructions for the client..."
+                value={workCompletionData.notes}
+                onChange={(e) => setWorkCompletionData(prev => ({ ...prev, notes: e.target.value }))}
+                rows={3}
+              />
+            </div>
+
+            {/* File Uploads */}
+            <div className="space-y-2">
+              <Label>Deliverable Files (Optional)</Label>
+              <div 
+                className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center hover:border-gray-400 dark:hover:border-gray-500 transition-colors cursor-pointer"
+                onClick={() => workCompletionFileRef.current?.click()}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.currentTarget.classList.add('border-blue-500', 'bg-blue-50', 'dark:bg-blue-950/50');
+                }}
+                onDragLeave={(e) => {
+                  e.currentTarget.classList.remove('border-blue-500', 'bg-blue-50', 'dark:bg-blue-950/50');
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  e.currentTarget.classList.remove('border-blue-500', 'bg-blue-50', 'dark:bg-blue-950/50');
+                  const files = Array.from(e.dataTransfer.files);
+                  setWorkCompletionData(prev => ({ ...prev, files: [...prev.files, ...files] }));
+                }}
+              >
+                <Upload className="h-8 w-8 mx-auto text-gray-400 dark:text-gray-500 mb-2" />
+                <p className="font-medium dark:text-gray-100">Click to upload or drag and drop files</p>
+                <p className="text-sm text-muted-foreground">
+                  Upload your completed work files (max 10MB each)
+                </p>
+                <input
+                  ref={workCompletionFileRef}
+                  type="file"
+                  className="hidden"
+                  multiple
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.jpg,.jpeg,.png,.gif,.zip,.rar"
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files || []);
+                    setWorkCompletionData(prev => ({ ...prev, files: [...prev.files, ...files] }));
+                  }}
+                />
+              </div>
+              
+              {/* Display uploaded files */}
+              {workCompletionData.files.length > 0 && (
+                <div className="space-y-2">
+                  <Label>Selected Files:</Label>
+                  <div className="space-y-2">
+                    {workCompletionData.files.map((file, index) => (
+                      <div key={index} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded border">
+                        <div className="flex items-center gap-2">
+                          {getFileIcon(file.name)}
+                          <span className="text-sm dark:text-gray-100">{file.name}</span>
+                          <span className="text-xs text-muted-foreground">
+                            ({(file.size / 1024 / 1024).toFixed(2)} MB)
+                          </span>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setWorkCompletionData(prev => ({
+                            ...prev,
+                            files: prev.files.filter((_, i) => i !== index)
+                          }))}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* External Links */}
+            <div className="space-y-2">
+              <Label>External Links (Optional)</Label>
+              <div className="space-y-2">
+                {workCompletionData.links.map((link, index) => (
+                  <div key={index} className="flex gap-2">
+                    <Input
+                      placeholder="https://example.com"
+                      value={link}
+                      onChange={(e) => {
+                        const newLinks = [...workCompletionData.links];
+                        newLinks[index] = e.target.value;
+                        setWorkCompletionData(prev => ({ ...prev, links: newLinks }));
+                      }}
+                    />
+                    {workCompletionData.links.length > 1 && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setWorkCompletionData(prev => ({
+                          ...prev,
+                          links: prev.links.filter((_, i) => i !== index)
+                        }))}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setWorkCompletionData(prev => ({
+                    ...prev,
+                    links: [...prev.links, '']
+                  }))}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Another Link
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowWorkCompletionDialog(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleSubmitWorkCompletion}
+              disabled={!workCompletionData.description.trim() || submittingWork}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {submittingWork ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Submitting...
+                </>
+              ) : (
+                <>
+                  <Send className="h-4 w-4 mr-2" />
+                  Submit Work for Review
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Work Approval Dialog */}
+      <Dialog open={showApprovalDialog} onOpenChange={setShowApprovalDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ThumbsDown className="h-5 w-5" />
+              Request Changes
+            </DialogTitle>
+            <DialogDescription>
+              Provide feedback on what changes are needed before you can approve the work.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="rejection-reason">Reason for Changes *</Label>
+              <Textarea
+                id="rejection-reason"
+                placeholder="Explain what changes are needed..."
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+                rows={4}
+                required
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowApprovalDialog(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => handleApproveWork(false)}
+              disabled={!rejectionReason.trim() || approvingWork}
+              variant="destructive"
+            >
+              {approvingWork ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <XSquare className="h-4 w-4 mr-2" />
+                  Request Changes
                 </>
               )}
             </Button>

@@ -16,14 +16,24 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const limit = parseInt(searchParams.get('limit') || '20')
     const offset = parseInt(searchParams.get('offset') || '0')
+    const invoiceId = searchParams.get('invoice_id')
 
-    // Fetch notifications for the current user
-    const { data: notifications, error } = await supabase
+    // Build query
+    let query = supabase
       .from('notifications')
       .select('*')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1)
+
+    // Add invoice filter if provided
+    if (invoiceId) {
+      query = query.eq('invoice_id', invoiceId)
+    }
+
+    // Add pagination
+    query = query.range(offset, offset + limit - 1)
+
+    const { data: notifications, error } = await query
 
     if (error) {
       console.error('Error fetching notifications:', error)

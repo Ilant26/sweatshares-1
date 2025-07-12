@@ -112,24 +112,7 @@ const chartData = [
   { date: "May 31", views: 440, messages: 195, connections: 100 },
 ];
 
-const pendingItems = [
-  {
-    id: "1",
-    type: "signature",
-    title: "Signatures in Waiting",
-    description: "3 documents to sign",
-    action: "View",
-    icon: <FileText className="h-4 w-4 text-blue-500" />,
-  },
-  {
-    id: "2",
-    type: "payment",
-    title: "Payments in Waiting",
-    description: "2 invoices to pay",
-    action: "Register",
-    icon: <CreditCard className="h-4 w-4 text-green-500" />,
-  },
-];
+
 
 function renderMessageContent(content: string) {
   try {
@@ -180,6 +163,11 @@ export default function Page() {
   const [alertsLoading, setAlertsLoading] = useState(true);
   const [suggestions, setSuggestions] = useState<any>({});
   const [suggestionsLoading, setSuggestionsLoading] = useState(true);
+  
+  // State for pending items
+  const [pendingSignatures, setPendingSignatures] = useState<any[]>([]);
+  const [pendingInvoices, setPendingInvoices] = useState<any[]>([]);
+  const [pendingLoading, setPendingLoading] = useState(true);
 
   // --- Listing Modal State (copied/adapted from my-listings) ---
   const [profileType, setProfileType] = useState("");
@@ -409,6 +397,46 @@ export default function Page() {
     }
   }, [user]);
 
+  // Fetch pending items (signatures and invoices)
+  useEffect(() => {
+    if (user) {
+      setPendingLoading(true);
+      (async () => {
+        try {
+          // Fetch pending signature requests
+          const { data: signatures } = await supabase
+            .from('signature_requests')
+            .select(`
+              *,
+              document:vault_documents(id, filename, description),
+              sender:profiles!signature_requests_sender_id_fkey(id, full_name, username, avatar_url)
+            `)
+            .eq('receiver_id', user.id)
+            .eq('status', 'pending');
+
+          // Fetch pending invoices
+          const { data: invoices } = await supabase
+            .from('invoices')
+            .select(`
+              *,
+              sender:profiles!invoices_sender_id_fkey(id, full_name, username, avatar_url)
+            `)
+            .eq('receiver_id', user.id)
+            .eq('status', 'pending');
+
+          setPendingSignatures(signatures || []);
+          setPendingInvoices(invoices || []);
+        } catch (error) {
+          console.error('Error fetching pending items:', error);
+          setPendingSignatures([]);
+          setPendingInvoices([]);
+        } finally {
+          setPendingLoading(false);
+        }
+      })();
+    }
+  }, [user]);
+
   // Handle alert toggle
   const handleAlertToggle = async (alertId: string, currentStatus: boolean) => {
     try {
@@ -494,7 +522,7 @@ export default function Page() {
   const activeAlertsCount = alerts.filter(alert => alert.is_active).length;
 
   // Loading state
-  if (userLoading || favoritesLoading || connectionsLoading || messagesLoading || listingsLoading) {
+  if (userLoading || favoritesLoading || connectionsLoading || messagesLoading || listingsLoading || pendingLoading) {
     return <div className="p-8">Loading dashboard...</div>;
   }
 
@@ -638,20 +666,81 @@ export default function Page() {
             <CardTitle>Pending</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-4">
-            {pendingItems.map((item) => (
-              <div key={item.id} className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  {item.icon}
-                  <div>
-                    <p className="text-sm font-medium leading-none">{item.title}</p>
-                    <p className="text-sm text-muted-foreground">{item.description}</p>
-                  </div>
-                </div>
-                <Button variant="link" size="sm">
-                  {item.action}
-                </Button>
+            {pendingLoading ? (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="h-4 w-4 animate-spin" />
               </div>
-            ))}
+            ) : (
+              <>
+                {/* Pending Signatures */}
+                {pendingSignatures.length > 0 && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <FileText className="h-4 w-4 text-blue-500" />
+                        <div>
+                          <p className="text-sm font-medium leading-none">Signatures in Waiting</p>
+                          <p className="text-sm text-muted-foreground">
+                            {pendingSignatures.length} document{pendingSignatures.length !== 1 ? 's' : ''} to sign
+                          </p>
+                        </div>
+                      </div>
+                      <Link href="/dashboard/signature" passHref legacyBehavior>
+                        <Button variant="link" size="sm">
+                          View
+                        </Button>
+                      </Link>
+                    </div>
+                    {/* Show first pending signature as preview */}
+                    {pendingSignatures[0] && (
+                      <div className="ml-6 text-xs text-muted-foreground">
+                        <p className="truncate">
+                          "{pendingSignatures[0].document?.filename || 'Document'}" from {pendingSignatures[0].sender?.full_name || pendingSignatures[0].sender?.username || 'Unknown'}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Pending Invoices */}
+                {pendingInvoices.length > 0 && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <CreditCard className="h-4 w-4 text-green-500" />
+                        <div>
+                          <p className="text-sm font-medium leading-none">Payments in Waiting</p>
+                          <p className="text-sm text-muted-foreground">
+                            {pendingInvoices.length} invoice{pendingInvoices.length !== 1 ? 's' : ''} to pay
+                          </p>
+                        </div>
+                      </div>
+                      <Link href="/dashboard/my-invoices" passHref legacyBehavior>
+                        <Button variant="link" size="sm">
+                          View
+                        </Button>
+                      </Link>
+                    </div>
+                    {/* Show first pending invoice as preview */}
+                    {pendingInvoices[0] && (
+                      <div className="ml-6 text-xs text-muted-foreground">
+                        <p className="truncate">
+                          Invoice #{pendingInvoices[0].invoice_number} - €{pendingInvoices[0].total} from {pendingInvoices[0].sender?.full_name || pendingInvoices[0].sender?.username || 'Unknown'}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* No pending items */}
+                {pendingSignatures.length === 0 && pendingInvoices.length === 0 && (
+                  <div className="text-center py-4 text-muted-foreground">
+                    <p className="text-sm">No pending items</p>
+                    <p className="text-xs">You're all caught up!</p>
+                  </div>
+                )}
+              </>
+            )}
           </CardContent>
         </Card>
 

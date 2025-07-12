@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { submitWorkCompletion, getEscrowTransactions } from '@/lib/escrow';
+import { cookies } from 'next/headers';
 
-export async function PUT(request: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    const supabase = createClientComponentClient();
+    const supabase = createRouteHandlerClient({ cookies });
     
     // Get current user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -38,10 +39,13 @@ export async function PUT(request: NextRequest) {
     };
 
     // Verify user is the payee for this transaction
-    const transactions = await getEscrowTransactions(user.id);
-    const transaction = transactions.find(t => t.id === escrowTransactionId);
-    
-    if (!transaction) {
+    const { data: transaction, error: transactionError } = await supabase
+      .from('escrow_transactions')
+      .select('*')
+      .eq('id', escrowTransactionId)
+      .single();
+
+    if (transactionError || !transaction) {
       return NextResponse.json(
         { error: 'Transaction not found' },
         { status: 404 }
@@ -55,15 +59,34 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    if (transaction.status !== 'paid_in_escrow') {
+    if (transaction.status !== 'paid_in_escrow' && transaction.status !== 'funded' && transaction.status !== 'revision_requested') {
       return NextResponse.json(
-        { error: 'Transaction is not in paid_in_escrow status' },
+        { error: 'Transaction is not in paid_in_escrow, funded, or revision_requested status' },
         { status: 400 }
       );
     }
 
     // Submit work completion
-    const updatedTransaction = await submitWorkCompletion(escrowTransactionId, completionProof);
+    const { data: updatedTransaction, error: submitError } = await supabase
+      .from('escrow_transactions')
+      .update({
+        status: 'work_completed',
+        completion_proof: completionProof,
+        completion_submitted_at: new Date().toISOString(),
+        dispute_reason: null, // Clear any previous revision request
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', escrowTransactionId)
+      .select()
+      .single();
+
+    if (submitError) {
+      console.error('Error submitting work completion:', submitError);
+      return NextResponse.json(
+        { error: 'Failed to submit work completion' },
+        { status: 500 }
+      );
+    }
 
     // Update invoice status
     const { error: invoiceError } = await supabase

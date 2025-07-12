@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { approveWorkCompletion, getEscrowTransactions, calculatePlatformFee, calculateSellerAmount } from '@/lib/escrow';
 import { stripe } from '@/lib/stripe';
+import { cookies } from 'next/headers';
 
 export async function PUT(request: NextRequest) {
   try {
-    const supabase = createClientComponentClient();
+    const supabase = createRouteHandlerClient({ cookies });
     
     // Get current user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -29,10 +30,13 @@ export async function PUT(request: NextRequest) {
     }
 
     // Verify user is the payer for this transaction
-    const transactions = await getEscrowTransactions(user.id);
-    const transaction = transactions.find(t => t.id === escrowTransactionId);
-    
-    if (!transaction) {
+    const { data: transaction, error: transactionError } = await supabase
+      .from('escrow_transactions')
+      .select('*')
+      .eq('id', escrowTransactionId)
+      .single();
+
+    if (transactionError || !transaction) {
       return NextResponse.json(
         { error: 'Transaction not found' },
         { status: 404 }
@@ -46,9 +50,9 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    if (transaction.status !== 'work_completed') {
+    if (transaction.status !== 'work_completed' && transaction.status !== 'funded') {
       return NextResponse.json(
-        { error: 'Transaction is not in work_completed status' },
+        { error: 'Transaction is not in work_completed or funded status' },
         { status: 400 }
       );
     }
@@ -76,8 +80,28 @@ export async function PUT(request: NextRequest) {
         note: 'Platform fee tracking handled in application layer'
       });
 
-      // Approve work completion (this updates status to 'approved' and sets timestamps)
-      updatedTransaction = await approveWorkCompletion(escrowTransactionId);
+      // Approve work completion (update status to 'approved' and set timestamps)
+      const { data: approvedTransaction, error: approveError } = await supabase
+        .from('escrow_transactions')
+        .update({
+          status: 'approved',
+          completion_approved_at: new Date().toISOString(),
+          funds_released_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', escrowTransactionId)
+        .select()
+        .single();
+
+      if (approveError) {
+        console.error('Error approving transaction:', approveError);
+        return NextResponse.json(
+          { error: 'Failed to approve transaction' },
+          { status: 500 }
+        );
+      }
+
+      updatedTransaction = approvedTransaction;
 
       // Update invoice status
       const { error: invoiceError } = await supabase
@@ -87,6 +111,10 @@ export async function PUT(request: NextRequest) {
           completion_approved: true
         })
         .eq('escrow_transaction_id', escrowTransactionId);
+
+      if (invoiceError) {
+        console.error('Error updating invoice:', invoiceError);
+      }
     } else {
       // Request revision
       if (!rejectionReason) {
@@ -96,7 +124,7 @@ export async function PUT(request: NextRequest) {
         );
       }
 
-      updatedTransaction = await supabase
+      const { data: revisionTransaction, error: revisionError } = await supabase
         .from('escrow_transactions')
         .update({
           status: 'revision_requested',
@@ -107,12 +135,15 @@ export async function PUT(request: NextRequest) {
         .select()
         .single();
 
-      if (updatedTransaction.error) {
+      if (revisionError) {
+        console.error('Error requesting revision:', revisionError);
         return NextResponse.json(
           { error: 'Failed to update transaction' },
           { status: 500 }
         );
       }
+
+      updatedTransaction = revisionTransaction;
     }
 
     // Send notification to payee (you can implement this later)

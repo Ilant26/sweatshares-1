@@ -110,14 +110,16 @@ export function NotificationsDropdown() {
         targetUrl = '/dashboard/my-network'
         break
       case 'invoice_request':
+        if (notification.invoice_id) {
+          targetUrl = '/dashboard/my-invoices'
+        } else {
+          targetUrl = '/dashboard/my-invoices'
+        }
+        break
       case 'escrow_payment':
         if (notification.invoice_id) {
-          // Check if it's an escrow payment that needs action
-          if (notification.type === 'escrow_payment' && notification.data?.escrow_status === 'pending_payment') {
-            targetUrl = `/dashboard/escrow-payment/${notification.invoice_id}`
-          } else {
-            targetUrl = '/dashboard/my-invoices'
-          }
+          // Navigate to escrow work page for all escrow notifications
+          targetUrl = `/dashboard/escrow-work/${notification.invoice_id}`
         } else {
           targetUrl = '/dashboard/my-invoices'
         }
@@ -158,7 +160,7 @@ export function NotificationsDropdown() {
     return `${Math.floor(diffInMinutes / 1440)}d ago`
   }
 
-  const getNotificationIcon = (type: string) => {
+  const getNotificationIcon = (type: string, data?: any) => {
     switch (type) {
       case 'message':
         return '💬'
@@ -169,6 +171,27 @@ export function NotificationsDropdown() {
       case 'invoice_request':
         return '📄'
       case 'escrow_payment':
+        // Different icons based on escrow status
+        if (data?.escrow_status) {
+          switch (data.escrow_status) {
+            case 'funded':
+              return '💰'
+            case 'work_completed':
+              return '📋'
+            case 'approved':
+              return '✅'
+            case 'revision_requested':
+              return '🔄'
+            case 'disputed':
+              return '⚠️'
+            case 'released':
+              return '🎉'
+            case 'refunded':
+              return '↩️'
+            default:
+              return '💰'
+          }
+        }
         return '💰'
       case 'vault_share':
         return '📁'
@@ -278,7 +301,7 @@ export function NotificationsDropdown() {
                   </Avatar>
                     ) : (
                       <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-sm">
-                        {getNotificationIcon(notification.type)}
+                        {getNotificationIcon(notification.type, notification.data)}
                       </div>
                     )}
                   </div>
