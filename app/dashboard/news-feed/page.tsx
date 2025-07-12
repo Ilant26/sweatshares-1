@@ -579,7 +579,7 @@ export default function NewsFeedPage() {
       variants={pageVariants}
     >
       <div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-8">
-        <main className="grid flex-1 items-start gap-4 p-4 sm:px-4 sm:py-0 md:gap-6 lg:grid-cols-[220px_1fr_250px] xl:grid-cols-[250px_1fr_300px]">
+        <main className="grid flex-1 items-start gap-4 p-4 sm:px-4 sm:py-0 md:gap-6 lg:grid-cols-[220px_1fr_280px] xl:grid-cols-[250px_1fr_320px] 2xl:grid-cols-[250px_1fr_350px]">
           {/* Left Sidebar */}
           <motion.div className="grid auto-rows-max items-start gap-4 md:gap-8" variants={itemVariants}>
             {/* Profile Card */}
@@ -1079,22 +1079,22 @@ export default function NewsFeedPage() {
           </motion.div>
 
           {/* Right Sidebar */}
-          <motion.div className="grid auto-rows-max items-start gap-4 md:gap-8" variants={itemVariants}>
+          <motion.div className="grid auto-rows-max items-start gap-4 md:gap-8 overflow-hidden" variants={itemVariants}>
             {/* Suggested Connections Card */}
             <motion.div variants={itemVariants}>
-              <Card>
+              <Card className="overflow-hidden">
                 <CardHeader className="pb-2">
                   <h3 className="text-base font-semibold">Suggested Connections</h3>
                 </CardHeader>
-                <CardContent className="grid gap-2">
+                <CardContent className="grid gap-2 overflow-hidden">
                   {suggestedConnections.length > 0 ? (
                     suggestedConnections.map((profile) => (
-                      <div key={profile.id} className="flex items-center space-x-2 p-2 rounded-lg border">
-                        <Avatar className="h-8 w-8">
+                      <div key={profile.id} className="flex items-center space-x-2 p-2 rounded-lg border overflow-hidden">
+                        <Avatar className="h-8 w-8 flex-shrink-0">
                           <AvatarImage src={profile.avatar_url || undefined} alt={profile.full_name || undefined} />
                           <AvatarFallback>{profile.full_name?.charAt(0) || profile.username?.charAt(0) || 'U'}</AvatarFallback>
                         </Avatar>
-                        <div className="flex-1 min-w-0">
+                        <div className="flex-1 min-w-0 overflow-hidden">
                           <h4 
                             className="text-sm font-medium cursor-pointer hover:text-primary transition-colors truncate"
                             onClick={() => handleProfileClick(profile.id)}
@@ -1125,21 +1125,21 @@ export default function NewsFeedPage() {
 
                         {/* Recent Listings Card */}
             <motion.div variants={itemVariants}>
-              <Card>
+              <Card className="overflow-hidden">
                 <CardHeader className="pb-2">
                   <h3 className="text-base font-semibold">Recent Listings</h3>
                 </CardHeader>
-                <CardContent className="grid gap-2">
+                <CardContent className="grid gap-2 overflow-hidden">
                   {recentListings.length > 0 ? (
                     recentListings.map((listing) => (
-                      <div key={listing.id} className="p-2 rounded border hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => router.push(`/dashboard/listings/${listing.id}`)}>
-                        <div className="flex items-center space-x-2">
+                      <div key={listing.id} className="p-2 rounded border hover:bg-muted/50 transition-colors cursor-pointer overflow-hidden" onClick={() => router.push(`/dashboard/listings/${listing.id}`)}>
+                        <div className="flex items-center space-x-2 overflow-hidden">
                           <Avatar className="h-6 w-6 flex-shrink-0">
                             <AvatarImage src={listing.profiles?.avatar_url || undefined} alt={listing.profiles?.full_name || undefined} />
                             <AvatarFallback>{listing.profiles?.full_name?.charAt(0) || 'U'}</AvatarFallback>
                           </Avatar>
                           <div className="flex-1 min-w-0 overflow-hidden">
-                            <div className="flex items-center space-x-1 mb-1">
+                            <div className="flex items-center space-x-1 mb-1 overflow-hidden">
                               <h4 className="text-xs font-bold truncate flex-1">
                                 {listing.profiles?.full_name || listing.profiles?.username || 'Unknown User'}
                               </h4>
