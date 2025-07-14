@@ -54,7 +54,7 @@ export default function VerifyEmailPage() {
       if (error) throw error;
       
       toast.success("Email verified successfully!");
-      router.push("/dashboard");
+      router.push("/onboarding");
     } catch (err: any) {
       toast.error(err.message || "Failed to verify email");
     } finally {

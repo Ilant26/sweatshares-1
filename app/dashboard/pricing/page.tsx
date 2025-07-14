@@ -248,6 +248,12 @@ const INVESTOR_PLANS: PricingPlan[] = [
   }
 ];
 
+// Add color helpers for plan types
+const PLAN_COLORS = {
+  pro: 'blue',
+  premium: 'purple',
+};
+
 export default function PricingPage() {
   const { user } = useUser();
   const [userProfile, setUserProfile] = useState<UserProfile>({});
@@ -380,28 +386,37 @@ export default function PricingPage() {
           const Icon = plan.icon;
           const price = getDiscountedPrice(plan.price);
           const isCurrentPlan = plan.name.toLowerCase() === currentPlan.toLowerCase();
-          
+          const isPro = plan.name.toLowerCase() === 'pro';
+          const isPremium = plan.name.toLowerCase() === 'premium';
           return (
             <Card
               key={plan.id}
               className={cn(
                 "relative transition-all duration-200 hover:shadow-lg",
                 plan.color,
-                plan.popular && "ring-2 ring-primary",
+                plan.popular && isPro && "ring-2 ring-blue-600 border-blue-600",
+                isPremium && "ring-2 ring-purple-600 border-purple-600",
                 isCurrentPlan && "bg-muted/50"
               )}
             >
-              {plan.popular && (
+              {plan.popular && !isPremium && (
                 <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
                   <Badge className="bg-primary text-primary-foreground">
                     Most Popular
                   </Badge>
                 </div>
               )}
-              
+              {isPremium && (
+                <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                  <Badge className="bg-purple-600 text-white">Best Offer</Badge>
+                </div>
+              )}
               <CardHeader className="text-center pb-4">
-                <div className="mx-auto mb-4 p-3 rounded-full bg-primary/10 w-fit">
-                  <Icon className="h-6 w-6 text-primary" />
+                <div className={cn(
+                  "mx-auto mb-4 p-3 rounded-full w-fit",
+                  isPremium ? "bg-purple-100" : isPro ? "bg-blue-100" : "bg-primary/10"
+                )}>
+                  <Icon className={cn("h-6 w-6", isPremium ? "text-purple-600" : isPro ? "text-blue-600" : "text-primary")}/>
                 </div>
                 <CardTitle className="text-xl">{plan.name}</CardTitle>
                 <CardDescription className="text-sm">
@@ -423,24 +438,25 @@ export default function PricingPage() {
                   )}
                 </div>
               </CardHeader>
-              
               <CardContent className="pt-0">
-                <Button 
-                  className="w-full mb-6" 
-                  variant={plan.popular ? "default" : "outline"}
+                <Button
+                  className={cn(
+                    "w-full mb-6",
+                    isPremium ? "bg-purple-600 hover:bg-purple-700 text-white" : isPro ? "bg-blue-600 hover:bg-blue-700 text-white" : plan.popular ? "" : ""
+                  )}
+                  variant={plan.popular && !isPremium && !isPro ? "default" : "outline"}
+                  style={isPremium ? { border: 'none' } : {}}
                   disabled={isCurrentPlan}
                 >
                   {isCurrentPlan ? "Current Plan" : plan.cta}
                 </Button>
-                
                 <div className="space-y-3">
                   {plan.features.map((feature, index) => (
                     <div key={index} className="flex items-start gap-2">
-                      <Check className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                      <Check className={cn("h-4 w-4 mt-0.5 flex-shrink-0 text-green-500")}/>
                       <span className="text-sm">{feature}</span>
                     </div>
                   ))}
-                  
                   {plan.limitations && plan.limitations.map((limitation, index) => (
                     <div key={index} className="flex items-start gap-2">
                       <X className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
@@ -459,7 +475,6 @@ export default function PricingPage() {
         <h2 className="text-2xl font-bold text-center mb-8">
           Feature Comparison
         </h2>
-        
         <div className="overflow-x-auto">
           <div className="min-w-full">
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
@@ -481,40 +496,42 @@ export default function PricingPage() {
                   );
                 })}
               </div>
-
               {/* Plan Columns */}
-              {plans.map((plan) => (
-                <div key={plan.id} className="lg:col-span-1">
-                  <div className={cn(
-                    "h-12 flex items-center justify-center font-semibold rounded-t-lg px-4",
-                    plan.popular ? "bg-primary text-primary-foreground" : "bg-muted"
-                  )}>
-                    {plan.name}
+              {plans.map((plan) => {
+                const isPro = plan.name.toLowerCase() === 'pro';
+                const isPremium = plan.name.toLowerCase() === 'premium';
+                return (
+                  <div key={plan.id} className="lg:col-span-1">
+                    <div className={cn(
+                      "h-12 flex items-center justify-center font-semibold rounded-t-lg px-4",
+                      isPremium ? "bg-purple-600 text-white" : isPro ? "bg-blue-600 text-white" : plan.popular ? "bg-primary text-primary-foreground" : "bg-muted"
+                    )}>
+                      {plan.name}
+                    </div>
+                    {FEATURES_LIST.map((feature) => {
+                      // Determine if feature is included based on plan logic
+                      const isIncluded = getFeatureIncluded(feature.id, plan.id);
+                      const isLimited = getFeatureLimited(feature.id, plan.id);
+                      return (
+                        <div
+                          key={feature.id}
+                          className="h-12 flex items-center justify-center border-b border-border"
+                        >
+                          {isLimited ? (
+                            <Badge variant="outline" className="text-xs">
+                              Limited
+                            </Badge>
+                          ) : isIncluded ? (
+                            <Check className="h-4 w-4 text-green-500" />
+                          ) : (
+                            <X className="h-4 w-4 text-red-500" />
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
-                  {FEATURES_LIST.map((feature) => {
-                    // Determine if feature is included based on plan logic
-                    const isIncluded = getFeatureIncluded(feature.id, plan.id);
-                    const isLimited = getFeatureLimited(feature.id, plan.id);
-                    
-                    return (
-                      <div
-                        key={feature.id}
-                        className="h-12 flex items-center justify-center border-b border-border"
-                      >
-                        {isLimited ? (
-                          <Badge variant="outline" className="text-xs">
-                            Limited
-                          </Badge>
-                        ) : isIncluded ? (
-                          <Check className="h-4 w-4 text-green-500" />
-                        ) : (
-                          <X className="h-4 w-4 text-red-500" />
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>
