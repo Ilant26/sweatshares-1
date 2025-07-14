@@ -100,7 +100,7 @@ export default function ReportABugPage() {
     }));
   };
 
-  return (
+      return (
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-3xl mx-auto">
         {/* Header */}
@@ -109,7 +109,7 @@ export default function ReportABugPage() {
           <p className="text-muted-foreground">
             Provide detailed information about the bug you encountered to help us fix it quickly.
           </p>
-        </div>
+            </div>
 
         {/* Bug Report Form */}
         <Card>
@@ -129,28 +129,28 @@ export default function ReportABugPage() {
                 <h3 className="text-lg font-semibold">Basic Information</h3>
                 
                 {/* Bug Title */}
-                <div className="space-y-2">
-                  <Label htmlFor="title">Bug Title *</Label>
-                  <Input
-                    id="title"
+                    <div className="space-y-2">
+                      <Label htmlFor="title">Bug Title *</Label>
+                      <Input
+                        id="title"
                     value={formData.title}
                     onChange={(e) => handleInputChange('title', e.target.value)}
-                    placeholder="Brief description of the bug"
-                    required
-                  />
-                </div>
+                        placeholder="Brief description of the bug"
+                        required
+                      />
+                    </div>
 
                 {/* Category */}
-                <div className="space-y-2">
-                  <Label htmlFor="category">Category *</Label>
+                    <div className="space-y-2">
+                      <Label htmlFor="category">Category *</Label>
                   <Select 
                     value={formData.category} 
                     onValueChange={(value) => handleInputChange('category', value)}
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select category" />
+                        </SelectTrigger>
+                        <SelectContent>
                       <SelectItem value="ui-ux">UI/UX Issues</SelectItem>
                       <SelectItem value="functionality">Functional Bugs</SelectItem>
                       <SelectItem value="performance">Performance Issues</SelectItem>
@@ -159,91 +159,91 @@ export default function ReportABugPage() {
                       <SelectItem value="browser">Browser Compatibility</SelectItem>
                       <SelectItem value="data">Data Issues</SelectItem>
                       <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                        </SelectContent>
+                      </Select>
+                    </div>
 
                 {/* Severity */}
-                <div className="space-y-2">
-                  <Label htmlFor="severity">Severity</Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="severity">Severity</Label>
                   <Select 
                     value={formData.severity} 
                     onValueChange={(value) => handleInputChange('severity', value)}
                   >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
                       <SelectItem value="low">Low - Minor issue, doesn't affect functionality</SelectItem>
                       <SelectItem value="medium">Medium - Noticeable issue, some impact on usability</SelectItem>
                       <SelectItem value="high">High - Significant issue, affects core functionality</SelectItem>
                       <SelectItem value="critical">Critical - Severe issue, breaks core functionality</SelectItem>
-                    </SelectContent>
-                  </Select>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-              </div>
 
               {/* Bug Details Section */}
-              <div className="space-y-4">
+                <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Bug Details</h3>
-                
+
                 {/* Description */}
-                <div className="space-y-2">
-                  <Label htmlFor="description">Description *</Label>
-                  <Textarea
-                    id="description"
+                    <div className="space-y-2">
+                      <Label htmlFor="description">Description *</Label>
+                      <Textarea
+                        id="description"
                     value={formData.description}
                     onChange={(e) => handleInputChange('description', e.target.value)}
-                    placeholder="Describe the bug in detail..."
-                    rows={4}
-                    required
-                  />
-                </div>
+                        placeholder="Describe the bug in detail..."
+                        rows={4}
+                        required
+                      />
+                    </div>
 
                 {/* Steps to Reproduce */}
-                <div className="space-y-2">
+                    <div className="space-y-2">
                   <Label htmlFor="steps_to_reproduce">Steps to Reproduce</Label>
-                  <Textarea
+                      <Textarea
                     id="steps_to_reproduce"
                     value={formData.steps_to_reproduce}
                     onChange={(e) => handleInputChange('steps_to_reproduce', e.target.value)}
-                    placeholder="1. Go to...&#10;2. Click on...&#10;3. Observe..."
-                    rows={4}
-                  />
-                </div>
+                        placeholder="1. Go to...&#10;2. Click on...&#10;3. Observe..."
+                        rows={4}
+                      />
+                    </div>
 
                 {/* Expected Behavior */}
-                <div className="space-y-2">
+                      <div className="space-y-2">
                   <Label htmlFor="expected_behavior">Expected Behavior</Label>
-                  <Textarea
+                        <Textarea
                     id="expected_behavior"
                     value={formData.expected_behavior}
                     onChange={(e) => handleInputChange('expected_behavior', e.target.value)}
-                    placeholder="What should happen?"
-                    rows={3}
-                  />
-                </div>
+                          placeholder="What should happen?"
+                          rows={3}
+                        />
+                      </div>
 
                 {/* Actual Behavior */}
-                <div className="space-y-2">
+                      <div className="space-y-2">
                   <Label htmlFor="actual_behavior">Actual Behavior</Label>
-                  <Textarea
+                        <Textarea
                     id="actual_behavior"
                     value={formData.actual_behavior}
                     onChange={(e) => handleInputChange('actual_behavior', e.target.value)}
-                    placeholder="What actually happens?"
-                    rows={3}
-                  />
+                          placeholder="What actually happens?"
+                          rows={3}
+                        />
+                  </div>
                 </div>
-              </div>
 
               {/* System Information Section */}
-              <div className="space-y-4">
+                <div className="space-y-4">
                 <h3 className="text-lg font-semibold">System Information</h3>
-                
+
                 {/* Browser */}
-                <div className="space-y-2">
-                  <Label htmlFor="browser">Browser</Label>
+                    <div className="space-y-2">
+                      <Label htmlFor="browser">Browser</Label>
                   <Select 
                     value={formData.browser} 
                     onValueChange={(value) => handleInputChange('browser', value)}
@@ -302,7 +302,7 @@ export default function ReportABugPage() {
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
+                </div>
 
               {/* Submit Button */}
               <Button 
@@ -323,9 +323,9 @@ export default function ReportABugPage() {
                 )}
               </Button>
             </form>
-          </CardContent>
-        </Card>
-      </div>
+              </CardContent>
+            </Card>
+          </div>
     </div>
   );
 } 

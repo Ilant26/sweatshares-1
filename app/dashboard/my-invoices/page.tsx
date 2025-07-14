@@ -77,7 +77,6 @@ import {
   CreditCard,
   Shield,
   AlertCircle,
-  RefreshCw,
   Loader2,
 } from 'lucide-react';
 
@@ -521,7 +520,7 @@ export default function MyInvoicesPage() {
     fetchData();
   }, [user]);
 
-  // Set up periodic refresh of Stripe Connect status (every 30 seconds when not connected)
+  
   useEffect(() => {
     if (!user || stripeConnectStatus === 'connected') return;
 
@@ -542,28 +541,6 @@ export default function MyInvoicesPage() {
         // Refresh invoices data
         const refreshedInvoices = await getInvoices(user.id);
         setInvoices(refreshedInvoices);
-        
-        // Refresh invoice statuses for escrow invoices
-        for (const invoice of refreshedInvoices) {
-          if (invoice.payment_method === 'escrow') {
-            try {
-              await fetch('/api/escrow/refresh-invoice-status', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ invoiceId: invoice.id }),
-              });
-            } catch (error) {
-              console.error('Error refreshing status for invoice:', invoice.id, error);
-            }
-          }
-        }
-        
-        // Fetch refreshed invoices again after status updates
-        const finalInvoices = await getInvoices(user.id);
-        setInvoices(finalInvoices);
-        
       } catch (error) {
         console.error('Error refreshing invoice data on focus:', error);
       }
@@ -1513,181 +1490,7 @@ export default function MyInvoicesPage() {
     return <div className="flex items-center justify-center h-full">Loading...</div>;
   }
 
-  // Debug function to check escrow transaction status
-  const debugEscrowTransaction = async (escrowTransactionId: string) => {
-    try {
-      const response = await fetch('/api/debug/escrow-payment-status', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ escrowTransactionId }),
-      });
 
-      const data = await response.json();
-      
-      if (response.ok) {
-        console.log('🔍 ESCROW DEBUG INFO:', data.debugInfo);
-        
-        // Show debug info in a toast
-        toast({
-          title: 'Debug Info',
-          description: `Check console for detailed debug information. Payee has ${data.debugInfo.payeeStripeAccounts.length} Stripe accounts.`,
-        });
-        
-        return data.debugInfo;
-      } else {
-        console.error('Debug request failed:', data);
-        toast({
-          title: 'Debug Failed',
-          description: data.error || 'Failed to get debug info',
-          variant: 'destructive',
-        });
-      }
-    } catch (error) {
-      console.error('Error calling debug endpoint:', error);
-      toast({
-        title: 'Debug Error',
-        description: 'Failed to call debug endpoint',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  // Add debug button to escrow payment dialog
-  const handleDebugEscrowPayment = async (invoice: Invoice) => {
-    if (invoice.escrow_transaction_id) {
-      await debugEscrowTransaction(invoice.escrow_transaction_id);
-    } else {
-      toast({
-        title: 'No Escrow Transaction',
-        description: 'This invoice does not have an escrow transaction yet.',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  // Check current database state
-  const checkCurrentState = async () => {
-    try {
-      const response = await fetch('/api/debug/check-current-state');
-      const data = await response.json();
-      
-      if (response.ok) {
-        console.log('🔍 CURRENT DATABASE STATE:', data.currentState);
-        
-        // Show summary in toast
-        const escrowCount = data.currentState.escrowTransactions.length;
-        const stripeCount = data.currentState.stripeAccounts.length;
-        const profilesCount = data.currentState.profiles.length;
-        
-        toast({
-          title: 'Database State',
-          description: `${escrowCount} escrow transactions, ${stripeCount} Stripe accounts, ${profilesCount} profiles. Check console for details.`,
-        });
-        
-        return data.currentState;
-      } else {
-        console.error('State check failed:', data);
-        toast({
-          title: 'State Check Failed',
-          description: data.error || 'Failed to check database state',
-          variant: 'destructive',
-        });
-      }
-    } catch (error) {
-      console.error('Error checking state:', error);
-      toast({
-        title: 'State Check Error',
-        description: 'Failed to check database state',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  // Manual refresh function for invoice status
-  const handleRefreshInvoiceStatus = async () => {
-    if (!user) return;
-    
-    try {
-      // Show loading state
-      toast({
-        title: "Refreshing Invoice Status",
-        description: "Checking for payment updates...",
-      });
-
-      // Get all escrow invoices that are pending
-      const escrowInvoices = invoices.filter(inv => 
-        inv.payment_method === 'escrow' && inv.status === 'pending'
-      );
-
-      if (escrowInvoices.length === 0) {
-        toast({
-          title: "No Updates Needed",
-          description: "All escrow invoices are up to date.",
-        });
-        return;
-      }
-
-      let updatedCount = 0;
-      let errorCount = 0;
-
-      // Refresh each escrow invoice status
-      for (const invoice of escrowInvoices) {
-        try {
-          const response = await fetch('/api/escrow/refresh-invoice-status', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ invoiceId: invoice.id }),
-          });
-
-          if (response.ok) {
-            const result = await response.json();
-            if (result.newStatus && result.newStatus !== invoice.status) {
-              updatedCount++;
-            }
-          } else {
-            errorCount++;
-          }
-        } catch (error) {
-          console.error(`Error refreshing invoice ${invoice.id}:`, error);
-          errorCount++;
-        }
-      }
-
-      // Refresh the invoices list
-      const updatedInvoices = await getInvoices(user.id);
-      setInvoices(updatedInvoices);
-
-      // Show results
-      if (updatedCount > 0) {
-        toast({
-          title: "Invoice Status Updated",
-          description: `${updatedCount} invoice(s) updated to paid status.`,
-        });
-      } else if (errorCount > 0) {
-        toast({
-          title: "Refresh Completed",
-          description: `Refreshed ${escrowInvoices.length} invoices. ${errorCount} had errors.`,
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "No Changes",
-          description: "All invoice statuses are current.",
-        });
-      }
-    } catch (error) {
-      console.error('Error refreshing invoice status:', error);
-      toast({
-        title: "Refresh Failed",
-        description: "Failed to refresh invoice status. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
 
   return (
     <div className="flex-1 space-y-6 p-4 sm:p-8 pt-6">
@@ -1704,55 +1507,6 @@ export default function MyInvoicesPage() {
             </div>
           </div>
           <div className="flex flex-col sm:flex-row gap-2">
-            <Button 
-              variant="outline" 
-              onClick={handleRefreshInvoiceStatus}
-              className="gap-2"
-            >
-              <RefreshCw className="h-4 w-4" />
-              <span className="hidden sm:inline">Refresh Status</span>
-              <span className="sm:hidden">Refresh</span>
-            </Button>
-            <Button 
-              variant="outline" 
-              onClick={async () => {
-                if (!user) return;
-                
-                // Get all escrow invoices for debugging
-                const escrowInvoices = invoices.filter(inv => inv.payment_method === 'escrow');
-                console.log('🔍 ESCROW INVOICES DEBUG:', escrowInvoices);
-                
-                for (const invoice of escrowInvoices) {
-                  console.log(`📋 Invoice ${invoice.invoice_number}:`, {
-                    id: invoice.id,
-                    status: invoice.status,
-                    payment_method: invoice.payment_method,
-                    escrow_transaction_id: invoice.escrow_transaction_id
-                  });
-                  
-                  if (invoice.escrow_transaction_id) {
-                    // Get escrow transaction details
-                    const { data: escrowData } = await supabase
-                      .from('escrow_transactions')
-                      .select('*')
-                      .eq('id', invoice.escrow_transaction_id)
-                      .single();
-                    
-                    console.log(`🔒 Escrow Transaction for ${invoice.invoice_number}:`, escrowData);
-                  }
-                }
-                
-                toast({
-                  title: "Debug Info",
-                  description: `Found ${escrowInvoices.length} escrow invoices. Check console for details.`,
-                });
-              }}
-              className="gap-2"
-            >
-              <Eye className="h-4 w-4" />
-              <span className="hidden sm:inline">Debug Escrow</span>
-              <span className="sm:hidden">Debug</span>
-            </Button>
             <Dialog open={newInvoiceDialogOpen} onOpenChange={(open) => {
               setNewInvoiceDialogOpen(open);
               if (!open) {
@@ -2623,17 +2377,7 @@ export default function MyInvoicesPage() {
                           <CreditCard className="h-4 w-4 mr-1" />
                           Pay
                           </Button>
-                          {invoice.payment_method === 'escrow' && (
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              onClick={() => handleDebugEscrowPayment(invoice)}
-                              className="text-xs"
-                              title="Debug escrow transaction"
-                            >
-                              🐛
-                        </Button>
-                          )}
+
                         </div>
                       )}
                       {invoice.payment_method === 'escrow' && invoice.status === 'paid' && (
@@ -2742,20 +2486,7 @@ export default function MyInvoicesPage() {
                               <CreditCard className="h-4 w-4 mr-1" />
                               Pay
                               </Button>
-                              {invoice.payment_method === 'escrow' && (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleDebugEscrowPayment(invoice);
-                                  }}
-                                  className="text-xs"
-                                  title="Debug escrow transaction"
-                                >
-                                  🐛
-                            </Button>
-                              )}
+
                             </div>
                           )}
                           {invoice.payment_method === 'escrow' && invoice.status === 'paid' && (

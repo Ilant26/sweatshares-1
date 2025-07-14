@@ -274,9 +274,31 @@ export default function FindPartnerPage() {
     fetchListings();
   }, [listingType]);
 
+  // Helper function to check if a profile has meaningful information
+  const hasProfileInformation = (profile: Profile): boolean => {
+    const hasName = profile.full_name && profile.full_name.trim().length > 0;
+    const hasBio = profile.bio && profile.bio.trim().length > 0;
+    const hasRole = profile.professional_role && profile.professional_role.trim().length > 0;
+    const hasCompany = profile.company && profile.company.trim().length > 0;
+    const hasSkills = profile.skills && (
+      Array.isArray(profile.skills) ? profile.skills.length > 0 : 
+      typeof profile.skills === 'string' ? profile.skills.trim().length > 0 : false
+    );
+    const hasProfileType = profile.profile_type && profile.profile_type.trim().length > 0;
+    
+    // Profile must have at least 2 meaningful pieces of information
+    const infoCount = [hasName, hasBio, hasRole, hasCompany, hasSkills, hasProfileType].filter(Boolean).length;
+    return infoCount >= 2;
+  };
+
   // Filtering logic
   const filteredProfiles = useMemo(() => {
     return profiles.filter((profile) => {
+      // First, filter out profiles without meaningful information
+      if (!hasProfileInformation(profile)) {
+        return false;
+      }
+      
       // Search: must match at least one of the fields if search is set
       if (search && !(
         (profile.full_name && profile.full_name.toLowerCase().includes(search.toLowerCase())) ||
