@@ -78,6 +78,7 @@ import {
   Shield,
   AlertCircle,
   Loader2,
+  RefreshCw,
 } from 'lucide-react';
 
 // Add dynamic helpers before the return statement in MyInvoicesPage
