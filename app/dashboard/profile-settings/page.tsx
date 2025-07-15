@@ -19,6 +19,7 @@ import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { X, Plus } from 'lucide-react';
+import { useTheme } from 'next-themes';
 
 // Define the UserProfile interface based on your database schema
 interface UserProfile {
@@ -39,6 +40,7 @@ interface UserProfile {
     profile_type: string | null;
     skills: string[];
     company: string | null;
+    theme: 'light' | 'dark';
 }
 
 // Comprehensive skills list organized by categories
@@ -91,6 +93,7 @@ export default function ProfileSettingsPage() {
     const { user, loading: sessionLoading } = useSession();
     const supabase = createClientComponentClient<Database>();
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const { setTheme } = useTheme();
 
     const [activeTab, setActiveTab] = useState('personal');
     const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
@@ -156,7 +159,8 @@ export default function ProfileSettingsPage() {
                     onboarding_completed,
                     profile_type,
                     skills,
-                    company
+                    company,
+                    theme
                 `)
                 .eq('id', user?.id)
                 .single();
@@ -181,6 +185,7 @@ export default function ProfileSettingsPage() {
                 profile_type: profile?.profile_type || null,
                 skills: profile?.skills || [],
                 company: profile?.company || null,
+                theme: profile?.theme || 'light',
             };
 
             setUserProfile(newProfile);
@@ -275,6 +280,7 @@ export default function ProfileSettingsPage() {
                         profile_type: userProfile.profile_type,
                         skills: userProfile.skills,
                         company: userProfile.company,
+                        theme: userProfile.theme,
                     },
                     { onConflict: 'id' }
                 );
@@ -350,6 +356,7 @@ export default function ProfileSettingsPage() {
         <div className="flex-1 p-8 pt-6">
             <form onSubmit={handleSave} className="space-y-8">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {/* Left column: Profile Information */}
                     <Card>
                         <CardHeader>
                             <CardTitle>Profile Information</CardTitle>
@@ -729,80 +736,129 @@ export default function ProfileSettingsPage() {
                                 />
                             </div>
 
-                            <div className="space-y-4">
-                                <div className="grid gap-4">
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="profile_type">Profile Type</Label>
-                                        <Select
-                                            value={userProfile.profile_type || ''}
-                                            onValueChange={handleSelectChange('profile_type')}
-                                        >
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Select your profile type" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="Founder">Founder</SelectItem>
-                                                <SelectItem value="Investor">Investor</SelectItem>
-                                                <SelectItem value="Expert">Expert/Freelancer/Consultant</SelectItem>
-                                            </SelectContent>
-                                        </Select>
+                            {/* 1. Remove Profile Type field from the form UI and logic */}
+                            {/* 2. Make theme selection functional */}
+                            {/* Theme Card - improved layout */}
+                        </CardContent>
+                    </Card>
+                    {/* Right column: Contact Information + Theme */}
+                    <div className="flex flex-col gap-8">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Contact Information</CardTitle>
+                                <CardDescription>Update your contact details and preferences.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-6">
+                                <div className="grid gap-2">
+                                    <Label htmlFor="email">Email</Label>
+                                    <Input
+                                        id="email"
+                                        type="email"
+                                        value={userProfile.email}
+                                        disabled
+                                        className="bg-muted"
+                                    />
+                                    <p className="text-sm text-muted-foreground">Your email address cannot be changed.</p>
+                                </div>
+
+                                <div className="grid gap-2">
+                                    <Label htmlFor="phone_number">Phone Number</Label>
+                                    <Input
+                                        id="phone_number"
+                                        type="tel"
+                                        value={userProfile.phone_number || ''}
+                                        onChange={handleInputChange}
+                                        placeholder="+1 (555) 000-0000"
+                                    />
+                                </div>
+
+                                <div className="flex items-center justify-between">
+                                    <div className="space-y-0.5">
+                                        <Label>Email Notifications</Label>
+                                        <p className="text-sm text-muted-foreground">Receive email notifications about your account activity.</p>
                                     </div>
+                                    <Switch
+                                        checked={userProfile.email_notifications}
+                                        onCheckedChange={handleSwitchChange('email_notifications')}
+                                    />
                                 </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Contact Information</CardTitle>
-                            <CardDescription>Update your contact details and preferences.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-6">
-                            <div className="grid gap-2">
-                                <Label htmlFor="email">Email</Label>
-                                <Input
-                                    id="email"
-                                    type="email"
-                                    value={userProfile.email}
-                                    disabled
-                                    className="bg-muted"
-                                />
-                                <p className="text-sm text-muted-foreground">Your email address cannot be changed.</p>
-                            </div>
 
-                            <div className="grid gap-2">
-                                <Label htmlFor="phone_number">Phone Number</Label>
-                                <Input
-                                    id="phone_number"
-                                    type="tel"
-                                    value={userProfile.phone_number || ''}
-                                    onChange={handleInputChange}
-                                    placeholder="+1 (555) 000-0000"
-                                />
-                            </div>
-
-                            <div className="flex items-center justify-between">
-                                <div className="space-y-0.5">
-                                    <Label>Email Notifications</Label>
-                                    <p className="text-sm text-muted-foreground">Receive email notifications about your account activity.</p>
+                                <div className="flex items-center justify-between">
+                                    <div className="space-y-0.5">
+                                        <Label>Two-Factor Authentication</Label>
+                                        <p className="text-sm text-muted-foreground">Add an extra layer of security to your account.</p>
+                                    </div>
+                                    <Switch
+                                        checked={userProfile.two_factor_enabled}
+                                        onCheckedChange={handleSwitchChange('two_factor_enabled')}
+                                    />
                                 </div>
-                                <Switch
-                                    checked={userProfile.email_notifications}
-                                    onCheckedChange={handleSwitchChange('email_notifications')}
-                                />
-                            </div>
-
-                            <div className="flex items-center justify-between">
-                                <div className="space-y-0.5">
-                                    <Label>Two-Factor Authentication</Label>
-                                    <p className="text-sm text-muted-foreground">Add an extra layer of security to your account.</p>
+                            </CardContent>
+                        </Card>
+                        {/* Theme Card - improved layout */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Theme</CardTitle>
+                                <CardDescription>Select the theme for the dashboard.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="flex gap-8 justify-center">
+                                    {/* Theme Option: Light */}
+                                    <button
+                                        type="button"
+                                        className={`group flex flex-col items-center focus:outline-none ${userProfile.theme === 'light' ? 'ring-2 ring-primary ring-offset-2' : 'ring-1 ring-muted'} rounded-xl p-3 transition-all bg-background`}
+                                        onClick={() => {
+                                            setUserProfile(prev => prev ? { ...prev, theme: 'light' } : null);
+                                            setTheme('light');
+                                            // Optionally, persist immediately
+                                            supabase.from('profiles').update({ theme: 'light' }).eq('id', userProfile.id);
+                                        }}
+                                        aria-label="Select light theme"
+                                    >
+                                        <div className="w-40 h-28 rounded-lg bg-gray-100 flex flex-col gap-2 p-4 mb-2">
+                                            <div className="h-4 w-3/4 bg-gray-200 rounded" />
+                                            <div className="h-4 w-2/3 bg-gray-200 rounded" />
+                                            <div className="flex gap-2 mt-2">
+                                                <div className="h-4 w-4 bg-gray-300 rounded-full" />
+                                                <div className="h-4 w-2/3 bg-gray-200 rounded" />
+                                            </div>
+                                            <div className="flex gap-2 mt-2">
+                                                <div className="h-4 w-4 bg-gray-300 rounded-full" />
+                                                <div className="h-4 w-2/3 bg-gray-200 rounded" />
+                                            </div>
+                                        </div>
+                                        <span className="text-base font-medium mt-1">Light</span>
+                                    </button>
+                                    {/* Theme Option: Dark */}
+                                    <button
+                                        type="button"
+                                        className={`group flex flex-col items-center focus:outline-none ${userProfile.theme === 'dark' ? 'ring-2 ring-primary ring-offset-2' : 'ring-1 ring-muted'} rounded-xl p-3 transition-all bg-background`}
+                                        onClick={() => {
+                                            setUserProfile(prev => prev ? { ...prev, theme: 'dark' } : null);
+                                            setTheme('dark');
+                                            // Optionally, persist immediately
+                                            supabase.from('profiles').update({ theme: 'dark' }).eq('id', userProfile.id);
+                                        }}
+                                        aria-label="Select dark theme"
+                                    >
+                                        <div className="w-40 h-28 rounded-lg bg-[#151a23] flex flex-col gap-2 p-4 mb-2">
+                                            <div className="h-4 w-3/4 bg-[#232b3b] rounded" />
+                                            <div className="h-4 w-2/3 bg-[#232b3b] rounded" />
+                                            <div className="flex gap-2 mt-2">
+                                                <div className="h-4 w-4 bg-[#3b4660] rounded-full" />
+                                                <div className="h-4 w-2/3 bg-[#232b3b] rounded" />
+                                            </div>
+                                            <div className="flex gap-2 mt-2">
+                                                <div className="h-4 w-4 bg-[#3b4660] rounded-full" />
+                                                <div className="h-4 w-2/3 bg-[#232b3b] rounded" />
+                                            </div>
+                                        </div>
+                                        <span className="text-base font-medium mt-1">Dark</span>
+                                    </button>
                                 </div>
-                                <Switch
-                                    checked={userProfile.two_factor_enabled}
-                                    onCheckedChange={handleSwitchChange('two_factor_enabled')}
-                                />
-                            </div>
-                        </CardContent>
-                    </Card>
+                            </CardContent>
+                        </Card>
+                    </div>
                 </div>
                 {error && (
                     <Alert variant="destructive">

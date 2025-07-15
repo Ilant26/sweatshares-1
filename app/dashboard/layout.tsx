@@ -234,7 +234,7 @@ function DashboardHeader() {
   return (
     <header className="sticky top-0 z-50 flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 px-2 sm:px-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
       <div className="flex items-center gap-2">
-        <SidebarTrigger className="rounded-md bg-white dark:bg-muted border border-input dark:border-muted shadow-sm hover:bg-accent dark:hover:bg-accent transition-colors size-8 flex items-center justify-center p-0" />
+        <SidebarTrigger className="size-8 flex items-center justify-center p-0 bg-transparent border-0 shadow-none hover:bg-accent/40 transition-colors rounded-md" />
         <Separator
           orientation="vertical"
           className="mr-2 data-[orientation=vertical]:h-4 hidden sm:block"
@@ -258,7 +258,7 @@ function DashboardHeader() {
             <Link
               href="/dashboard/news-feed"
               className={cn(
-                "relative px-2 py-1 text-xs lg:text-sm font-medium transition-colors",
+                "relative px-2 py-1 text-xs lg:text-sm font-bold transition-colors", // font-bold always
                 "hover:text-primary/80",
                 currentSection === 'feed' ? "text-primary" : "text-muted-foreground",
                 "after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:bg-primary after:transition-transform after:duration-200",
@@ -270,7 +270,7 @@ function DashboardHeader() {
             <Link
               href="/dashboard/find-partner"
               className={cn(
-                "relative px-2 py-1 text-xs lg:text-sm font-medium transition-colors",
+                "relative px-2 py-1 text-xs lg:text-sm font-bold transition-colors", // font-bold always
                 "hover:text-primary/80",
                 isFindPartner ? "text-primary" : "text-muted-foreground",
                 "after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:bg-primary after:transition-transform after:duration-200",
@@ -288,7 +288,7 @@ function DashboardHeader() {
             <Link
               href="/dashboard/news-feed"
               className={cn(
-                "relative px-2 py-1 text-xs font-medium transition-colors",
+                "relative px-2 py-1 text-xs font-bold transition-colors", // font-bold always
                 "hover:text-primary/80",
                 currentSection === 'feed' ? "text-primary" : "text-muted-foreground",
                 "after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:bg-primary after:transition-transform after:duration-200",
@@ -300,7 +300,7 @@ function DashboardHeader() {
             <Link
               href="/dashboard/find-partner"
               className={cn(
-                "relative px-2 py-1 text-xs font-medium transition-colors",
+                "relative px-2 py-1 text-xs font-bold transition-colors", // font-bold always
                 "hover:text-primary/80",
                 isFindPartner ? "text-primary" : "text-muted-foreground",
                 "after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:bg-primary after:transition-transform after:duration-200",
@@ -317,14 +317,14 @@ function DashboardHeader() {
         "ml-auto"
       )}>
         <div className="hidden sm:block">
-          <div className="rounded-md bg-white dark:bg-muted border border-input dark:border-muted shadow-sm hover:bg-accent dark:hover:bg-accent transition-colors size-8 flex items-center justify-center p-0">
+          <button className="size-8 flex items-center justify-center p-0 bg-transparent border-0 shadow-none hover:bg-accent/40 transition-colors rounded-md">
             <ThemeSwitcher />
-          </div>
+          </button>
         </div>
         <div className="hidden sm:block">
-          <div className="rounded-md bg-white dark:bg-muted border border-input dark:border-muted shadow-sm hover:bg-accent dark:hover:bg-accent transition-colors size-8 flex items-center justify-center p-0">
+          <button className="size-8 flex items-center justify-center p-0 bg-transparent border-0 shadow-none hover:bg-accent/40 transition-colors rounded-md">
             <NotificationsDropdown />
-          </div>
+          </button>
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -400,7 +400,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Suspense fallback={
                 <header className="sticky top-0 z-50 flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 px-2 sm:px-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
                   <div className="flex items-center gap-2">
-                    <SidebarTrigger className="rounded-md bg-white dark:bg-muted border border-input dark:border-muted shadow-sm hover:bg-accent dark:hover:bg-accent transition-colors size-8 flex items-center justify-center p-0" />
+                    <SidebarTrigger className="size-8 flex items-center justify-center p-0 bg-transparent border-0 shadow-none hover:bg-accent/40 transition-colors rounded-md" />
                     <Separator
                       orientation="vertical"
                       className="mr-2 data-[orientation=vertical]:h-4 hidden sm:block"
@@ -409,10 +409,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   <div className="absolute left-1/2 transform -translate-x-1/2 hidden sm:flex">
                     <div className="inline-flex items-center justify-center">
                       <nav className="flex space-x-6 lg:space-x-12">
-                        <div className="relative px-2 py-1 text-xs lg:text-sm font-medium text-muted-foreground">
+                        <div className="relative px-2 py-1 text-xs lg:text-sm font-bold text-muted-foreground">
                           News Feed
                         </div>
-                        <div className="relative px-2 py-1 text-xs lg:text-sm font-medium text-muted-foreground">
+                        <div className="relative px-2 py-1 text-xs lg:text-sm font-bold text-muted-foreground">
                           Find My Partner
                         </div>
                       </nav>
@@ -421,10 +421,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   <div className="absolute left-1/2 transform -translate-x-1/2 sm:hidden">
                     <div className="inline-flex items-center justify-center">
                       <nav className="flex space-x-4">
-                        <div className="relative px-2 py-1 text-xs font-medium text-muted-foreground">
+                        <div className="relative px-2 py-1 text-xs font-bold text-muted-foreground">
                           Feed
                         </div>
-                        <div className="relative px-2 py-1 text-xs font-medium text-muted-foreground">
+                        <div className="relative px-2 py-1 text-xs font-bold text-muted-foreground">
                           Find
                         </div>
                       </nav>
@@ -432,14 +432,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   </div>
                   <div className="flex items-center gap-1 sm:gap-2 ml-auto">
                     <div className="hidden sm:block">
-                      <div className="rounded-md bg-white dark:bg-muted border border-input dark:border-muted shadow-sm hover:bg-accent dark:hover:bg-accent transition-colors size-8 flex items-center justify-center p-0">
+                      <button className="size-8 flex items-center justify-center p-0 bg-transparent border-0 shadow-none hover:bg-accent/40 transition-colors rounded-md">
                         <ThemeSwitcher />
-                      </div>
+                      </button>
                     </div>
                     <div className="hidden sm:block">
-                      <div className="rounded-md bg-white dark:bg-muted border border-input dark:border-muted shadow-sm hover:bg-accent dark:hover:bg-accent transition-colors size-8 flex items-center justify-center p-0">
+                      <button className="size-8 flex items-center justify-center p-0 bg-transparent border-0 shadow-none hover:bg-accent/40 transition-colors rounded-md">
                         <NotificationsDropdown />
-                      </div>
+                      </button>
                     </div>
                     <Button variant="ghost" size="sm" className="h-8 px-1 sm:px-2 hover:bg-accent">
                       <Avatar className="h-8 w-8 rounded-full">
