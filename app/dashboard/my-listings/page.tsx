@@ -79,17 +79,17 @@ export default function MyListingsPage() {
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const [editingId, setEditingId] = useState<string | null>(null);
 
-    // Add useEffect to handle automatic compensation type selection
+    // Add useEffect to handle automatic compensation type selection (only when compensation type is empty)
     useEffect(() => {
-        if (profileType && listingType) {
+        if (profileType && listingType && !compensationType) {
             // Founder looking for funding
             if (profileType === "founder" && listingType === "find-funding") {
                 setCompensationType("Equity");
             }
-            // Founder looking for expert/freelancer
-            else if (profileType === "founder" && listingType === "expert-freelance") {
-                setCompensationType("Cash");
-            }
+            // Founder looking for expert/freelancer - don't auto-set, let user choose
+            // else if (profileType === "founder" && listingType === "expert-freelance") {
+            //     setCompensationType("Cash");
+            // }
             // Investor looking for expert/freelancer
             else if (profileType === "investor" && listingType === "expert-freelance") {
                 setCompensationType("Cash");
@@ -99,19 +99,17 @@ export default function MyListingsPage() {
                 setCompensationType("Cash");
             }
             // Set default compensation type for other cases
-            else if (!compensationType) {
-                if (profileType === "founder" && ["employee", "mentor"].includes(listingType)) {
-                    setCompensationType("Salary");
-                } else if (profileType === "founder" && ["cofounder"].includes(listingType)) {
-                    setCompensationType("Equity");
-                } else if (profileType === "expert" && ["mission", "cofounder"].includes(listingType)) {
-                    setCompensationType("Equity");
-                } else if (profileType === "expert" && ["job"].includes(listingType)) {
-                    setCompensationType("Salary");
-                }
+            else if (profileType === "founder" && ["employee", "mentor"].includes(listingType)) {
+                setCompensationType("Salary");
+            } else if (profileType === "founder" && ["cofounder"].includes(listingType)) {
+                setCompensationType("Equity");
+            } else if (profileType === "expert" && ["mission", "cofounder"].includes(listingType)) {
+                setCompensationType("Equity");
+            } else if (profileType === "expert" && ["job"].includes(listingType)) {
+                setCompensationType("Salary");
             }
         }
-    }, [profileType, listingType, compensationType]);
+    }, [profileType, listingType]);
 
     // Add useEffect to set default sector
     useEffect(() => {

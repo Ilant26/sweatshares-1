@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { Badge } from '@/components/ui/badge';
 import { X, Plus } from 'lucide-react';
+import { CountrySelector } from '@/components/ui/country-selector';
 
 // Comprehensive skills list organized by categories
 const SKILLS_CATEGORIES = {
@@ -215,6 +216,50 @@ export function CreateListingModal({
               </Select>
             </div>
           )}
+          {/* Industry */}
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="secteur" className="text-right">Industry</Label>
+            <Select value={sector} onValueChange={setSector}>
+              <SelectTrigger className="col-span-3">
+                <SelectValue placeholder="Select an industry" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Technology">Technology</SelectItem>
+                <SelectItem value="Healthcare">Healthcare</SelectItem>
+                <SelectItem value="Finance">Finance</SelectItem>
+                <SelectItem value="Education">Education</SelectItem>
+                <SelectItem value="Retail">Retail</SelectItem>
+                <SelectItem value="Manufacturing">Manufacturing</SelectItem>
+                <SelectItem value="Real Estate">Real Estate</SelectItem>
+                <SelectItem value="Energy">Energy</SelectItem>
+                <SelectItem value="Transportation">Transportation</SelectItem>
+                <SelectItem value="Media & Entertainment">Media & Entertainment</SelectItem>
+                <SelectItem value="Telecommunications">Telecommunications</SelectItem>
+                <SelectItem value="Food & Beverage">Food & Beverage</SelectItem>
+                <SelectItem value="Hospitality">Hospitality</SelectItem>
+                <SelectItem value="Agriculture">Agriculture</SelectItem>
+                <SelectItem value="Automotive">Automotive</SelectItem>
+                <SelectItem value="Construction">Construction</SelectItem>
+                <SelectItem value="Aerospace">Aerospace</SelectItem>
+                <SelectItem value="Pharmaceuticals">Pharmaceuticals</SelectItem>
+                <SelectItem value="Chemicals">Chemicals</SelectItem>
+                <SelectItem value="Mining">Mining</SelectItem>
+                <SelectItem value="Environmental Services">Environmental Services</SelectItem>
+                <SelectItem value="Fitness & Wellness">Fitness & Wellness</SelectItem>
+                <SelectItem value="Gaming">Gaming</SelectItem>
+                <SelectItem value="Hardware">Hardware</SelectItem>
+                <SelectItem value="Internet of Things">Internet of Things</SelectItem>
+                <SelectItem value="Logistics">Logistics</SelectItem>
+                <SelectItem value="Mobile Apps">Mobile Apps</SelectItem>
+                <SelectItem value="Robotics">Robotics</SelectItem>
+                <SelectItem value="SaaS">SaaS</SelectItem>
+                <SelectItem value="Social Impact">Social Impact</SelectItem>
+                <SelectItem value="Space Technology">Space Technology</SelectItem>
+                <SelectItem value="Virtual Reality">Virtual Reality</SelectItem>
+                <SelectItem value="Wearable Technology">Wearable Technology</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           {/* Funding Stage */}
           {((profileType === "founder" && listingType === "find-funding") || 
             (profileType === "investor" && listingType === "investment-opportunity")) && (
@@ -329,65 +374,52 @@ export function CreateListingModal({
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="locationCountry" className="text-right">Location</Label>
             <div className="col-span-3 flex gap-2">
-              <Select value={locationCountry} onValueChange={setLocationCountry}>
-                <SelectTrigger className="w-1/2">
-                  <SelectValue placeholder="Select a country" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="France">France</SelectItem>
-                  <SelectItem value="USA">USA</SelectItem>
-                  <SelectItem value="UK">UK</SelectItem>
-                  <SelectItem value="Germany">Germany</SelectItem>
-                  <SelectItem value="Spain">Spain</SelectItem>
-                  <SelectItem value="Italy">Italy</SelectItem>
-                  <SelectItem value="Portugal">Portugal</SelectItem>
-                  <SelectItem value="Belgium">Belgium</SelectItem>
-                  <SelectItem value="Netherlands">Netherlands</SelectItem>
-                  <SelectItem value="Norway">Norway</SelectItem>
-                  <SelectItem value="Denmark">Denmark</SelectItem>
-                  <SelectItem value="Finland">Finland</SelectItem>
-                  <SelectItem value="Ireland">Ireland</SelectItem>
-                  <SelectItem value="Poland">Poland</SelectItem>
-                  <SelectItem value="Czech Republic">Czech Republic</SelectItem>
-                  <SelectItem value="Hungary">Hungary</SelectItem>
-                  <SelectItem value="Greece">Greece</SelectItem>
-                  <SelectItem value="Austria">Austria</SelectItem>
-                  <SelectItem value="Switzerland">Switzerland</SelectItem>
-                  <SelectItem value="Turkey">Turkey</SelectItem>
-                  <SelectItem value="Russia">Russia</SelectItem>
-                  <SelectItem value="Ukraine">Ukraine</SelectItem>
-                  <SelectItem value="Belarus">Belarus</SelectItem>
-                  <SelectItem value="Moldova">Moldova</SelectItem>
-                  <SelectItem value="Albania">Albania</SelectItem>
-                </SelectContent>
-              </Select>
+              <CountrySelector
+                value={locationCountry}
+                onValueChange={setLocationCountry}
+                placeholder="Select a country"
+                className="w-1/2"
+              />
               <Input id="locationCity" placeholder="City (optional)" className="w-1/2" value={locationCity} onChange={e => setLocationCity(e.target.value)} />
             </div>
           </div>
-          {/* Compensation Type */}
+          {/* Compensation Type / Equity Offered */}
           {(profileType === "founder" || profileType === "investor" || profileType === "expert") && 
             !(profileType === "founder" && listingType === "sell-startup") &&
             !(profileType === "investor" && ["investment-opportunity", "buy-startup", "co-investor"].includes(listingType)) && (
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="compensationType" className="text-right">Compensation Type</Label>
+              <Label htmlFor="compensationType" className="text-right">
+                {(profileType === "founder" && listingType === "find-funding") ? "Equity Offered" : "Compensation Type"}
+              </Label>
               <div className="col-span-3 flex flex-col gap-2">
                 <Select value={compensationType} onValueChange={setCompensationType}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select compensation type" />
                   </SelectTrigger>
                   <SelectContent>
-                    {/* Founder-specific compensation options */}
-                    {profileType === "founder" && listingType === "find-funding" && (
-                      <SelectItem value="Equity">Equity</SelectItem>
-                    )}
-                    {profileType === "founder" && (["cofounder", "expert-freelance"].includes(listingType)) && (
+                    {/* Always show these options for founder + expert-freelance for debugging */}
+                    {profileType === "founder" && listingType === "expert-freelance" && (
                       <>
-                        <SelectItem value="Equity">Equity</SelectItem>
                         <SelectItem value="Cash">Cash</SelectItem>
+                        <SelectItem value="Equity">Equity</SelectItem>
                         <SelectItem value="Hybrid">Hybrid</SelectItem>
                       </>
                     )}
-                    {profileType === "founder" && (["employee", "mentor"].includes(listingType)) && (
+                    
+                    {/* Other founder options */}
+                    {profileType === "founder" && listingType === "find-funding" && (
+                      <SelectItem value="Equity">Equity</SelectItem>
+                    )}
+                    
+                    {profileType === "founder" && listingType === "cofounder" && (
+                      <>
+                        <SelectItem value="Cash">Cash</SelectItem>
+                        <SelectItem value="Equity">Equity</SelectItem>
+                        <SelectItem value="Hybrid">Hybrid</SelectItem>
+                      </>
+                    )}
+                    
+                    {profileType === "founder" && (listingType === "employee" || listingType === "mentor") && (
                       <>
                         <SelectItem value="Salary">Salary</SelectItem>
                         <SelectItem value="Equity">Equity</SelectItem>
@@ -395,50 +427,49 @@ export function CreateListingModal({
                         <SelectItem value="Cash & Equity">Cash & Equity</SelectItem>
                       </>
                     )}
-                    {/* Expert-specific compensation options */}
-                    {profileType === "expert" && ["mission", "cofounder", "job", "expert-freelance"].includes(listingType) ? (
+
+                    {/* Expert options */}
+                    {profileType === "expert" && listingType === "mission" && (
                       <>
-                        {listingType === "mission" && (
-                          <>
-                            <SelectItem value="Equity">Equity</SelectItem>
-                            <SelectItem value="Cash">Cash</SelectItem>
-                            <SelectItem value="Hybrid">Hybrid</SelectItem>
-                          </>
-                        )}
-                        {listingType === "cofounder" && (
-                          <>
-                            <SelectItem value="Equity">Equity</SelectItem>
-                            <SelectItem value="Cash">Cash</SelectItem>
-                            <SelectItem value="Hybrid">Hybrid</SelectItem>
-                          </>
-                        )}
-                        {listingType === "job" && (
-                          <>
-                            <SelectItem value="Salary">Annual Salary</SelectItem>
-                            <SelectItem value="Equity">Equity</SelectItem>
-                            <SelectItem value="Hybrid">Hybrid</SelectItem>
-                          </>
-                        )}
-                        {listingType === "expert-freelance" && (
-                          <SelectItem value="Cash">Cash</SelectItem>
-                        )}
+                        <SelectItem value="Equity">Equity</SelectItem>
+                        <SelectItem value="Cash">Cash</SelectItem>
+                        <SelectItem value="Hybrid">Hybrid</SelectItem>
                       </>
-                    ) :
-                      ((profileType !== "founder" && profileType !== "expert") || (profileType === "founder" && !["find-funding", "cofounder", "expert-freelance", "employee", "mentor"].includes(listingType))) ? (
-                        <>
-                          {profileType === "investor" && listingType === "expert-freelance" ? (
-                            <SelectItem value="Cash">Cash</SelectItem>
-                          ) : (
-                            <>
-                              <SelectItem value="Cash">Cash</SelectItem>
-                              <SelectItem value="Equity">Equity</SelectItem>
-                              <SelectItem value="Salary">Annual Salary</SelectItem>
-                              <SelectItem value="Volunteer">Volunteer</SelectItem>
-                            </>
-                          )}
-                        </>
-                      ) : null
-                    }
+                    )}
+                    
+                    {profileType === "expert" && listingType === "cofounder" && (
+                      <>
+                        <SelectItem value="Equity">Equity</SelectItem>
+                        <SelectItem value="Cash">Cash</SelectItem>
+                        <SelectItem value="Hybrid">Hybrid</SelectItem>
+                      </>
+                    )}
+                    
+                    {profileType === "expert" && listingType === "job" && (
+                      <>
+                        <SelectItem value="Salary">Annual Salary</SelectItem>
+                        <SelectItem value="Equity">Equity</SelectItem>
+                        <SelectItem value="Hybrid">Hybrid</SelectItem>
+                      </>
+                    )}
+                    
+                    {profileType === "expert" && listingType === "expert-freelance" && (
+                      <SelectItem value="Cash">Cash</SelectItem>
+                    )}
+
+                    {/* Investor options */}
+                    {profileType === "investor" && listingType === "expert-freelance" && (
+                      <SelectItem value="Cash">Cash</SelectItem>
+                    )}
+                    
+                    {profileType === "investor" && listingType !== "expert-freelance" && !["investment-opportunity", "buy-startup", "co-investor"].includes(listingType) && (
+                      <>
+                        <SelectItem value="Cash">Cash</SelectItem>
+                        <SelectItem value="Equity">Equity</SelectItem>
+                        <SelectItem value="Salary">Annual Salary</SelectItem>
+                        <SelectItem value="Volunteer">Volunteer</SelectItem>
+                      </>
+                    )}
                   </SelectContent>
                 </Select>
                 {compensationType === 'Cash' && (
@@ -472,58 +503,23 @@ export function CreateListingModal({
             </div>
           )}
           {/* Amount (Founder & Investor only) */}
-          {((profileType === "founder" && !["cofounder", "expert-freelance", "employee", "mentor"].includes(listingType)) ||
+          {((profileType === "founder" && listingType === "find-funding") ||
             (profileType === "investor" && !["investment-opportunity", "buy-startup", "co-investor"].includes(listingType)) ||
             (profileType === "expert" && !["mission", "job", "expert-freelance", "cofounder"].includes(listingType))) && (
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="amount" className="text-right">Investment Amount</Label>
-              <Input id="amount" placeholder="Ex: 10000€" className="col-span-3" value={amount} onChange={e => setAmount(e.target.value)} />
+              <Label htmlFor="amount" className="text-right">
+                {(profileType === "founder" && listingType === "find-funding") ? "Amount Seeking" : "Investment Amount"}
+              </Label>
+              <Input 
+                id="amount" 
+                placeholder={(profileType === "founder" && listingType === "find-funding") ? "Ex: $1M - $5M" : "Ex: 10000€"} 
+                className="col-span-3" 
+                value={amount} 
+                onChange={e => setAmount(e.target.value)} 
+              />
             </div>
           )}
-          {/* Secteur */}
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="secteur" className="text-right">Company Sector</Label>
-            <Select value={sector} onValueChange={setSector}>
-              <SelectTrigger className="col-span-3">
-                <SelectValue placeholder="Select a sector" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Technology">Technology</SelectItem>
-                <SelectItem value="Healthcare">Healthcare</SelectItem>
-                <SelectItem value="Finance">Finance</SelectItem>
-                <SelectItem value="Education">Education</SelectItem>
-                <SelectItem value="Retail">Retail</SelectItem>
-                <SelectItem value="Manufacturing">Manufacturing</SelectItem>
-                <SelectItem value="Real Estate">Real Estate</SelectItem>
-                <SelectItem value="Energy">Energy</SelectItem>
-                <SelectItem value="Transportation">Transportation</SelectItem>
-                <SelectItem value="Media & Entertainment">Media & Entertainment</SelectItem>
-                <SelectItem value="Telecommunications">Telecommunications</SelectItem>
-                <SelectItem value="Food & Beverage">Food & Beverage</SelectItem>
-                <SelectItem value="Hospitality">Hospitality</SelectItem>
-                <SelectItem value="Agriculture">Agriculture</SelectItem>
-                <SelectItem value="Automotive">Automotive</SelectItem>
-                <SelectItem value="Construction">Construction</SelectItem>
-                <SelectItem value="Aerospace">Aerospace</SelectItem>
-                <SelectItem value="Pharmaceuticals">Pharmaceuticals</SelectItem>
-                <SelectItem value="Chemicals">Chemicals</SelectItem>
-                <SelectItem value="Mining">Mining</SelectItem>
-                <SelectItem value="Environmental Services">Environmental Services</SelectItem>
-                <SelectItem value="Fitness & Wellness">Fitness & Wellness</SelectItem>
-                <SelectItem value="Gaming">Gaming</SelectItem>
-                <SelectItem value="Hardware">Hardware</SelectItem>
-                <SelectItem value="Internet of Things">Internet of Things</SelectItem>
-                <SelectItem value="Logistics">Logistics</SelectItem>
-                <SelectItem value="Mobile Apps">Mobile Apps</SelectItem>
-                <SelectItem value="Robotics">Robotics</SelectItem>
-                <SelectItem value="SaaS">SaaS</SelectItem>
-                <SelectItem value="Social Impact">Social Impact</SelectItem>
-                <SelectItem value="Space Technology">Space Technology</SelectItem>
-                <SelectItem value="Virtual Reality">Virtual Reality</SelectItem>
-                <SelectItem value="Wearable Technology">Wearable Technology</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+
           {/* Title */}
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="title" className="text-right">Title <span className="text-destructive">*</span></Label>

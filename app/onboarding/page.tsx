@@ -15,6 +15,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { X, Plus } from 'lucide-react';
 import { Confetti } from '@/components/ui/confetti';
+import { CountrySelector } from '@/components/ui/country-selector';
 
 const PROFILE_TYPES = [
   { value: 'Founder', label: 'Founder', icon: Briefcase, desc: 'Build and grow your own startup.' },
@@ -29,12 +30,7 @@ const FOUND_US_OPTIONS = [
   { value: 'other', label: 'Other', icon: Mail },
 ];
 
-// Add COUNTRIES array from my-alerts
-const COUNTRIES = [
-  "France", "USA", "UK", "Germany", "Spain", "Italy", "Portugal", "Belgium", "Netherlands",
-  "Norway", "Denmark", "Finland", "Ireland", "Poland", "Czech Republic", "Hungary", "Greece",
-  "Austria", "Switzerland", "Turkey", "Canada", "Australia", "Japan", "Singapore"
-];
+// Import COUNTRIES from country-selector component (removed local COUNTRIES array)
 
 // Professional role options grouped by type (extracted from profile-settings)
 const ROLE_OPTIONS = {
@@ -306,16 +302,11 @@ export default function OnboardingPage() {
         )}
         <div>
           <Label htmlFor="country" className="flex items-center gap-2"><Globe className="w-4 h-4 text-primary" /> Where are you located?</Label>
-          <Select value={formData.country} onValueChange={value => setFormData({ ...formData, country: value })} required>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select your country" />
-            </SelectTrigger>
-            <SelectContent className="max-h-[400px] w-[400px]">
-              {COUNTRIES.map(country => (
-                <SelectItem key={country} value={country}>{country}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <CountrySelector
+            value={formData.country}
+            onValueChange={value => setFormData({ ...formData, country: value })}
+            placeholder="Select your country"
+          />
         </div>
         <div className="flex gap-3 justify-center pt-2">
           <Button variant="outline" size="lg" onClick={() => setStep(1)} type="button">Back</Button>

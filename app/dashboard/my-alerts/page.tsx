@@ -116,11 +116,7 @@ const SKILLS_CATEGORIES = {
   ]
 };
 
-const COUNTRIES = [
-  "France", "USA", "UK", "Germany", "Spain", "Italy", "Portugal", "Belgium", "Netherlands",
-  "Norway", "Denmark", "Finland", "Ireland", "Poland", "Czech Republic", "Hungary", "Greece",
-  "Austria", "Switzerland", "Turkey", "Canada", "Australia", "Japan", "Singapore"
-];
+import { COUNTRIES } from '@/components/ui/country-selector';
 
 const LISTING_TYPES_SIMPLIFIED = [
   // What people are looking for (simplified)

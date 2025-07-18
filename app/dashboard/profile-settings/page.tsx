@@ -20,6 +20,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { X, Plus } from 'lucide-react';
 import { useTheme } from 'next-themes';
+import { CountrySelector } from '@/components/ui/country-selector';
 
 // Define the UserProfile interface based on your database schema
 interface UserProfile {
@@ -867,6 +868,15 @@ export default function ProfileSettingsPage() {
                                         value={userProfile.phone_number || ''}
                                         onChange={handleInputChange}
                                         placeholder="+1 (555) 000-0000"
+                                    />
+                                </div>
+
+                                <div className="grid gap-2">
+                                    <Label htmlFor="country">Country</Label>
+                                    <CountrySelector
+                                        value={userProfile.country || ''}
+                                        onValueChange={handleSelectChange('country')}
+                                        placeholder="Select your country"
                                     />
                                 </div>
 
