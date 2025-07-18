@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { AnimatedGroup } from "@/components/ui/animated-group";
-import { Loader2, Star, Eye, User, Tag, Briefcase, MapPin, XCircle, Heart, Share2, Mail, DollarSign, ListFilter, Handshake } from "lucide-react";
+import { Loader2, Star, Eye, User, Tag, Briefcase, MapPin, XCircle, Heart, Share2, Mail, DollarSign, ListFilter, Handshake, Building2, Users } from "lucide-react";
 import { format } from "date-fns";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -532,8 +532,6 @@ export default function FindPartnerPage() {
                   : typeof profile.skills === "string"
                   ? profile.skills.split(",").map((s: string) => s.trim()).filter((s: string) => Boolean(s))
                   : [];
-                const displaySkills = skillsArr.slice(0, 3);
-                const moreSkills = skillsArr.length > 3 ? skillsArr.length - 3 : 0;
                 return (
                   <motion.div
                     key={profile.id}
@@ -566,38 +564,45 @@ export default function FindPartnerPage() {
                             
                             {/* Profile Info */}
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
+                              <div className="flex items-center justify-between gap-2 mb-1">
                                 <h3 
                                   className="font-bold text-base text-gray-900 dark:text-white truncate cursor-pointer hover:text-primary transition-colors"
                                   onClick={() => handleProfileClick(profile.id)}
                                 >
                                   {profile.full_name}
                                 </h3>
-                                {profile.profile_type && (
-                                  <Badge className="bg-primary/10 text-primary border-primary/20 text-xs px-2 py-0.5 capitalize">
-                                    {profile.profile_type}
-                                  </Badge>
-                                )}
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                  {profile.profile_type && (
+                                    <div className="flex items-center gap-1.5 bg-blue-500/10 text-blue-600 px-2 py-1 rounded-full text-xs font-medium">
+                                      {profile.profile_type === "Founder" && <Briefcase className="h-3.5 w-3.5" />}
+                                      {profile.profile_type === "Investor" && <DollarSign className="h-3.5 w-3.5" />}
+                                      {profile.profile_type === "Expert" && <Star className="h-3.5 w-3.5" />}
+                                      <span>{profile.profile_type}</span>
+                                    </div>
+                                  )}
+                                </div>
                               </div>
                               
                               {profile.professional_role && (
-                                <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
                                   {profile.professional_role}
+                                  {profile.company && (
+                                    <>
+                                      <span className="mx-1">•</span>
+                                      <span className="text-gray-600">{profile.company}</span>
+                                    </>
+                                  )}
                                 </p>
                               )}
                               
-                              {profile.company && (
-                                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                                  {profile.company}
-                                </p>
-                              )}
-                              
-                              {/* Location and Date */}
+                              {/* Date and Location */}
                               <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                                <MapPin className="h-3 w-3" />
-                                <span>{profile.country || "Location not specified"}</span>
+                                <div className="flex items-center gap-1">
+                                  <MapPin className="h-3 w-3" />
+                                  <span>{profile.country || "Location not specified"}</span>
+                                </div>
                                 <span className="mx-1">•</span>
-                                <span>{profile.created_at ? format(new Date(profile.created_at), "MMM yyyy") : "Recently joined"}</span>
+                                <span>{profile.created_at ? format(new Date(profile.created_at), "MMM dd, yyyy") : "Recently joined"}</span>
                               </div>
                             </div>
                           </div>
@@ -605,33 +610,37 @@ export default function FindPartnerPage() {
 
                         {/* Bio Section */}
                         {profile.bio && (
-                          <div className="px-4 pb-3">
-                            <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-3 leading-relaxed">
+                          <div className="px-4 pb-4">
+                            <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">About</h4>
+                            <div className="text-xs text-gray-600 dark:text-gray-400 line-clamp-3 leading-relaxed">
                               {profile.bio}
-                            </p>
-                          </div>
-                        )}
-
-                        {/* Skills Section */}
-                        {displaySkills.length > 0 && (
-                          <div className="px-4 pb-3">
-                            <div className="flex flex-wrap gap-2">
-                              {displaySkills.map((skill: string) => (
-                                <Badge 
-                                  key={skill} 
-                                  className={`${getSkillColor(skill)} text-xs px-2 py-0.5 font-medium border-0`}
-                                >
-                                  {skill}
-                                </Badge>
-                              ))}
-                              {moreSkills > 0 && (
-                                <Badge variant="outline" className="text-xs px-2 py-0.5 font-medium border-gray-200 dark:border-gray-700">
-                                  +{moreSkills} more
-                                </Badge>
-                              )}
                             </div>
                           </div>
                         )}
+
+                        {/* Details Section */}
+                        <div className="px-4 pb-4 space-y-3">
+                          {/* Skills */}
+                          {skillsArr.length > 0 && (
+                            <div className="space-y-2">
+                              <h4 className="text-sm font-semibold text-gray-900 dark:text-white">Skills & Expertise</h4>
+                              <div className="flex flex-wrap gap-1.5">
+                                {skillsArr.map((skill: string) => (
+                                  <Badge 
+                                    key={skill} 
+                                    variant="secondary"
+                                    className="bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-900/20 dark:to-blue-800/20 
+                                             text-blue-700 dark:text-blue-400 border-blue-200/50 dark:border-blue-700/50 
+                                             hover:bg-blue-100 dark:hover:bg-blue-800/30 transition-colors
+                                             text-xs px-2 py-0.5 rounded-lg"
+                                  >
+                                    {skill}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
 
                         {/* Action Buttons */}
                         <div className="mt-auto p-4 pt-3">
@@ -646,27 +655,39 @@ export default function FindPartnerPage() {
                               View Profile
                             </Button>
                             
-                            {user && profile.id !== user.id && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 w-8 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-yellow-50 dark:hover:bg-yellow-900/20"
-                                onClick={() => {
-                                  if (isProfileSaved(profile.id)) unsaveProfile(profile.id);
-                                  else saveProfile(profile.id);
-                                }}
-                                disabled={favoritesLoading}
-                              >
-                                <Star
-                                  className={`h-4 w-4 ${
-                                    isProfileSaved(profile.id)
-                                      ? "fill-yellow-400 text-yellow-500"
-                                      : "text-gray-400 hover:text-yellow-500"
-                                  }`}
-                                  strokeWidth={isProfileSaved(profile.id) ? 0 : 1.5}
-                                />
-                              </Button>
-                            )}
+                            <div className="flex gap-1">
+                              {user && profile.id !== user.id && (
+                                <>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 w-8 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-yellow-50 dark:hover:bg-yellow-900/20"
+                                    onClick={() => {
+                                      if (isProfileSaved(profile.id)) unsaveProfile(profile.id);
+                                      else saveProfile(profile.id);
+                                    }}
+                                    disabled={favoritesLoading}
+                                  >
+                                    <Star
+                                      className={`h-4 w-4 ${
+                                        isProfileSaved(profile.id)
+                                          ? "fill-yellow-400 text-yellow-500"
+                                          : "text-gray-400 hover:text-yellow-500"
+                                      }`}
+                                      strokeWidth={isProfileSaved(profile.id) ? 0 : 1.5}
+                                    />
+                                  </Button>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm"
+                                    className="h-8 w-8 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                                    onClick={() => handleMessage(profile.id)}
+                                  >
+                                    <Mail className="h-4 w-4 text-gray-400 hover:text-blue-500" />
+                                  </Button>
+                                </>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </CardContent>
@@ -703,16 +724,18 @@ export default function FindPartnerPage() {
                             
                             {/* Listing Info */}
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
+                              <div className="flex items-center justify-between gap-2 mb-1">
                                 <h3 
                                   className="font-bold text-base text-gray-900 dark:text-white truncate cursor-pointer hover:text-primary transition-colors"
                                   onClick={() => handleProfileClick(listing.profiles?.id)}
                                 >
                                   {listing.profiles?.full_name || 'Unknown User'}
                                 </h3>
-                                <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/20 text-xs px-2 py-1">
-                                  {formatListingType(listing.listing_type)}
-                                </Badge>
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                  <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/20 text-xs px-2 py-1">
+                                    {formatListingType(listing.listing_type)}
+                                  </Badge>
+                                </div>
                               </div>
                               
                               {listing.profiles?.professional_role && (
@@ -743,24 +766,28 @@ export default function FindPartnerPage() {
 
                         {/* Details Section */}
                         <div className="px-4 pb-4 space-y-3">
-                          {/* Funding Stage, Compensation, Amount */}
+                          {/* Key Details Badges */}
                           <div className="flex flex-wrap gap-2">
                             {listing.funding_stage && (
-                              <div className="flex items-center gap-1.5 bg-blue-500/10 text-blue-600 px-3 py-1.5 rounded-full text-xs font-medium">
-                                <Briefcase className="h-3.5 w-3.5" />
-                                <span>{listing.funding_stage}</span>
+                              <div className="flex items-center gap-1.5 bg-purple-500/10 text-purple-600 px-3 py-1.5 rounded-full text-xs font-medium">
+                                <Building2 className="h-3.5 w-3.5" />
+                                <span>Stage: {listing.funding_stage}</span>
                               </div>
                             )}
-                            {listing.compensation_type && (
+                            {listing.compensation_type === "Equity" && listing.compensation_value && (
                               <div className="flex items-center gap-1.5 bg-green-500/10 text-green-600 px-3 py-1.5 rounded-full text-xs font-medium">
-                                <DollarSign className="h-3.5 w-3.5" />
-                                <span>{listing.compensation_type}</span>
+                                <Users className="h-3.5 w-3.5" />
+                                <span>Equity Offered: {
+                                  typeof listing.compensation_value === 'object' 
+                                    ? listing.compensation_value.equity || listing.compensation_value.value 
+                                    : listing.compensation_value
+                                }</span>
                               </div>
                             )}
                             {listing.amount && (
-                              <div className="flex items-center gap-1.5 bg-purple-500/10 text-purple-600 px-3 py-1.5 rounded-full text-xs font-medium">
+                              <div className="flex items-center gap-1.5 bg-blue-500/10 text-blue-600 px-3 py-1.5 rounded-full text-xs font-medium">
                                 <DollarSign className="h-3.5 w-3.5" />
-                                <span>{listing.amount}</span>
+                                <span>Amount Seeking: {listing.amount}</span>
                               </div>
                             )}
                           </div>

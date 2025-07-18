@@ -921,9 +921,9 @@ export default function ProfileSettingsPage() {
                                     <div className="space-y-4">
                                         <Label>Choose Theme</Label>
                                         <div className="flex flex-col gap-4">
-                                            {/* Theme Option: Light */}
-                                            <button
-                                                type="button"
+                                    {/* Theme Option: Light */}
+                                    <button
+                                        type="button"
                                                 className={`group flex items-center gap-4 p-4 rounded-lg border-2 transition-all hover:bg-accent/50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
                                                     userProfile.theme === 'light' 
                                                         ? 'border-primary bg-primary/5 ring-2 ring-primary ring-offset-2' 
@@ -931,8 +931,8 @@ export default function ProfileSettingsPage() {
                                                 }`}
                                                 onClick={async () => {
                                                     try {
-                                                        setUserProfile(prev => prev ? { ...prev, theme: 'light' } : null);
-                                                        setTheme('light');
+                                            setUserProfile(prev => prev ? { ...prev, theme: 'light' } : null);
+                                            setTheme('light');
                                                         setHasChanges(true);
                                                         
                                                         const { error } = await supabase
@@ -950,31 +950,31 @@ export default function ProfileSettingsPage() {
                                                         setUserProfile(prev => prev ? { ...prev, theme: 'dark' } : null);
                                                         setTheme('dark');
                                                     }
-                                                }}
-                                                aria-label="Select light theme"
-                                            >
+                                        }}
+                                        aria-label="Select light theme"
+                                    >
                                                 <div className="w-20 h-14 rounded-md bg-gray-100 border border-gray-200 flex flex-col gap-1 p-2 shrink-0">
                                                     <div className="h-2 w-3/4 bg-gray-300 rounded" />
                                                     <div className="h-2 w-1/2 bg-gray-200 rounded" />
                                                     <div className="flex gap-1 mt-1">
                                                         <div className="h-2 w-2 bg-gray-400 rounded-full" />
                                                         <div className="h-2 w-1/3 bg-gray-200 rounded" />
-                                                    </div>
-                                                </div>
+                                            </div>
+                                            </div>
                                                 <div className="flex-1 text-left">
                                                     <div className="font-medium">Light Theme</div>
                                                     <div className="text-sm text-muted-foreground">Clean and bright interface with light backgrounds</div>
-                                                </div>
+                                        </div>
                                                 {userProfile.theme === 'light' && (
                                                     <div className="h-4 w-4 rounded-full bg-primary flex items-center justify-center shrink-0">
                                                         <div className="h-2 w-2 rounded-full bg-white"></div>
                                                     </div>
                                                 )}
-                                            </button>
+                                    </button>
                                             
-                                            {/* Theme Option: Dark */}
-                                            <button
-                                                type="button"
+                                    {/* Theme Option: Dark */}
+                                    <button
+                                        type="button"
                                                 className={`group flex items-center gap-4 p-4 rounded-lg border-2 transition-all hover:bg-accent/50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
                                                     userProfile.theme === 'dark' 
                                                         ? 'border-primary bg-primary/5 ring-2 ring-primary ring-offset-2' 
@@ -982,8 +982,8 @@ export default function ProfileSettingsPage() {
                                                 }`}
                                                 onClick={async () => {
                                                     try {
-                                                        setUserProfile(prev => prev ? { ...prev, theme: 'dark' } : null);
-                                                        setTheme('dark');
+                                            setUserProfile(prev => prev ? { ...prev, theme: 'dark' } : null);
+                                            setTheme('dark');
                                                         setHasChanges(true);
                                                         
                                                         const { error } = await supabase
@@ -1001,27 +1001,27 @@ export default function ProfileSettingsPage() {
                                                         setUserProfile(prev => prev ? { ...prev, theme: 'light' } : null);
                                                         setTheme('light');
                                                     }
-                                                }}
-                                                aria-label="Select dark theme"
-                                            >
+                                        }}
+                                        aria-label="Select dark theme"
+                                    >
                                                 <div className="w-20 h-14 rounded-md bg-[#151a23] border border-[#232b3b] flex flex-col gap-1 p-2 shrink-0">
                                                     <div className="h-2 w-3/4 bg-[#232b3b] rounded" />
                                                     <div className="h-2 w-1/2 bg-[#2a3441] rounded" />
                                                     <div className="flex gap-1 mt-1">
                                                         <div className="h-2 w-2 bg-[#3b4660] rounded-full" />
                                                         <div className="h-2 w-1/3 bg-[#232b3b] rounded" />
-                                                    </div>
-                                                </div>
+                                            </div>
+                                            </div>
                                                 <div className="flex-1 text-left">
                                                     <div className="font-medium">Dark Theme</div>
                                                     <div className="text-sm text-muted-foreground">Sleek and modern interface with dark backgrounds</div>
-                                                </div>
+                                        </div>
                                                 {userProfile.theme === 'dark' && (
                                                     <div className="h-4 w-4 rounded-full bg-primary flex items-center justify-center shrink-0">
                                                         <div className="h-2 w-2 rounded-full bg-white"></div>
                                                     </div>
                                                 )}
-                                            </button>
+                                    </button>
                                         </div>
                                     </div>
                                     

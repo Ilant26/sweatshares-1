@@ -97,14 +97,14 @@ export function DashboardListingContent({ listing, profile }: DashboardListingCo
     if (isListingLiked(listing.id)) {
       await unlikeListing(listing.id);
       toast({
-        title: "Retiré des favoris",
-        description: "Cette annonce a été retirée de vos favoris",
+        title: "Removed from favorites",
+        description: "This listing has been removed from your favorites",
       });
     } else {
       await likeListing(listing.id);
       toast({
-        title: "Ajouté aux favoris",
-        description: "Cette annonce a été ajoutée à vos favoris",
+        title: "Added to favorites",
+        description: "This listing has been added to your favorites",
       });
     }
   };
@@ -124,8 +124,8 @@ export function DashboardListingContent({ listing, profile }: DashboardListingCo
       // Fallback: copy to clipboard
       navigator.clipboard.writeText(window.location.href);
       toast({
-        title: "Lien copié",
-        description: "Le lien de l'annonce a été copié dans le presse-papiers",
+        title: "Link copied",
+        description: "The listing link has been copied to your clipboard",
       });
     }
   };
@@ -158,7 +158,7 @@ Looking forward to hearing from you!`;
               <div>
                 <Button variant="ghost" className="gap-2">
                   <ArrowLeft className="h-4 w-4" />
-                  Retour aux annonces
+                  Back to listings
                 </Button>
               </div>
             </Link>
@@ -194,7 +194,7 @@ Looking forward to hearing from you!`;
                   <motion.div variants={itemVariants} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
                     <Calendar className="h-5 w-5 text-primary" />
                     <div>
-                      <p className="text-sm text-muted-foreground">Date de publication</p>
+                      <p className="text-sm text-muted-foreground">Date of publication</p>
                       <p className="font-medium">{listing.created_at ? new Date(listing.created_at).toLocaleDateString() : 'N/A'}</p>
                     </div>
                   </motion.div>
@@ -202,15 +202,28 @@ Looking forward to hearing from you!`;
                     <motion.div variants={itemVariants} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
                       <DollarSign className="h-5 w-5 text-primary" />
                       <div>
-                        <p className="text-sm text-muted-foreground">Montant d'investissement</p>
+                        <p className="text-sm text-muted-foreground">Amount Seeking</p>
                         <p className="font-medium">{listing.amount}</p>
+                      </div>
+                    </motion.div>
+                  )}
+                  {listing.compensation_type === "Equity" && listing.compensation_value && (
+                    <motion.div variants={itemVariants} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                      <Users className="h-5 w-5 text-primary" />
+                      <div>
+                        <p className="text-sm text-muted-foreground">Equity Offered</p>
+                        <p className="font-medium">
+                          {typeof listing.compensation_value === 'object' 
+                            ? listing.compensation_value.equity || listing.compensation_value.value 
+                            : listing.compensation_value}
+                        </p>
                       </div>
                     </motion.div>
                   )}
                   <motion.div variants={itemVariants} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
                     <MapPin className="h-5 w-5 text-primary" />
                     <div>
-                      <p className="text-sm text-muted-foreground">Localisation</p>
+                      <p className="text-sm text-muted-foreground">Location</p>
                       <p className="font-medium">{listing.location_country} {listing.location_city && `, ${listing.location_city}`}</p>
                     </div>
                   </motion.div>
@@ -218,7 +231,7 @@ Looking forward to hearing from you!`;
                     <motion.div variants={itemVariants} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
                       <Building2 className="h-5 w-5 text-primary" />
                       <div>
-                        <p className="text-sm text-muted-foreground">Étape</p>
+                        <p className="text-sm text-muted-foreground">Stage</p>
                         <p className="font-medium">{listing.funding_stage}</p>
                       </div>
                     </motion.div>
@@ -282,7 +295,7 @@ Looking forward to hearing from you!`;
                           <div className="space-y-4">
                             <div className="flex items-center gap-2">
                               <Briefcase className="h-5 w-5 text-primary" />
-                              <h4 className="text-xl font-semibold">Rémunération</h4>
+                              <h4 className="text-xl font-semibold">Compensation</h4>
                             </div>
                             <div className="p-4 rounded-lg bg-muted/50">
                               <p className="font-medium">
@@ -325,7 +338,7 @@ Looking forward to hearing from you!`;
                           className="bg-primary hover:bg-primary/90 text-primary-foreground"
                         >
                           <Mail className="h-4 w-4 mr-2" />
-                          Reply to listing
+                          Contact
                         </Button>
                       )}
 
