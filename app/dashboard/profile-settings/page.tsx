@@ -107,6 +107,52 @@ export default function ProfileSettingsPage() {
     const [skillsSearchTerm, setSkillsSearchTerm] = useState('');
     const [isSkillsDropdownOpen, setIsSkillsDropdownOpen] = useState(false);
 
+    // Form persistence key
+    const FORM_STORAGE_KEY = `profile-settings-${user?.id}`;
+
+    // Save form data to localStorage
+    const saveFormData = (profileData: UserProfile) => {
+        if (typeof window !== 'undefined' && profileData) {
+            try {
+                const formData = {
+                    ...profileData,
+                    lastSaved: Date.now()
+                };
+                localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(formData));
+            } catch (error) {
+                console.warn('Failed to save form data to localStorage:', error);
+            }
+        }
+    };
+
+    // Load form data from localStorage
+    const loadFormData = (): UserProfile | null => {
+        if (typeof window !== 'undefined') {
+            try {
+                const savedData = localStorage.getItem(FORM_STORAGE_KEY);
+                if (savedData) {
+                    const parsed = JSON.parse(savedData);
+                    // Check if data is not too old (24 hours)
+                    const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+                    if (parsed.lastSaved && (Date.now() - parsed.lastSaved) < maxAge) {
+                        delete parsed.lastSaved;
+                        return parsed;
+                    }
+                }
+            } catch (error) {
+                console.warn('Failed to load form data from localStorage:', error);
+            }
+        }
+        return null;
+    };
+
+    // Clear saved form data
+    const clearSavedFormData = () => {
+        if (typeof window !== 'undefined') {
+            localStorage.removeItem(FORM_STORAGE_KEY);
+        }
+    };
+
     useEffect(() => {
         if (!sessionLoading && user) {
             fetchUserProfile();
@@ -118,6 +164,40 @@ export default function ProfileSettingsPage() {
             setSelectedSkills(userProfile.skills);
         }
     }, [userProfile?.skills]);
+
+    // Auto-save form data when userProfile changes
+    useEffect(() => {
+        if (userProfile && hasChanges) {
+            const saveTimeout = setTimeout(() => {
+                saveFormData(userProfile);
+            }, 1000); // Save after 1 second of inactivity
+
+            return () => clearTimeout(saveTimeout);
+        }
+    }, [userProfile, hasChanges]);
+
+    // Save form data before page unload
+    useEffect(() => {
+        const handleBeforeUnload = () => {
+            if (userProfile && hasChanges) {
+                saveFormData(userProfile);
+            }
+        };
+
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'hidden' && userProfile && hasChanges) {
+                saveFormData(userProfile);
+            }
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, [userProfile, hasChanges]);
 
     // Handle clicking outside skills dropdown
     useEffect(() => {
@@ -167,7 +247,7 @@ export default function ProfileSettingsPage() {
 
             if (profileError) throw profileError;
 
-            const newProfile = {
+            const fetchedProfile = {
                 id: user?.id || '',
                 username: profile?.username || user?.user_metadata?.username || null,
                 full_name: profile?.full_name || user?.user_metadata?.full_name || null,
@@ -188,9 +268,26 @@ export default function ProfileSettingsPage() {
                 theme: profile?.theme || 'light',
             };
 
-            setUserProfile(newProfile);
-            setPreviewUrl(profile?.avatar_url || user?.user_metadata?.avatar_url || '/placeholder-user.jpg');
-            setHasChanges(false);
+            // Check for saved form data and merge with fetched profile
+            const savedFormData = loadFormData();
+            let finalProfile = fetchedProfile;
+            let hasUnsavedChanges = false;
+
+            if (savedFormData) {
+                // Merge saved data with fetched profile, giving priority to saved data
+                finalProfile = { ...fetchedProfile, ...savedFormData };
+                hasUnsavedChanges = true;
+                
+                // Show a toast to inform user about restored data
+                toast.info('Unsaved changes have been restored!', {
+                    description: 'Your previous edits were automatically saved.',
+                    duration: 5000
+                });
+            }
+
+            setUserProfile(finalProfile);
+            setPreviewUrl(finalProfile.avatar_url || '/placeholder-user.jpg');
+            setHasChanges(hasUnsavedChanges);
 
         } catch (err: any) {
             setError(err.message || "Failed to load user profile.");
@@ -290,6 +387,7 @@ export default function ProfileSettingsPage() {
             toast.success('Profile updated successfully!');
             setSelectedFile(null);
             setHasChanges(false);
+            clearSavedFormData(); // Clear any saved form data since we successfully saved
             await fetchUserProfile(); // Refresh the profile data
 
         } catch (err: any) {
@@ -935,7 +1033,15 @@ export default function ProfileSettingsPage() {
                         <AlertDescription>{error}</AlertDescription>
                     </Alert>
                 )}
-                <div className="flex justify-end">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        {hasChanges && (
+                            <>
+                                <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+                                <span>Changes are automatically saved as you type</span>
+                            </>
+                        )}
+                    </div>
                     <Button type="submit" disabled={isSaving || !hasChanges}>
                         {isSaving ? (
                             <>
