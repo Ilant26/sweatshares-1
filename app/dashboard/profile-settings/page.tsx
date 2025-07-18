@@ -796,65 +796,135 @@ export default function ProfileSettingsPage() {
                             </CardContent>
                         </Card>
                         {/* Theme Card - improved layout */}
-                        <Card>
+                        <Card className="h-full">
                             <CardHeader>
-                                <CardTitle>Theme</CardTitle>
-                                <CardDescription>Select the theme for the dashboard.</CardDescription>
+                                <CardTitle>Theme Preferences</CardTitle>
+                                <CardDescription>Customize your dashboard appearance and choose your preferred theme.</CardDescription>
                             </CardHeader>
-                            <CardContent>
-                                <div className="flex gap-8 justify-center">
-                                    {/* Theme Option: Light */}
-                                    <button
-                                        type="button"
-                                        className={`group flex flex-col items-center focus:outline-none ${userProfile.theme === 'light' ? 'ring-2 ring-primary ring-offset-2' : 'ring-1 ring-muted'} rounded-xl p-3 transition-all bg-background`}
-                                        onClick={() => {
-                                            setUserProfile(prev => prev ? { ...prev, theme: 'light' } : null);
-                                            setTheme('light');
-                                            // Optionally, persist immediately
-                                            supabase.from('profiles').update({ theme: 'light' }).eq('id', userProfile.id);
-                                        }}
-                                        aria-label="Select light theme"
-                                    >
-                                        <div className="w-40 h-28 rounded-lg bg-gray-100 flex flex-col gap-2 p-4 mb-2">
-                                            <div className="h-4 w-3/4 bg-gray-200 rounded" />
-                                            <div className="h-4 w-2/3 bg-gray-200 rounded" />
-                                            <div className="flex gap-2 mt-2">
-                                                <div className="h-4 w-4 bg-gray-300 rounded-full" />
-                                                <div className="h-4 w-2/3 bg-gray-200 rounded" />
-                                            </div>
-                                            <div className="flex gap-2 mt-2">
-                                                <div className="h-4 w-4 bg-gray-300 rounded-full" />
-                                                <div className="h-4 w-2/3 bg-gray-200 rounded" />
-                                            </div>
+                            <CardContent className="space-y-6">
+                                <div className="space-y-4">
+                                    <div className="space-y-2">
+                                        <Label>Current Theme</Label>
+                                        <p className="text-sm text-muted-foreground">
+                                            Your selected theme: <span className="font-medium capitalize">{userProfile.theme}</span>
+                                        </p>
+                                    </div>
+                                    
+                                    <div className="space-y-4">
+                                        <Label>Choose Theme</Label>
+                                        <div className="flex flex-col gap-4">
+                                            {/* Theme Option: Light */}
+                                            <button
+                                                type="button"
+                                                className={`group flex items-center gap-4 p-4 rounded-lg border-2 transition-all hover:bg-accent/50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
+                                                    userProfile.theme === 'light' 
+                                                        ? 'border-primary bg-primary/5 ring-2 ring-primary ring-offset-2' 
+                                                        : 'border-border hover:border-primary/50'
+                                                }`}
+                                                onClick={async () => {
+                                                    try {
+                                                        setUserProfile(prev => prev ? { ...prev, theme: 'light' } : null);
+                                                        setTheme('light');
+                                                        setHasChanges(true);
+                                                        
+                                                        const { error } = await supabase
+                                                            .from('profiles')
+                                                            .update({ theme: 'light' })
+                                                            .eq('id', userProfile.id);
+                                                        
+                                                        if (error) throw error;
+                                                        
+                                                        toast.success('Theme updated to Light mode');
+                                                    } catch (error) {
+                                                        console.error('Error updating theme:', error);
+                                                        toast.error('Failed to update theme');
+                                                        // Revert on error
+                                                        setUserProfile(prev => prev ? { ...prev, theme: 'dark' } : null);
+                                                        setTheme('dark');
+                                                    }
+                                                }}
+                                                aria-label="Select light theme"
+                                            >
+                                                <div className="w-20 h-14 rounded-md bg-gray-100 border border-gray-200 flex flex-col gap-1 p-2 shrink-0">
+                                                    <div className="h-2 w-3/4 bg-gray-300 rounded" />
+                                                    <div className="h-2 w-1/2 bg-gray-200 rounded" />
+                                                    <div className="flex gap-1 mt-1">
+                                                        <div className="h-2 w-2 bg-gray-400 rounded-full" />
+                                                        <div className="h-2 w-1/3 bg-gray-200 rounded" />
+                                                    </div>
+                                                </div>
+                                                <div className="flex-1 text-left">
+                                                    <div className="font-medium">Light Theme</div>
+                                                    <div className="text-sm text-muted-foreground">Clean and bright interface with light backgrounds</div>
+                                                </div>
+                                                {userProfile.theme === 'light' && (
+                                                    <div className="h-4 w-4 rounded-full bg-primary flex items-center justify-center shrink-0">
+                                                        <div className="h-2 w-2 rounded-full bg-white"></div>
+                                                    </div>
+                                                )}
+                                            </button>
+                                            
+                                            {/* Theme Option: Dark */}
+                                            <button
+                                                type="button"
+                                                className={`group flex items-center gap-4 p-4 rounded-lg border-2 transition-all hover:bg-accent/50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
+                                                    userProfile.theme === 'dark' 
+                                                        ? 'border-primary bg-primary/5 ring-2 ring-primary ring-offset-2' 
+                                                        : 'border-border hover:border-primary/50'
+                                                }`}
+                                                onClick={async () => {
+                                                    try {
+                                                        setUserProfile(prev => prev ? { ...prev, theme: 'dark' } : null);
+                                                        setTheme('dark');
+                                                        setHasChanges(true);
+                                                        
+                                                        const { error } = await supabase
+                                                            .from('profiles')
+                                                            .update({ theme: 'dark' })
+                                                            .eq('id', userProfile.id);
+                                                        
+                                                        if (error) throw error;
+                                                        
+                                                        toast.success('Theme updated to Dark mode');
+                                                    } catch (error) {
+                                                        console.error('Error updating theme:', error);
+                                                        toast.error('Failed to update theme');
+                                                        // Revert on error
+                                                        setUserProfile(prev => prev ? { ...prev, theme: 'light' } : null);
+                                                        setTheme('light');
+                                                    }
+                                                }}
+                                                aria-label="Select dark theme"
+                                            >
+                                                <div className="w-20 h-14 rounded-md bg-[#151a23] border border-[#232b3b] flex flex-col gap-1 p-2 shrink-0">
+                                                    <div className="h-2 w-3/4 bg-[#232b3b] rounded" />
+                                                    <div className="h-2 w-1/2 bg-[#2a3441] rounded" />
+                                                    <div className="flex gap-1 mt-1">
+                                                        <div className="h-2 w-2 bg-[#3b4660] rounded-full" />
+                                                        <div className="h-2 w-1/3 bg-[#232b3b] rounded" />
+                                                    </div>
+                                                </div>
+                                                <div className="flex-1 text-left">
+                                                    <div className="font-medium">Dark Theme</div>
+                                                    <div className="text-sm text-muted-foreground">Sleek and modern interface with dark backgrounds</div>
+                                                </div>
+                                                {userProfile.theme === 'dark' && (
+                                                    <div className="h-4 w-4 rounded-full bg-primary flex items-center justify-center shrink-0">
+                                                        <div className="h-2 w-2 rounded-full bg-white"></div>
+                                                    </div>
+                                                )}
+                                            </button>
                                         </div>
-                                        <span className="text-base font-medium mt-1">Light</span>
-                                    </button>
-                                    {/* Theme Option: Dark */}
-                                    <button
-                                        type="button"
-                                        className={`group flex flex-col items-center focus:outline-none ${userProfile.theme === 'dark' ? 'ring-2 ring-primary ring-offset-2' : 'ring-1 ring-muted'} rounded-xl p-3 transition-all bg-background`}
-                                        onClick={() => {
-                                            setUserProfile(prev => prev ? { ...prev, theme: 'dark' } : null);
-                                            setTheme('dark');
-                                            // Optionally, persist immediately
-                                            supabase.from('profiles').update({ theme: 'dark' }).eq('id', userProfile.id);
-                                        }}
-                                        aria-label="Select dark theme"
-                                    >
-                                        <div className="w-40 h-28 rounded-lg bg-[#151a23] flex flex-col gap-2 p-4 mb-2">
-                                            <div className="h-4 w-3/4 bg-[#232b3b] rounded" />
-                                            <div className="h-4 w-2/3 bg-[#232b3b] rounded" />
-                                            <div className="flex gap-2 mt-2">
-                                                <div className="h-4 w-4 bg-[#3b4660] rounded-full" />
-                                                <div className="h-4 w-2/3 bg-[#232b3b] rounded" />
-                                            </div>
-                                            <div className="flex gap-2 mt-2">
-                                                <div className="h-4 w-4 bg-[#3b4660] rounded-full" />
-                                                <div className="h-4 w-2/3 bg-[#232b3b] rounded" />
-                                            </div>
-                                        </div>
-                                        <span className="text-base font-medium mt-1">Dark</span>
-                                    </button>
+                                    </div>
+                                    
+                                    <Separator />
+                                    
+                                    <div className="space-y-2">
+                                        <Label>About Themes</Label>
+                                        <p className="text-sm text-muted-foreground">
+                                            Theme changes are applied immediately and saved automatically. You can switch between light and dark themes at any time.
+                                        </p>
+                                    </div>
                                 </div>
                             </CardContent>
                         </Card>

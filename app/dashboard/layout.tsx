@@ -8,7 +8,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
-import { ThemeSwitcher } from "@/components/theme-switcher"
+
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { ProtectedRoute } from '@/components/protected-route'
 import { useSession, UnreadMessagesProvider, UnreadInvitationsProvider } from '@/components/providers/session-provider'
@@ -260,7 +260,7 @@ function DashboardHeader() {
               className={cn(
                 "relative px-2 py-1 text-xs lg:text-sm font-bold transition-colors", // font-bold always
                 "hover:text-primary/80",
-                currentSection === 'feed' ? "text-primary" : "text-muted-foreground",
+                currentSection === 'feed' ? "text-primary" : "text-muted-foreground dark:text-white",
                 "after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:bg-primary after:transition-transform after:duration-200",
                 currentSection === 'feed' && "after:scale-x-100"
               )}
@@ -272,7 +272,7 @@ function DashboardHeader() {
               className={cn(
                 "relative px-2 py-1 text-xs lg:text-sm font-bold transition-colors", // font-bold always
                 "hover:text-primary/80",
-                isFindPartner ? "text-primary" : "text-muted-foreground",
+                isFindPartner ? "text-primary" : "text-muted-foreground dark:text-white",
                 "after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:bg-primary after:transition-transform after:duration-200",
                 isFindPartner && "after:scale-x-100"
               )}
@@ -290,7 +290,7 @@ function DashboardHeader() {
               className={cn(
                 "relative px-2 py-1 text-xs font-bold transition-colors", // font-bold always
                 "hover:text-primary/80",
-                currentSection === 'feed' ? "text-primary" : "text-muted-foreground",
+                currentSection === 'feed' ? "text-primary" : "text-muted-foreground dark:text-white",
                 "after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:bg-primary after:transition-transform after:duration-200",
                 currentSection === 'feed' && "after:scale-x-100"
               )}
@@ -302,7 +302,7 @@ function DashboardHeader() {
               className={cn(
                 "relative px-2 py-1 text-xs font-bold transition-colors", // font-bold always
                 "hover:text-primary/80",
-                isFindPartner ? "text-primary" : "text-muted-foreground",
+                isFindPartner ? "text-primary" : "text-muted-foreground dark:text-white",
                 "after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:bg-primary after:transition-transform after:duration-200",
                 isFindPartner && "after:scale-x-100"
               )}
@@ -317,14 +317,7 @@ function DashboardHeader() {
         "ml-auto"
       )}>
         <div className="hidden sm:block">
-          <button className="size-8 flex items-center justify-center p-0 bg-transparent border-0 shadow-none hover:bg-accent/40 transition-colors rounded-md">
-            <ThemeSwitcher />
-          </button>
-        </div>
-        <div className="hidden sm:block">
-          <button className="size-8 flex items-center justify-center p-0 bg-transparent border-0 shadow-none hover:bg-accent/40 transition-colors rounded-md">
-            <NotificationsDropdown />
-          </button>
+          <NotificationsDropdown />
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -409,10 +402,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   <div className="absolute left-1/2 transform -translate-x-1/2 hidden sm:flex">
                     <div className="inline-flex items-center justify-center">
                       <nav className="flex space-x-6 lg:space-x-12">
-                        <div className="relative px-2 py-1 text-xs lg:text-sm font-bold text-muted-foreground">
+                        <div className="relative px-2 py-1 text-xs lg:text-sm font-bold text-muted-foreground dark:text-white">
                           News Feed
                         </div>
-                        <div className="relative px-2 py-1 text-xs lg:text-sm font-bold text-muted-foreground">
+                        <div className="relative px-2 py-1 text-xs lg:text-sm font-bold text-muted-foreground dark:text-white">
                           Find My Partner
                         </div>
                       </nav>
@@ -421,10 +414,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   <div className="absolute left-1/2 transform -translate-x-1/2 sm:hidden">
                     <div className="inline-flex items-center justify-center">
                       <nav className="flex space-x-4">
-                        <div className="relative px-2 py-1 text-xs font-bold text-muted-foreground">
+                        <div className="relative px-2 py-1 text-xs font-bold text-muted-foreground dark:text-white">
                           Feed
                         </div>
-                        <div className="relative px-2 py-1 text-xs font-bold text-muted-foreground">
+                        <div className="relative px-2 py-1 text-xs font-bold text-muted-foreground dark:text-white">
                           Find
                         </div>
                       </nav>
@@ -432,14 +425,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   </div>
                   <div className="flex items-center gap-1 sm:gap-2 ml-auto">
                     <div className="hidden sm:block">
-                      <button className="size-8 flex items-center justify-center p-0 bg-transparent border-0 shadow-none hover:bg-accent/40 transition-colors rounded-md">
-                        <ThemeSwitcher />
-                      </button>
-                    </div>
-                    <div className="hidden sm:block">
-                      <button className="size-8 flex items-center justify-center p-0 bg-transparent border-0 shadow-none hover:bg-accent/40 transition-colors rounded-md">
-                        <NotificationsDropdown />
-                      </button>
+                      <NotificationsDropdown />
                     </div>
                     <Button variant="ghost" size="sm" className="h-8 px-1 sm:px-2 hover:bg-accent">
                       <Avatar className="h-8 w-8 rounded-full">
