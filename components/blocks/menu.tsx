@@ -43,54 +43,40 @@ export const Menu = () => {
     }, [menuState]);
 
     return (
-        <header>
+        <header className="sticky top-0 z-50 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border/40">
             <nav
                 data-state={menuState && 'active'}
-                className="relative z-50 w-full px-2 group">
-                <div className="mx-auto mt-2 max-w-6xl px-6 lg:px-12">
-                    <div className="relative flex flex-wrap items-center justify-between gap-6 py-3 lg:gap-0 lg:py-4">
-                        <div className="flex w-full justify-between lg:w-auto">
-                            <Link
-                                href="/"
-                                aria-label="home"
-                                className="flex items-center space-x-2">
-                                {/* Light mode logo */}
-                                <Image
-                                  src="/logo/logo-svg-dark-text.svg"
-                                  alt="SweatShares Logo"
-                                  width={160}
-                                  height={50}
-                                  priority
-                                  className="block dark:hidden"
-                                />
-                                {/* Dark mode logo */}
-                                <Image
-                                  src="/logo/logo-svg-white-text.svg"
-                                  alt="SweatShares Logo (White)"
-                                  width={160}
-                                  height={50}
-                                  priority
-                                  className="hidden dark:block"
-                                />
-                            </Link>
+                className="relative w-full px-2 group">
+                <div className="mx-auto max-w-6xl px-6 lg:px-12">
+                    <div className="relative flex items-center justify-between gap-6 py-3 lg:gap-0 lg:py-4">
+                        {/* Logo - Left Side */}
+                        <Link
+                            href="/"
+                            aria-label="home"
+                            className="flex items-center space-x-2">
+                            {/* Light mode logo */}
+                            <Image
+                              src="/logo/logo-svg-dark-text.svg"
+                              alt="SweatShares Logo"
+                              width={160}
+                              height={50}
+                              priority
+                              className="block dark:hidden"
+                            />
+                            {/* Dark mode logo */}
+                            <Image
+                              src="/logo/logo-svg-white-text.svg"
+                              alt="SweatShares Logo (White)"
+                              width={160}
+                              height={50}
+                              priority
+                              className="hidden dark:block"
+                            />
+                        </Link>
 
-                            <button
-                                onClick={() => setMenuState(!menuState)}
-                                aria-label={menuState ? 'Close Menu' : 'Open Menu'}
-                                className="relative z-20 -m-2.5 -mr-4 block cursor-pointer p-2.5 lg:hidden">
-                                <MenuIcon className={cn(
-                                    "m-auto size-6",
-                                    menuState ? "hidden" : "block"
-                                )} />
-                                <X className={cn(
-                                    "m-auto size-6",
-                                    menuState ? "block" : "hidden"
-                                )} />
-                            </button>
-                        </div>
-
-                        <div className="flex items-center gap-6">
-                            <ul className="hidden lg:flex gap-10 text-base">
+                        {/* Navigation Menu - Center (Desktop) */}
+                        <div className="hidden lg:flex items-center">
+                            <ul className="flex gap-10 text-base">
                                 {menuItems.map((item, index) => {
                                     const isActive = pathname === item.href;
                                     return (
@@ -116,8 +102,73 @@ export const Menu = () => {
                             </ul>
                         </div>
 
+                        {/* Right Side - Auth Buttons & Theme Toggle */}
+                        <div className="flex items-center gap-4">
+                            {/* Theme Switcher */}
+                            <div className="hidden lg:block">
+                                <ThemeSwitcher />
+                            </div>
+                            
+                            {/* Auth Buttons */}
+                            <div className="hidden lg:flex items-center gap-3">
+                                {user ? (
+                                    <>
+                                        <Button
+                                            asChild
+                                            variant="outline"
+                                            size="sm">
+                                            <Link href="/dashboard" className="flex items-center gap-2">
+                                                <LayoutDashboard className="h-4 w-4" />
+                                                Dashboard
+                                            </Link>
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={handleSignOut}>
+                                            <LogOut className="h-4 w-4 mr-2" />
+                                            Sign Out
+                                        </Button>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Button
+                                            asChild
+                                            variant="outline"
+                                            size="sm">
+                                            <Link href="/auth/login">
+                                                Login
+                                            </Link>
+                                        </Button>
+                                        <Button
+                                            asChild
+                                            size="sm">
+                                            <Link href="/auth/sign-up">
+                                                Sign Up
+                                            </Link>
+                                        </Button>
+                                    </>
+                                )}
+                            </div>
+
+                            {/* Mobile Menu Button */}
+                            <button
+                                onClick={() => setMenuState(!menuState)}
+                                aria-label={menuState ? 'Close Menu' : 'Open Menu'}
+                                className="relative z-20 -m-2.5 block cursor-pointer p-2.5 lg:hidden">
+                                <MenuIcon className={cn(
+                                    "m-auto size-6",
+                                    menuState ? "hidden" : "block"
+                                )} />
+                                <X className={cn(
+                                    "m-auto size-6",
+                                    menuState ? "block" : "hidden"
+                                )} />
+                            </button>
+                        </div>
+
                         {menuState && (
-                            <div className="fixed inset-x-0 top-[72px] z-50 bg-background lg:hidden">
+                            <div className="fixed inset-x-0 top-[72px] z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border/40 lg:hidden">
                                 <div className="mx-auto max-w-4xl px-6 py-6">
                                     <div className="space-y-6">
                                         <ul className="space-y-4">
@@ -195,46 +246,7 @@ export const Menu = () => {
                             </div>
                         )}
 
-                        <div className="hidden lg:flex items-center gap-6">
-                            <ThemeSwitcher />
-                            {user ? (
-                                <>
-                                    <Button
-                                        asChild
-                                        variant="outline"
-                                        size="default">
-                                        <Link href="/dashboard" className="flex items-center gap-2">
-                                            Dashboard
-                                        </Link>
-                                    </Button>
-                                    <Button
-                                        variant="outline"
-                                        size="default"
-                                        onClick={handleSignOut}>
-                                        <LogOut className="h-4 w-4 mr-2" />
-                                        Sign Out
-                                    </Button>
-                                </>
-                            ) : (
-                                <>
-                                    <Button
-                                        asChild
-                                        variant="outline"
-                                        size="default">
-                                        <Link href="/auth/login">
-                                            Login
-                                        </Link>
-                                    </Button>
-                                    <Button
-                                        asChild
-                                        size="default">
-                                        <Link href="/auth/sign-up">
-                                            Sign Up
-                                        </Link>
-                                    </Button>
-                                </>
-                            )}
-                        </div>
+
                     </div>
                 </div>
             </nav>

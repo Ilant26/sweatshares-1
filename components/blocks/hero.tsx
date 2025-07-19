@@ -224,7 +224,7 @@ export function HeroSection({
 
     React.useEffect(() => {
         if (viewType === 'profiles') {
-            onSearchFilterChange({ role, profileType, skill })
+        onSearchFilterChange({ role, profileType, skill })
         }
     }, [role, profileType, skill, viewType, onSearchFilterChange])
 
@@ -352,9 +352,9 @@ export function HeroSection({
 
     const clearFilters = () => {
         if (viewType === 'profiles') {
-            setRole("all");
-            setProfileType("all");
-            setSkill("all");
+        setRole("all");
+        setProfileType("all");
+        setSkill("all");
         } else {
             setListingType("all");
             setListingCountry("all");
@@ -405,7 +405,7 @@ export function HeroSection({
                 
                 {/* Hero Section */}
                 <section>
-                    <div className="relative pt-12 md:pt-20">
+                    <div className="relative pt-6 md:pt-12">
                         <div aria-hidden className="absolute inset-0 -z-10 size-full [background:radial-gradient(125%_125%_at_50%_100%,transparent_0%,var(--background)_75%)]" />
                         <div className="mx-auto max-w-7xl px-6">
                             <div className="text-center sm:mx-auto lg:mr-auto lg:mt-0">
@@ -458,55 +458,55 @@ export function HeroSection({
                                     <div className="flex flex-wrap gap-2 md:gap-3 w-full max-w-5xl items-end bg-background p-6 rounded-xl shadow-lg border border-border">
                                         {viewType === 'profiles' ? (
                                             <>
-                                                {/* Role Filter */}
+                                        {/* Role Filter */}
                                                 <div className="flex flex-col gap-1">
                                                     <Label className="text-xs font-medium text-muted-foreground">Role</Label>
-                                                    <Select value={role} onValueChange={setRole}>
-                                                        <SelectTrigger className="w-36" aria-label="Filter by role">
-                                                            <User className="mr-2 h-4 w-4 text-muted-foreground" />
-                                                            <SelectValue placeholder="Role" />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            <SelectItem value="all">All Roles</SelectItem>
-                                                            {ROLES.map((r) => (
-                                                                <SelectItem key={r} value={r}>{r}</SelectItem>
-                                                            ))}
-                                                        </SelectContent>
-                                                    </Select>
+                                        <Select value={role} onValueChange={setRole}>
+                                            <SelectTrigger className="w-36" aria-label="Filter by role">
+                                                <User className="mr-2 h-4 w-4 text-muted-foreground" />
+                                                <SelectValue placeholder="Role" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">All Roles</SelectItem>
+                                                {ROLES.map((r) => (
+                                                    <SelectItem key={r} value={r}>{r}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
                                                 </div>
-                                                
-                                                {/* Profile Type Filter */}
+                                        
+                                        {/* Profile Type Filter */}
                                                 <div className="flex flex-col gap-1">
                                                     <Label className="text-xs font-medium text-muted-foreground">Profile Type</Label>
-                                                    <Select value={profileType} onValueChange={setProfileType}>
-                                                        <SelectTrigger className="w-36" aria-label="Filter by profile type">
-                                                            <Briefcase className="mr-2 h-4 w-4 text-muted-foreground" />
-                                                            <SelectValue placeholder="Profile Type" />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            <SelectItem value="all">All Types</SelectItem>
-                                                            {PROFILE_TYPES.map((t) => (
-                                                                <SelectItem key={t} value={t}>{t}</SelectItem>
-                                                            ))}
-                                                        </SelectContent>
-                                                    </Select>
+                                        <Select value={profileType} onValueChange={setProfileType}>
+                                            <SelectTrigger className="w-36" aria-label="Filter by profile type">
+                                                <Briefcase className="mr-2 h-4 w-4 text-muted-foreground" />
+                                                <SelectValue placeholder="Profile Type" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                <SelectItem value="all">All Types</SelectItem>
+                                                {PROFILE_TYPES.map((t) => (
+                                                    <SelectItem key={t} value={t}>{t}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
                                                 </div>
-                                                
-                                                {/* Skill Filter */}
+                                        
+                                        {/* Skill Filter */}
                                                 <div className="flex flex-col gap-1">
                                                     <Label className="text-xs font-medium text-muted-foreground">Skill</Label>
-                                                    <Select value={skill} onValueChange={setSkill}>
-                                                        <SelectTrigger className="w-36" aria-label="Filter by skill">
-                                                            <Tag className="mr-2 h-4 w-4 text-muted-foreground" />
-                                                            <SelectValue placeholder="Skill" />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            <SelectItem value="all">All Skills</SelectItem>
-                                                            {SKILLS.map((s) => (
-                                                                <SelectItem key={s} value={s}>{s}</SelectItem>
-                                                            ))}
-                                                        </SelectContent>
-                                                    </Select>
+                                        <Select value={skill} onValueChange={setSkill}>
+                                            <SelectTrigger className="w-36" aria-label="Filter by skill">
+                                                <Tag className="mr-2 h-4 w-4 text-muted-foreground" />
+                                                <SelectValue placeholder="Skill" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                <SelectItem value="all">All Skills</SelectItem>
+                                                {SKILLS.map((s) => (
+                                                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
                                                 </div>
                                             </>
                                         ) : (
@@ -987,7 +987,7 @@ export function HeroSection({
                                     </motion.div>
                                 ))
                             )
-                        )}
+                            )}
                         </div>
                         
                         {/* View More Button */}
