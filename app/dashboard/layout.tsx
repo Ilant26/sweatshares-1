@@ -17,7 +17,7 @@ import { Toaster } from "@/components/ui/toaster"
 import Link from "next/link"
 import { supabase } from "@/lib/supabase"
 import { cn } from "@/lib/utils"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, Newspaper, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { NotificationsDropdown } from "@/components/notifications-dropdown"
 import { ChatInterface } from "@/components/chat-interface"
@@ -258,25 +258,27 @@ function DashboardHeader() {
             <Link
               href="/dashboard/news-feed"
               className={cn(
-                "relative px-2 py-1 text-xs lg:text-sm font-bold transition-colors", // font-bold always
+                "relative px-2 py-1 text-xs lg:text-sm font-bold transition-colors flex items-center gap-2", // font-bold always
                 "hover:text-primary/80",
                 currentSection === 'feed' ? "text-primary" : "text-muted-foreground dark:text-white",
                 "after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:bg-primary after:transition-transform after:duration-200",
                 currentSection === 'feed' && "after:scale-x-100"
               )}
             >
+              <Newspaper className="h-4 w-4" />
               News Feed
             </Link>
             <Link
               href="/dashboard/find-partner"
               className={cn(
-                "relative px-2 py-1 text-xs lg:text-sm font-bold transition-colors", // font-bold always
+                "relative px-2 py-1 text-xs lg:text-sm font-bold transition-colors flex items-center gap-2", // font-bold always
                 "hover:text-primary/80",
                 isFindPartner ? "text-primary" : "text-muted-foreground dark:text-white",
                 "after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:bg-primary after:transition-transform after:duration-200",
                 isFindPartner && "after:scale-x-100"
               )}
             >
+              <Users className="h-4 w-4" />
               Find My Partner
             </Link>
           </nav>
@@ -288,25 +290,27 @@ function DashboardHeader() {
             <Link
               href="/dashboard/news-feed"
               className={cn(
-                "relative px-2 py-1 text-xs font-bold transition-colors", // font-bold always
+                "relative px-2 py-1 text-xs font-bold transition-colors flex items-center gap-1", // font-bold always
                 "hover:text-primary/80",
                 currentSection === 'feed' ? "text-primary" : "text-muted-foreground dark:text-white",
                 "after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:bg-primary after:transition-transform after:duration-200",
                 currentSection === 'feed' && "after:scale-x-100"
               )}
             >
+              <Newspaper className="h-3 w-3" />
               Feed
             </Link>
             <Link
               href="/dashboard/find-partner"
               className={cn(
-                "relative px-2 py-1 text-xs font-bold transition-colors", // font-bold always
+                "relative px-2 py-1 text-xs font-bold transition-colors flex items-center gap-1", // font-bold always
                 "hover:text-primary/80",
                 isFindPartner ? "text-primary" : "text-muted-foreground dark:text-white",
                 "after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:bg-primary after:transition-transform after:duration-200",
                 isFindPartner && "after:scale-x-100"
               )}
             >
+              <Users className="h-3 w-3" />
               Find
             </Link>
           </nav>
@@ -402,10 +406,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   <div className="absolute left-1/2 transform -translate-x-1/2 hidden sm:flex">
                     <div className="inline-flex items-center justify-center">
                       <nav className="flex space-x-6 lg:space-x-12">
-                        <div className="relative px-2 py-1 text-xs lg:text-sm font-bold text-muted-foreground dark:text-white">
+                        <div className="relative px-2 py-1 text-xs lg:text-sm font-bold text-muted-foreground dark:text-white flex items-center gap-2">
+                          <Newspaper className="h-4 w-4" />
                           News Feed
                         </div>
-                        <div className="relative px-2 py-1 text-xs lg:text-sm font-bold text-muted-foreground dark:text-white">
+                        <div className="relative px-2 py-1 text-xs lg:text-sm font-bold text-muted-foreground dark:text-white flex items-center gap-2">
+                          <Users className="h-4 w-4" />
                           Find My Partner
                         </div>
                       </nav>
@@ -414,10 +420,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   <div className="absolute left-1/2 transform -translate-x-1/2 sm:hidden">
                     <div className="inline-flex items-center justify-center">
                       <nav className="flex space-x-4">
-                        <div className="relative px-2 py-1 text-xs font-bold text-muted-foreground dark:text-white">
+                        <div className="relative px-2 py-1 text-xs font-bold text-muted-foreground dark:text-white flex items-center gap-1">
+                          <Newspaper className="h-3 w-3" />
                           Feed
                         </div>
-                        <div className="relative px-2 py-1 text-xs font-bold text-muted-foreground dark:text-white">
+                        <div className="relative px-2 py-1 text-xs font-bold text-muted-foreground dark:text-white flex items-center gap-1">
+                          <Users className="h-3 w-3" />
                           Find
                         </div>
                       </nav>
