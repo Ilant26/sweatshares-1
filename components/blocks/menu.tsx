@@ -53,28 +53,25 @@ export const Menu = () => {
                             <Link
                                 href="/"
                                 aria-label="home"
-                                className="flex items-center space-x-2"
-                                legacyBehavior>
-                                <div className="flex items-center space-x-2">
-                                    {/* Light mode logo */}
-                                    <Image
-                                      src="/logo/logo-svg-dark-text.svg"
-                                      alt="SweatShares Logo"
-                                      width={120}
-                                      height={40}
-                                      priority
-                                      className="block dark:hidden"
-                                    />
-                                    {/* Dark mode logo */}
-                                    <Image
-                                      src="/logo/logo-svg-white-text.svg"
-                                      alt="SweatShares Logo (White)"
-                                      width={120}
-                                      height={40}
-                                      priority
-                                      className="hidden dark:block"
-                                    />
-                                </div>
+                                className="flex items-center space-x-2">
+                                {/* Light mode logo */}
+                                <Image
+                                  src="/logo/logo-svg-dark-text.svg"
+                                  alt="SweatShares Logo"
+                                  width={160}
+                                  height={50}
+                                  priority
+                                  className="block dark:hidden"
+                                />
+                                {/* Dark mode logo */}
+                                <Image
+                                  src="/logo/logo-svg-white-text.svg"
+                                  alt="SweatShares Logo (White)"
+                                  width={160}
+                                  height={50}
+                                  priority
+                                  className="hidden dark:block"
+                                />
                             </Link>
 
                             <button
@@ -93,7 +90,7 @@ export const Menu = () => {
                         </div>
 
                         <div className="flex items-center gap-6">
-                            <ul className="hidden lg:flex gap-8 text-sm">
+                            <ul className="hidden lg:flex gap-10 text-base">
                                 {menuItems.map((item, index) => {
                                     const isActive = pathname === item.href;
                                     return (
@@ -105,8 +102,7 @@ export const Menu = () => {
                                                     isActive 
                                                         ? "text-primary font-medium" 
                                                         : "text-muted-foreground hover:text-accent-foreground"
-                                                )}
-                                                legacyBehavior>
+                                                )}>
                                                 <div className="relative">
                                                     {item.name}
                                                     {isActive && (
@@ -137,8 +133,7 @@ export const Menu = () => {
                                                                 isActive 
                                                                     ? "text-primary font-medium" 
                                                                     : "text-muted-foreground hover:text-accent-foreground"
-                                                            )}
-                                                            legacyBehavior>
+                                                            )}>
                                                             <div className="flex items-center gap-3">
                                                                 <item.icon className={cn(
                                                                     "size-5",
@@ -200,21 +195,21 @@ export const Menu = () => {
                             </div>
                         )}
 
-                        <div className="hidden lg:flex items-center gap-4">
+                        <div className="hidden lg:flex items-center gap-6">
                             <ThemeSwitcher />
                             {user ? (
                                 <>
                                     <Button
                                         asChild
                                         variant="outline"
-                                        size="sm">
+                                        size="default">
                                         <Link href="/dashboard" className="flex items-center gap-2">
                                             Dashboard
                                         </Link>
                                     </Button>
                                     <Button
                                         variant="outline"
-                                        size="sm"
+                                        size="default"
                                         onClick={handleSignOut}>
                                         <LogOut className="h-4 w-4 mr-2" />
                                         Sign Out
@@ -225,14 +220,14 @@ export const Menu = () => {
                                     <Button
                                         asChild
                                         variant="outline"
-                                        size="sm">
+                                        size="default">
                                         <Link href="/auth/login">
                                             Login
                                         </Link>
                                     </Button>
                                     <Button
                                         asChild
-                                        size="sm">
+                                        size="default">
                                         <Link href="/auth/sign-up">
                                             Sign Up
                                         </Link>

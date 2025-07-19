@@ -6,6 +6,8 @@
 :root {
   --background: oklch(0.9940 0 0);
   --foreground: oklch(0 0 0);
+  --brand: 217 91% 60%;
+  --brand-foreground: 214 95% 68%;
   --card: oklch(0.9940 0 0);
   --card-foreground: oklch(0 0 0);
   --popover: oklch(0.9911 0 0);
@@ -55,6 +57,8 @@
 .dark {
   --background: oklch(0.2223 0.0060 271.1393);
   --foreground: oklch(0.9551 0 0);
+  --brand: 214 95% 68%;
+  --brand-foreground: 217 91% 60%;
   --card: oklch(0.2568 0.0076 274.6528);
   --card-foreground: oklch(0.9551 0 0);
   --popover: oklch(0.2568 0.0076 274.6528);
@@ -153,6 +157,35 @@
 }
 body {
   letter-spacing: var(--tracking-normal);
+}
+
+@layer utilities {
+  .glow-effect {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .glow-effect::before {
+    content: '';
+    z-index: -1;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 200%;
+    height: 200%;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(
+      circle,
+      hsl(var(--brand) / 0.3),
+      transparent 50%
+    );
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .glow-effect:hover::before {
+    opacity: 1;
+  }
 }
 @layer base {
   * {

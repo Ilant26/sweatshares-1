@@ -221,11 +221,7 @@ export function TalentFinder({
   return (
     <section className="w-full max-w-5xl mx-auto py-12 px-4">
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-        {filteredUsers.length === 0 ? (
-          <div className="col-span-full text-center text-muted-foreground">
-            No users found for this role.
-          </div>
-        ) : (
+        {filteredUsers.length > 0 && 
           filteredUsers.map((user, index) => (
             <motion.div
               key={user.id}
@@ -291,7 +287,7 @@ export function TalentFinder({
               </div>
             </motion.div>
           ))
-        )}
+        }
       </div>
     </section>
   );
