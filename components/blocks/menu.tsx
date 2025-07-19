@@ -60,7 +60,7 @@ export const Menu = () => {
             {/* Main Menu */}
             <nav
                 data-state={menuState && 'active'}
-                className="relative w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border/40">
+                className="relative w-full bg-background border-b border-border/40">
                 <div className="flex items-center py-3 lg:py-4 px-6 lg:px-12">
                     {/* Left Group: Logo + Navigation */}
                     <div className="flex items-center">
@@ -186,7 +186,7 @@ export const Menu = () => {
 
                 {/* Mobile Menu */}
                 {menuState && (
-                    <div className="fixed inset-x-0 top-[72px] z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border/40 lg:hidden">
+                    <div className="fixed inset-x-0 top-[72px] z-40 bg-background border-b border-border/40 lg:hidden">
                         <div className="mx-auto max-w-4xl px-6 py-6">
                             <div className="space-y-6">
                                 <ul className="space-y-4">
