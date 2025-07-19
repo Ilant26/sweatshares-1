@@ -42,10 +42,25 @@ export const Menu = () => {
     }, [menuState]);
 
     return (
-        <header className="sticky top-0 z-50 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border/40">
+        <header className="sticky top-0 z-50 w-full">
+            {/* Disclaimer Banner - Only show when user is not logged in */}
+            {!user && (
+                <div className="w-full bg-blue-600 text-white py-2 px-4 text-center text-sm font-medium">
+                    <span className="flex items-center justify-center gap-2">
+                        <span className="inline-block w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                        SweatShares is now live,{' '}
+                        <Link href="/auth/login" className="underline hover:text-blue-200 transition-colors">
+                            start now
+                        </Link>
+                        {' '}→
+                    </span>
+                </div>
+            )}
+            
+            {/* Main Menu */}
             <nav
                 data-state={menuState && 'active'}
-                className="relative w-full">
+                className="relative w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border/40">
                 <div className="flex items-center py-3 lg:py-4 px-6 lg:px-12">
                     {/* Left Group: Logo + Navigation */}
                     <div className="flex items-center">

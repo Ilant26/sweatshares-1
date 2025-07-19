@@ -34,8 +34,9 @@ const profiles = generatePlaceholderProfiles();
 export default function CommunitySection() {
     return (
         <section className="py-8 md:py-16 bg-gradient-to-br from-blue-50/50 via-white to-purple-50/50 dark:from-blue-950/20 dark:via-background dark:to-purple-950/20">
-            <div className="mx-auto max-w-7xl px-6">
-                <div className="text-center mb-16">
+            {/* Header Section with Container */}
+            <div className="mx-auto max-w-7xl px-6 mb-16">
+                <div className="text-center">
                     <h2 className="text-balance text-4xl font-semibold lg:text-5xl mb-6">
                         Built by the Community <br /> for the Community
                     </h2>
@@ -43,7 +44,10 @@ export default function CommunitySection() {
                         Join thousands of developers, designers, and innovators who are building the future together.
                     </p>
                 </div>
+            </div>
 
+            {/* Full Width Carousel Section */}
+            <div className="w-full">
                 {/* Infinite Profile Carousel - Row 1 */}
                 <div className="relative overflow-hidden mb-2 py-5">
                     <div className="flex animate-scroll-left">
@@ -107,8 +111,6 @@ export default function CommunitySection() {
                         ))}
                     </div>
                 </div>
-
-
             </div>
 
             <style jsx>{`
