@@ -7,23 +7,19 @@ export default function ContentSection() {
         <section className="py-16 md:py-32">
             <div className="mx-auto max-w-5xl space-y-8 px-6 md:space-y-12">
 
-            <div className="grid gap-6 md:grid-cols-2 md:gap-12">
-                    <h2 className="text-4xl font-medium">The SweatShares ecosystem doesn't just connect people </h2>
-                    <div className="space-y-6">
+            <div className="grid gap-4 md:grid-cols-2 md:gap-8">
+                    <h2 className="text-4xl font-medium -mt-4">The SweatShares ecosystem doesn't just connect people </h2>
+                    <div className="space-y-4">
                         <p>It brings projects to life, attract like-minded people to unify their skillset to ensure a better tomorrow </p>
 
-                        <Button
-                            asChild
-                            variant="secondary"
-                            size="sm"
-                            className="gap-1 pr-1.5">
-                            <Link href="#" legacyBehavior>
-                                <div className="flex items-center gap-1">
-                                    <span>Learn More</span>
-                                    <ChevronRight className="size-2" />
-                                </div>
-                            </Link>
-                        </Button>
+                        <Link href="/auth/sign-up">
+                            <Button
+                                size="lg"
+                                className="gap-2 px-6 py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200">
+                                <span>Get Started</span>
+                                <ChevronRight className="size-4" />
+                            </Button>
+                        </Link>
                     </div>
                 </div>
                 <img

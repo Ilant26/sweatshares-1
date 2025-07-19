@@ -15,9 +15,14 @@ export default function Home() {
   const [userFilter, setUserFilter] = useState<RoleFilter>("All");
   const [lookingForFilter, setLookingForFilter] = useState<RoleFilter>("Freelancer");
 
-  const handleSearchFilterChange = (filters: { userRole: RoleFilter; lookingForRole: RoleFilter }) => {
-    setUserFilter(filters.userRole);
-    setLookingForFilter(filters.lookingForRole);
+  const handleSearchFilterChange = (filters: { role: string; profileType: string; skill: string }) => {
+    // Convert the filters to the format expected by TalentFinder
+    if (filters.role !== 'all') {
+      setUserFilter(filters.role as RoleFilter);
+    }
+    if (filters.profileType !== 'all') {
+      setLookingForFilter(filters.profileType as RoleFilter);
+    }
   };
 
   return (

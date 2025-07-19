@@ -327,9 +327,9 @@ export function HeroSection({
                 </section>
 
                 {/* Profile Cards Section */}
-                <section className="mt-16">
+                <section className="mt-16 pb-8">
                     <div className="mx-auto max-w-7xl px-6">
-                        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 w-full flex-1">
+                        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 w-full">
                             {loading ? (
                                 skeletonCards.map((_, i) => (
                                     <Card key={i} className="flex flex-col h-full p-4">

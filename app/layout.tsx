@@ -37,7 +37,6 @@ export default function RootLayout({
           enableSystem={false}
           disableTransitionOnChange
           storageKey="sweatshares-theme"
-          forcedTheme="light"
         >
           <SessionProvider>
             {children}
