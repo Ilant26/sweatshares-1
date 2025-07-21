@@ -504,6 +504,24 @@ export default function ProfileSettingsPage() {
                                             placeholder="Enter your username"
                                         />
                                     </div>
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="profile_type">Profile Type</Label>
+                                        <Select
+                                            value={userProfile.profile_type || ''}
+                                            onValueChange={handleSelectChange('profile_type')}
+                                            required
+                                        >
+                                            <SelectTrigger className="w-full">
+                                                <SelectValue placeholder="Select your profile type" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="Founder">Founder</SelectItem>
+                                                <SelectItem value="Investor">Investor</SelectItem>
+                                                <SelectItem value="Expert">Expert</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        <span className="text-xs text-muted-foreground">Choose the type that best describes your main activity on the platform.</span>
+                                    </div>
                                 </div>
                             </div>
 
