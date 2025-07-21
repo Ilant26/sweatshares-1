@@ -4,10 +4,10 @@ import { motion } from 'framer-motion'
 // Generate placeholder profiles for the carousel
 const generatePlaceholderProfiles = () => {
     const names = [
-        "Sarah Chen", "Marcus Rodriguez", "Priya Patel", "David Kim", "Emma Thompson",
-        "Alex Johnson", "Maria Garcia", "James Wilson", "Lisa Anderson", "Robert Taylor",
-        "Jennifer Lee", "Michael Brown", "Amanda Davis", "Christopher Miller", "Jessica White",
-        "Daniel Martinez", "Ashley Johnson", "Matthew Garcia", "Nicole Rodriguez", "Kevin Lee",
+        "Sarah Chen", "Maria Rodriguez", "Niels Patel", "Marion Duville", "Kering Thompson",
+        "Alexa Johnson", "Mario Garcia", "Jamia Wilson", "Eirc Anderson", "Robert Taylor",
+        "Jules Leonard", "Olivia Brown", "James Davis", "Christiane Miller", "Bastian White",
+        "Daniela Martinez", "Corio Johnson", "Collin Garcia", "Nicole Rodriguez", "Kevin Lee",
         "Stephanie Clark", "Andrew Hall", "Rachel Lewis", "Joshua Young", "Megan Allen",
         "Ryan King", "Lauren Scott", "Brandon Green", "Hannah Baker", "Tyler Adams"
     ];

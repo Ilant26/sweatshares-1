@@ -24,6 +24,7 @@ import { Glow } from '@/components/ui/glow'
 import { SidePanel } from '@/components/ui/side-panel'
 import { ProfileDetailView } from '@/components/profile-detail-view'
 import { ListingDetailView } from '@/components/listing-detail-view'
+import { CountrySelector } from '@/components/ui/country-selector';
 
 const transitionVariants = {
     item: {
@@ -529,21 +530,18 @@ export function HeroSection({
                                                 </div>
                                                 
                                                 {/* Country Filter */}
-                                                <div className="flex flex-col gap-1">
-                                                    <Label className="text-xs font-medium text-muted-foreground">Country</Label>
-                                                    <Select value={listingCountry} onValueChange={setListingCountry}>
-                                                        <SelectTrigger className="w-32" aria-label="Filter by country">
-                                                            <MapPin className="mr-2 h-4 w-4 text-muted-foreground" />
-                                                            <SelectValue placeholder="Country" />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            <SelectItem value="all">All Countries</SelectItem>
-                                                            {[...new Set(listings.map(l => l.location_country).filter(Boolean))].map((country: string | null) => (
-                                                                <SelectItem key={country || ''} value={country || ''}>{country}</SelectItem>
-                                                            ))}
-                                                        </SelectContent>
-                                                    </Select>
-                                                </div>
+                                                {viewType === 'listings' && (
+                                                    <div className="flex flex-col gap-1">
+                                                        <Label className="text-xs font-medium text-muted-foreground">Country</Label>
+                                                        <CountrySelector
+                                                            value={listingCountry === 'all' ? '' : listingCountry}
+                                                            onValueChange={setListingCountry}
+                                                            placeholder="Country"
+                                                            className="w-32"
+                                                            disabled={loadingListings}
+                                                        />
+                                                    </div>
+                                                )}
                                                 
                                                 {/* Sector Filter */}
                                                 <div className="flex flex-col gap-1">

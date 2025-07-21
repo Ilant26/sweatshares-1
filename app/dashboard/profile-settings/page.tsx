@@ -21,6 +21,7 @@ import { Badge } from '@/components/ui/badge';
 import { X, Plus } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { CountrySelector } from '@/components/ui/country-selector';
+import { SkillsSelector } from '@/components/ui/skills-selector';
 
 // Define the UserProfile interface based on your database schema
 interface UserProfile {
@@ -761,85 +762,15 @@ export default function ProfileSettingsPage() {
 
                             <div className="grid gap-2">
                                 <Label>Skills</Label>
-                                <div className="space-y-3">
-                                    {/* Selected Skills Display */}
-                                    {selectedSkills.length > 0 && (
-                                        <div className="flex flex-wrap gap-2">
-                                            {selectedSkills.map((skill) => (
-                                                <Badge
-                                                    key={skill}
-                                                    variant="secondary"
-                                                    className="flex items-center gap-1 px-3 py-1"
-                                                >
-                                                    {skill}
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleSkillRemove(skill)}
-                                                        className="ml-1 hover:text-destructive transition-colors"
-                                                    >
-                                                        <X className="h-3 w-3" />
-                                                    </button>
-                                                </Badge>
-                                            ))}
-                                        </div>
-                                    )}
-
-                                    {/* Skills Selection */}
-                                    <div className="relative skills-dropdown">
-                                        <div className="flex items-center gap-2">
-                                            <Input
-                                                placeholder="Search and select skills..."
-                                                value={skillsSearchTerm}
-                                                onChange={(e) => setSkillsSearchTerm(e.target.value)}
-                                                onFocus={() => setIsSkillsDropdownOpen(true)}
-                                                className="flex-1"
-                                            />
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => setIsSkillsDropdownOpen(!isSkillsDropdownOpen)}
-                                            >
-                                                <Plus className="h-4 w-4" />
-                                            </Button>
-                                        </div>
-
-                                        {/* Skills Dropdown */}
-                                        {isSkillsDropdownOpen && (
-                                            <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-background border border-border rounded-md shadow-lg max-h-96 overflow-y-auto">
-                                                <div className="p-2">
-                                                    {Object.entries(SKILLS_CATEGORIES).map(([category, skills]) => (
-                                                        <div key={category} className="mb-4">
-                                                            <h4 className="font-medium text-sm text-muted-foreground mb-2 px-2">
-                                                                {category}
-                                                            </h4>
-                                                            <div className="grid grid-cols-2 gap-1">
-                                                                {skills
-                                                                    .filter(skill => 
-                                                                        skill.toLowerCase().includes(skillsSearchTerm.toLowerCase())
-                                                                    )
-                                                                    .map((skill) => (
-                                                                        <button
-                                                                            key={skill}
-                                                                            type="button"
-                                                                            onClick={() => handleSkillToggle(skill)}
-                                                                            className={`text-left px-2 py-1 rounded text-sm transition-colors ${
-                                                                                selectedSkills.includes(skill)
-                                                                                    ? 'bg-primary text-primary-foreground'
-                                                                                    : 'hover:bg-muted'
-                                                                            }`}
-                                                                        >
-                                                                            {skill}
-                                                                        </button>
-                                                                    ))}
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
+                                <SkillsSelector
+                                    value={selectedSkills}
+                                    onChange={(skills) => {
+                                        setSelectedSkills(skills);
+                                        setUserProfile(prev => prev ? { ...prev, skills } : null);
+                                        setHasChanges(true);
+                                    }}
+                                    disabled={isSaving}
+                                />
                             </div>
 
                             <div className="grid gap-2">

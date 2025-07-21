@@ -9,6 +9,7 @@ import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { Badge } from '@/components/ui/badge';
 import { X, Plus } from 'lucide-react';
 import { CountrySelector } from '@/components/ui/country-selector';
+import { SkillsSelector } from '@/components/ui/skills-selector';
 
 // Comprehensive skills list organized by categories
 const SKILLS_CATEGORIES = {
@@ -120,38 +121,6 @@ export function CreateListingModal({
   onSubmit,
 }: CreateListingModalProps) {
   // Skills state management
-  const [skillsSearchTerm, setSkillsSearchTerm] = React.useState('');
-  const [isSkillsDropdownOpen, setIsSkillsDropdownOpen] = React.useState(false);
-
-  // Handle clicking outside skills dropdown
-  React.useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Element;
-      if (!target.closest('.skills-dropdown')) {
-        setIsSkillsDropdownOpen(false);
-      }
-    };
-
-    if (isSkillsDropdownOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isSkillsDropdownOpen]);
-
-  const handleSkillToggle = (skill: string) => {
-    if (skills.includes(skill)) {
-      setSkills(skills.filter(s => s !== skill));
-    } else if (skills.length < 5) {
-      setSkills([...skills, skill]);
-    }
-  };
-
-  const handleSkillRemove = (skillToRemove: string) => {
-    setSkills(skills.filter(skill => skill !== skillToRemove));
-  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -285,88 +254,14 @@ export function CreateListingModal({
           {!(profileType === "founder" && (["find-funding", "sell-startup"].includes(listingType))) && 
             !(profileType === "investor" && (["investment-opportunity", "buy-startup", "co-investor"].includes(listingType))) && 
             (profileType === "founder" || profileType === "investor" || profileType === "expert") && (
-            <div className="grid grid-cols-4 items-start gap-4">
-              <Label className="text-right pt-2">Skills <span className="text-muted-foreground text-xs">({skills.length}/5)</span></Label>
-              <div className="col-span-3 space-y-3">
-                {/* Selected Skills Display */}
-                {skills.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {skills.map((skill) => (
-                      <Badge
-                        key={skill}
-                        variant="secondary"
-                        className="flex items-center gap-1 px-3 py-1"
-                      >
-                        {skill}
-                        <button
-                          type="button"
-                          onClick={() => handleSkillRemove(skill)}
-                          className="ml-1 hover:text-destructive transition-colors"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-
-                {/* Skills Selection */}
-                <div className="relative skills-dropdown">
-                  <div className="flex items-center gap-2">
-                    <Input
-                      placeholder={skills.length >= 5 ? "Maximum 5 skills reached" : "Search and select skills..."}
-                      value={skillsSearchTerm}
-                      onChange={(e) => setSkillsSearchTerm(e.target.value)}
-                      onFocus={() => skills.length < 5 && setIsSkillsDropdownOpen(true)}
-                      className="flex-1"
-                      disabled={skills.length >= 5}
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => skills.length < 5 && setIsSkillsDropdownOpen(!isSkillsDropdownOpen)}
-                      disabled={skills.length >= 5}
-                    >
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </div>
-
-                  {/* Skills Dropdown */}
-                  {isSkillsDropdownOpen && skills.length < 5 && (
-                    <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-background border border-border rounded-md shadow-lg max-h-96 overflow-y-auto">
-                      <div className="p-2">
-                        {Object.entries(SKILLS_CATEGORIES).map(([category, categorySkills]) => (
-                          <div key={category} className="mb-4">
-                            <h4 className="font-medium text-sm text-muted-foreground mb-2 px-2">
-                              {category}
-                            </h4>
-                            <div className="grid grid-cols-2 gap-1">
-                              {categorySkills
-                                .filter(skill => 
-                                  skill.toLowerCase().includes(skillsSearchTerm.toLowerCase())
-                                )
-                                .map((skill) => (
-                                  <button
-                                    key={skill}
-                                    type="button"
-                                    onClick={() => handleSkillToggle(skill)}
-                                    className={`text-left px-2 py-1 rounded text-sm transition-colors ${
-                                      skills.includes(skill)
-                                        ? 'bg-primary text-primary-foreground'
-                                        : 'hover:bg-muted'
-                                    }`}
-                                  >
-                                    {skill}
-                                  </button>
-                                ))}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label className="text-right">Skills</Label>
+              <div className="col-span-3">
+                <SkillsSelector
+                  value={skills}
+                  onChange={setSkills}
+                  disabled={isCreating}
+                />
               </div>
             </div>
           )}
