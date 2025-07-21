@@ -1,7 +1,7 @@
-import React, { useMemo, useState } from 'react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './select';
+import React, { useMemo, useState, useRef, useEffect } from 'react';
 import { Input } from './input';
-import { Label } from './label';
+import { X } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 // Flat, deduplicated list of all roles from the old professional_role select
 export const PROFESSIONAL_ROLES: string[] = [
@@ -32,53 +32,104 @@ export const PROFESSIONAL_ROLES: string[] = [
 ];
 
 export function ProfessionalRoleSelector({
-  value,
+  value = '',
   onChange,
   disabled = false,
-  placeholder = "Select your profession"
+  placeholder = "Select your profession",
+  className
 }: {
-  value: string;
+  value?: string;
   onChange: (role: string) => void;
   disabled?: boolean;
   placeholder?: string;
+  className?: string;
 }) {
   const [search, setSearch] = useState("");
-  // Deduplicate roles
+  const [open, setOpen] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
   const roles = useMemo(() => Array.from(new Set(PROFESSIONAL_ROLES)), []);
   const filteredRoles = search
     ? roles.filter(r => r.toLowerCase().includes(search.toLowerCase()))
     : roles;
 
-  // Handler to support clear option
-  const handleValueChange = (role: string) => {
-    if (role === '__clear__') {
-      onChange("");
-    } else {
-      onChange(role);
+  useEffect(() => {
+    if (open && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [open]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearch(e.target.value);
+    setOpen(true);
+  };
+
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && search && filteredRoles.length > 0) {
+      onChange(filteredRoles[0]);
+      setOpen(false);
+      setSearch("");
+    }
+    if (e.key === 'Escape') {
+      setOpen(false);
     }
   };
 
   return (
-    <Select value={value} onValueChange={handleValueChange} disabled={disabled}>
-      <SelectTrigger className="w-full">
-        <SelectValue placeholder={placeholder} />
-      </SelectTrigger>
-      <SelectContent className="max-h-60 w-full">
-        <SelectItem value="__clear__">Clear</SelectItem>
-        <div className="px-2 py-1">
-          <Input
-            placeholder="Search profession..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="w-full text-xs"
-          />
+    <div className={cn("relative w-full", className)}>
+      <div className="relative">
+        <Input
+          ref={inputRef}
+          value={search !== '' || !value ? search : value}
+          onChange={handleInputChange}
+          onFocus={() => setOpen(true)}
+          onBlur={() => setTimeout(() => setOpen(false), 150)}
+          onKeyDown={handleInputKeyDown}
+          placeholder={placeholder}
+          disabled={disabled}
+          className="w-full text-sm pr-8"
+          autoComplete="off"
+        />
+        {(search || value) && !disabled && (
+          <button
+            type="button"
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-destructive"
+            onClick={() => {
+              setSearch("");
+              onChange("");
+              inputRef.current?.focus();
+            }}
+            tabIndex={-1}
+            aria-label="Clear selection"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+      {open && (
+        <div className="absolute z-50 mt-1 w-full bg-background border border-border rounded-md shadow-lg max-h-60 overflow-y-auto">
+          {filteredRoles.length === 0 ? (
+            <div className="px-3 py-2 text-muted-foreground text-sm">No profession found.</div>
+          ) : (
+            filteredRoles.map(role => (
+              <div
+                key={role}
+                className={cn(
+                  "px-3 py-2 cursor-pointer hover:bg-accent text-sm",
+                  value === role && "bg-primary/10 text-primary font-semibold"
+                )}
+                onMouseDown={() => {
+                  onChange(role);
+                  setOpen(false);
+                  setSearch("");
+                }}
+              >
+                {role}
+              </div>
+            ))
+          )}
         </div>
-        <div className="max-h-48 overflow-y-auto">
-          {filteredRoles.map(role => (
-            <SelectItem key={role} value={role}>{role}</SelectItem>
-          ))}
-        </div>
-      </SelectContent>
-    </Select>
+      )}
+    </div>
   );
 } 
