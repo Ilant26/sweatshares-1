@@ -25,6 +25,7 @@ import { SidePanel } from '@/components/ui/side-panel'
 import { ProfileDetailView } from '@/components/profile-detail-view'
 import { ListingDetailView } from '@/components/listing-detail-view'
 import { CountrySelector } from '@/components/ui/country-selector';
+import { SKILLS_CATEGORIES } from '@/components/ui/skills-selector';
 
 const transitionVariants = {
     item: {
@@ -197,6 +198,11 @@ export function HeroSection({
     const [role, setRole] = React.useState("all");
     const [profileType, setProfileType] = React.useState("all");
     const [skill, setSkill] = React.useState("all");
+    const [skillSearchTerm, setSkillSearchTerm] = React.useState("");
+    // Memoized flat skill list
+    const ALL_SKILLS: string[] = React.useMemo(() => {
+        return Array.from(new Set(Object.values(SKILLS_CATEGORIES).flat()));
+    }, []);
 
     // Listing filters
     const [listingType, setListingType] = React.useState("all");
@@ -496,18 +502,33 @@ export function HeroSection({
                                         {/* Skill Filter */}
                                                 <div className="flex flex-col gap-1">
                                                     <Label className="text-xs font-medium text-muted-foreground">Skill</Label>
-                                        <Select value={skill} onValueChange={setSkill}>
+                                        <Select
+                                            value={skill}
+                                            onValueChange={setSkill}
+                                        >
                                             <SelectTrigger className="w-36" aria-label="Filter by skill">
                                                 <Tag className="mr-2 h-4 w-4 text-muted-foreground" />
                                                 <SelectValue placeholder="Skill" />
-                                                </SelectTrigger>
-                                                <SelectContent>
+                                            </SelectTrigger>
+                                            <SelectContent>
                                                 <SelectItem value="all">All Skills</SelectItem>
-                                                {SKILLS.map((s) => (
-                                                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                                                <div className="px-2 py-1">
+                                                    <Input
+                                                        placeholder="Search skills..."
+                                                        value={skillSearchTerm}
+                                                        onChange={e => setSkillSearchTerm(e.target.value)}
+                                                        className="w-full text-xs"
+                                                    />
+                                                </div>
+                                                <div className="max-h-48 overflow-y-auto">
+                                                    {ALL_SKILLS.filter((s: string) =>
+                                                        !skillSearchTerm || s.toLowerCase().includes(skillSearchTerm.toLowerCase())
+                                                    ).slice(0, 50).map((s: string, i: number) => (
+                                                        i < 5 && <SelectItem key={s} value={s}>{s}</SelectItem>
                                                     ))}
-                                                </SelectContent>
-                                            </Select>
+                                                </div>
+                                            </SelectContent>
+                                        </Select>
                                                 </div>
                                             </>
                                         ) : (
