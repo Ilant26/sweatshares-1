@@ -111,19 +111,6 @@ export default function MyListingsPage() {
         }
     }, [profileType, listingType]);
 
-    // Add useEffect to set default sector
-    useEffect(() => {
-        if (!sector && profileType) {
-            if (profileType === "founder") {
-                setSector("Technology");
-            } else if (profileType === "investor") {
-                setSector("Finance");
-            } else if (profileType === "expert") {
-                setSector("Professional Services");
-            }
-        }
-    }, [profileType, sector]);
-
     const handleSelectAll = (checked: boolean) => {
         if (checked) {
             setSelectedListings(listings.map(listing => listing.id));

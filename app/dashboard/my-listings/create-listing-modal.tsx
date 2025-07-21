@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { X, Plus } from 'lucide-react';
 import { CountrySelector } from '@/components/ui/country-selector';
 import { SkillsSelector } from '@/components/ui/skills-selector';
+import { IndustrySelector } from '@/components/ui/industry-selector';
 
 // Comprehensive skills list organized by categories
 const SKILLS_CATEGORIES = {
@@ -135,7 +136,10 @@ export function CreateListingModal({
           {/* Profile Selector */}
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="profileType" className="text-right">I am a <span className="text-destructive">*</span></Label>
-            <Select onValueChange={setProfileType} value={profileType} disabled={editingId !== null}>
+            <Select onValueChange={v => {
+              setProfileType(v);
+              if (!v) setSector("");
+            }} value={profileType} disabled={editingId !== null}>
               <SelectTrigger className="col-span-3">
                 <SelectValue placeholder="Select your profile" />
               </SelectTrigger>
@@ -187,47 +191,15 @@ export function CreateListingModal({
           )}
           {/* Industry */}
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="secteur" className="text-right">Industry</Label>
-            <Select value={sector} onValueChange={setSector}>
-              <SelectTrigger className="col-span-3">
-                <SelectValue placeholder="Select an industry" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Technology">Technology</SelectItem>
-                <SelectItem value="Healthcare">Healthcare</SelectItem>
-                <SelectItem value="Finance">Finance</SelectItem>
-                <SelectItem value="Education">Education</SelectItem>
-                <SelectItem value="Retail">Retail</SelectItem>
-                <SelectItem value="Manufacturing">Manufacturing</SelectItem>
-                <SelectItem value="Real Estate">Real Estate</SelectItem>
-                <SelectItem value="Energy">Energy</SelectItem>
-                <SelectItem value="Transportation">Transportation</SelectItem>
-                <SelectItem value="Media & Entertainment">Media & Entertainment</SelectItem>
-                <SelectItem value="Telecommunications">Telecommunications</SelectItem>
-                <SelectItem value="Food & Beverage">Food & Beverage</SelectItem>
-                <SelectItem value="Hospitality">Hospitality</SelectItem>
-                <SelectItem value="Agriculture">Agriculture</SelectItem>
-                <SelectItem value="Automotive">Automotive</SelectItem>
-                <SelectItem value="Construction">Construction</SelectItem>
-                <SelectItem value="Aerospace">Aerospace</SelectItem>
-                <SelectItem value="Pharmaceuticals">Pharmaceuticals</SelectItem>
-                <SelectItem value="Chemicals">Chemicals</SelectItem>
-                <SelectItem value="Mining">Mining</SelectItem>
-                <SelectItem value="Environmental Services">Environmental Services</SelectItem>
-                <SelectItem value="Fitness & Wellness">Fitness & Wellness</SelectItem>
-                <SelectItem value="Gaming">Gaming</SelectItem>
-                <SelectItem value="Hardware">Hardware</SelectItem>
-                <SelectItem value="Internet of Things">Internet of Things</SelectItem>
-                <SelectItem value="Logistics">Logistics</SelectItem>
-                <SelectItem value="Mobile Apps">Mobile Apps</SelectItem>
-                <SelectItem value="Robotics">Robotics</SelectItem>
-                <SelectItem value="SaaS">SaaS</SelectItem>
-                <SelectItem value="Social Impact">Social Impact</SelectItem>
-                <SelectItem value="Space Technology">Space Technology</SelectItem>
-                <SelectItem value="Virtual Reality">Virtual Reality</SelectItem>
-                <SelectItem value="Wearable Technology">Wearable Technology</SelectItem>
-              </SelectContent>
-            </Select>
+            <Label htmlFor="sector" className="text-right">Industry</Label>
+            <div className="col-span-3">
+              <IndustrySelector
+                value={sector}
+                onChange={setSector}
+                disabled={isCreating}
+                placeholder="Select an industry"
+              />
+            </div>
           </div>
           {/* Funding Stage */}
           {((profileType === "founder" && listingType === "find-funding") || 

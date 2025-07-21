@@ -1,8 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Input } from './input';
-import { Button } from './button';
 import { Badge } from './badge';
-import { X, Plus, Search } from 'lucide-react';
+import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export const SKILLS_CATEGORIES = {
@@ -92,7 +91,7 @@ export function SkillsSelector({
   showCount?: boolean;
 }) {
   const [search, setSearch] = useState("");
-  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [open, setOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const MAX_SKILLS = 5;
 
@@ -102,7 +101,6 @@ export function SkillsSelector({
     const result: { skill: string; category: string }[] = [];
     Object.entries(categories).forEach(([category, skills]) => {
       skills.forEach((skill) => {
-        // Allow duplicate skill names in different categories, but not within the same category
         const key = `${skill}__${category}`;
         if (!seen.has(key)) {
           result.push({ skill, category });
@@ -127,7 +125,7 @@ export function SkillsSelector({
     if (!value.includes(skill) && value.length < MAX_SKILLS) {
       onChange([...value, skill]);
       setSearch("");
-      setDropdownOpen(false);
+      setOpen(false);
       inputRef.current?.focus();
     }
   };
@@ -137,16 +135,34 @@ export function SkillsSelector({
     onChange(value.filter((s) => s !== skill));
   };
 
-  // Keyboard navigation
+  // Focus input when dropdown opens
   useEffect(() => {
-    if (dropdownOpen && inputRef.current) {
+    if (open && inputRef.current) {
       inputRef.current.focus();
     }
-  }, [dropdownOpen]);
+  }, [open]);
+
+  // Allow typing in the field to search
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearch(e.target.value);
+    setOpen(true);
+  };
+
+  // When user presses Enter, select the first filtered skill
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && filteredSkills.length > 0) {
+      addSkill(filteredSkills[0].skill);
+    }
+    if (e.key === 'Escape') {
+      setOpen(false);
+    }
+    if (e.key === 'Backspace' && !search && value.length > 0) {
+      // Remove last skill if input is empty
+      removeSkill(value[value.length - 1]);
+    }
+  };
 
   const isAtLimit = value.length >= MAX_SKILLS;
-
-  // Compose placeholder with count
   const countText = `${value.length}/${MAX_SKILLS}`;
   const inputPlaceholder = showCount
     ? (isAtLimit ? countText : `${placeholder} (${countText})`)
@@ -154,80 +170,82 @@ export function SkillsSelector({
 
   return (
     <div className="relative w-full">
-      {/* Optionally show count next to label if showCount is true */}
-      {/* If you want to show count next to label, you can do it here, or let parent handle it */}
-      <div className="flex flex-wrap gap-2 mb-2">
+      <div className={cn("flex flex-wrap items-center gap-2 border rounded-md px-2 py-1 bg-background focus-within:ring-2 focus-within:ring-primary", disabled && "bg-muted")}
+        onClick={() => inputRef.current?.focus()}
+        tabIndex={-1}
+      >
         {value.map((skill) => {
-          // Find the first matching category for this skill
           const skillObj = allSkills.find((s) => s.skill === skill);
           const category = skillObj?.category;
-          // Use a unique key: skill-category if possible
           const key = category ? `${skill}-${category}` : skill;
           return (
-            <Badge key={key} className="flex items-center gap-1 px-3 py-1">
+            <Badge key={key} className="flex items-center gap-1 px-3 py-1 text-sm">
               {skill}
               {category && (
                 <span className={cn("ml-2 rounded px-2 py-0.5 text-xs font-semibold", CATEGORY_COLORS[category] || "bg-gray-200 text-gray-700")}>{category}</span>
               )}
               <button
                 type="button"
-                onClick={() => removeSkill(skill)}
+                onClick={e => { e.stopPropagation(); removeSkill(skill); }}
                 className="ml-1 hover:text-destructive transition-colors"
                 aria-label={`Remove ${skill}`}
+                tabIndex={-1}
               >
                 <X className="h-3 w-3" />
               </button>
             </Badge>
           );
         })}
-      </div>
-      <div className="relative">
-        <Input
+        <input
           ref={inputRef}
           value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setDropdownOpen(true);
-          }}
-          onFocus={() => !isAtLimit && setDropdownOpen(true)}
-          onBlur={() => setTimeout(() => setDropdownOpen(false), 150)}
+          onChange={handleInputChange}
+          onFocus={() => !isAtLimit && setOpen(true)}
+          onBlur={() => setTimeout(() => setOpen(false), 150)}
+          onKeyDown={handleInputKeyDown}
           placeholder={inputPlaceholder}
           disabled={disabled || isAtLimit}
-          className="w-full"
+          className="flex-1 min-w-[120px] border-0 bg-transparent outline-none text-sm py-1 px-2"
+          autoComplete="off"
         />
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="absolute right-1 top-1/2 -translate-y-1/2"
-          onClick={() => !isAtLimit && setDropdownOpen((v) => !v)}
-          tabIndex={-1}
-          disabled={isAtLimit}
-        >
-          <Search className="h-4 w-4" />
-        </Button>
-        {dropdownOpen && search && filteredSkills.length > 0 && !isAtLimit && (
-          <div className="absolute z-50 mt-1 w-full bg-background border border-border rounded-md shadow-lg max-h-60 overflow-y-auto">
-            {filteredSkills.map(({ skill, category }) => {
-              const key = `${skill}-${category}`;
-              return (
-                <div
-                  key={key}
-                  className="flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-accent"
-                  onMouseDown={() => addSkill(skill)}
-                >
-                  <span>{skill}</span>
-                  <span className={cn("ml-2 rounded px-2 py-0.5 text-xs font-semibold", CATEGORY_COLORS[category] || "bg-gray-200 text-gray-700")}>{category}</span>
-                </div>
-              );
-            })}
-            {filteredSkills.length === 0 && (
-              <div className="px-3 py-2 text-muted-foreground text-sm">No skills found.</div>
-            )}
-          </div>
+        {(search || value.length > 0) && !disabled && (
+          <button
+            type="button"
+            className="ml-1 text-muted-foreground hover:text-destructive"
+            onClick={() => {
+              setSearch("");
+              onChange([]);
+              inputRef.current?.focus();
+            }}
+            tabIndex={-1}
+            aria-label="Clear selection"
+          >
+            <X className="h-4 w-4" />
+          </button>
         )}
-        {/* Remove the floating max message */}
       </div>
+      {open && search && filteredSkills.length > 0 && !isAtLimit && (
+        <div className="absolute z-50 mt-1 w-full bg-background border border-border rounded-md shadow-lg max-h-60 overflow-y-auto">
+          {filteredSkills.map(({ skill, category }) => {
+            const key = `${skill}-${category}`;
+            return (
+              <div
+                key={key}
+                className="flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-accent text-sm"
+                onMouseDown={() => addSkill(skill)}
+              >
+                <span>{skill}</span>
+                <span className={cn("ml-2 rounded px-2 py-0.5 text-xs font-semibold", CATEGORY_COLORS[category] || "bg-gray-200 text-gray-700")}>{category}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+      {open && search && filteredSkills.length === 0 && (
+        <div className="absolute z-50 mt-1 w-full bg-background border border-border rounded-md shadow-lg p-3 text-center text-sm text-muted-foreground">
+          No skills found.
+        </div>
+      )}
     </div>
   );
 } 

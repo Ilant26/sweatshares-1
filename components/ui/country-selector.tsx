@@ -1,12 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Check, ChevronsUpDown, Search } from 'lucide-react';
+import { Input } from './input';
+import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-// Comprehensive list of all countries in the world
 const COUNTRIES = [
   "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Antigua and Barbuda", "Argentina", "Armenia", "Australia", "Austria",
   "Azerbaijan", "Bahamas", "Bahrain", "Bangladesh", "Barbados", "Belarus", "Belgium", "Belize", "Benin", "Bhutan",
@@ -39,79 +35,99 @@ interface CountrySelectorProps {
 }
 
 export function CountrySelector({ 
-  value, 
+  value = '', 
   onValueChange, 
   placeholder = "Select a country", 
   className,
   disabled = false 
 }: CountrySelectorProps) {
+  const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
-  const [searchValue, setSearchValue] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  const filteredCountries = COUNTRIES.filter(country =>
-    country.toLowerCase().includes(searchValue.toLowerCase())
-  );
+  const filteredCountries = search
+    ? COUNTRIES.filter(country => country.toLowerCase().includes(search.toLowerCase()))
+    : COUNTRIES;
+
+  useEffect(() => {
+    if (open && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [open]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearch(e.target.value);
+    setOpen(true);
+  };
+
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && filteredCountries.length > 0) {
+      onValueChange(filteredCountries[0]);
+      setOpen(false);
+      setSearch("");
+    }
+    if (e.key === 'Escape') {
+      setOpen(false);
+    }
+  };
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className={cn("w-full justify-between", className)}
+    <div className={cn("relative w-full", className)}>
+      <div className="relative">
+        <Input
+          ref={inputRef}
+          value={search !== '' || !value ? search : value}
+          onChange={handleInputChange}
+          onFocus={() => setOpen(true)}
+          onBlur={() => setTimeout(() => setOpen(false), 150)}
+          onKeyDown={handleInputKeyDown}
+          placeholder={placeholder}
           disabled={disabled}
-        >
-          {value || placeholder}
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-full p-0" style={{ width: 'var(--radix-popover-trigger-width)' }}>
-        <div className="p-3 border-b">
-          <div className="flex items-center">
-            <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
-            <Input
-              placeholder="Search countries..."
-              value={searchValue}
-              onChange={(e) => setSearchValue(e.target.value)}
-              className="border-0 px-0 focus-visible:ring-0 focus-visible:ring-offset-0"
-            />
-          </div>
-        </div>
-        <div className="max-h-[200px] overflow-auto">
+          className="w-full text-sm pr-8"
+          autoComplete="off"
+        />
+        {(search || value) && !disabled && (
+          <button
+            type="button"
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-destructive"
+            onClick={() => {
+              setSearch("");
+              onValueChange("");
+              inputRef.current?.focus();
+            }}
+            tabIndex={-1}
+            aria-label="Clear selection"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+      {open && (
+        <div className="absolute z-50 mt-1 w-full bg-background border border-border rounded-md shadow-lg max-h-60 overflow-y-auto">
           {filteredCountries.length === 0 ? (
-            <div className="py-6 text-center text-sm">No country found.</div>
+            <div className="px-3 py-2 text-muted-foreground text-sm">No country found.</div>
           ) : (
-            <div className="p-1">
-              {filteredCountries.map((country) => (
-                <div
-                  key={country}
-                  className={cn(
-                    "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground",
-                    value === country && "bg-accent"
-                  )}
-                  onClick={() => {
-                    onValueChange(country);
-                    setOpen(false);
-                    setSearchValue("");
-                  }}
-                >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      value === country ? "opacity-100" : "opacity-0"
-                    )}
-                  />
-                  {country}
-                </div>
-              ))}
-            </div>
+            filteredCountries.map(country => (
+              <div
+                key={country}
+                className={cn(
+                  "px-3 py-2 cursor-pointer hover:bg-accent text-sm",
+                  value === country && "bg-primary/10 text-primary font-semibold"
+                )}
+                onMouseDown={() => {
+                  onValueChange(country);
+                  setOpen(false);
+                  setSearch("");
+                }}
+              >
+                {country}
+              </div>
+            ))
           )}
         </div>
-      </PopoverContent>
-    </Popover>
+      )}
+    </div>
   );
 }
 
-// Export the countries list for use in other components
 export { COUNTRIES }; 
