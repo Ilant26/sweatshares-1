@@ -475,13 +475,16 @@ export default function FindPartnerPage() {
       if (listingSector && listingSector !== 'all') {
         query = query.eq('sector', listingSector);
       }
+      if (profileType && profileType !== 'all') {
+        query = query.eq('profile_type', profileType);
+      }
       const { data, error } = await query;
       if (error) setListingError(error.message);
       else setListings(data || []);
       setLoadingListings(false);
     };
     fetchListings();
-  }, [listingType, listingFundingStage, listingCompensationType, listingCountry, listingSector]);
+  }, [listingType, listingFundingStage, listingCompensationType, listingCountry, listingSector, profileType]);
 
   // Helper function to check if a profile has meaningful information
   const hasProfileInformation = (profile: Profile): boolean => {
@@ -683,9 +686,9 @@ export default function FindPartnerPage() {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="all">All Types</SelectItem>
-                            <SelectItem value="founder">Founder</SelectItem>
-                            <SelectItem value="investor">Investor</SelectItem>
-                            <SelectItem value="expert">Expert</SelectItem>
+                            <SelectItem value="Founder">Founder</SelectItem>
+                            <SelectItem value="Investor">Investor</SelectItem>
+                            <SelectItem value="Expert">Expert</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -743,9 +746,9 @@ export default function FindPartnerPage() {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="all">All Types</SelectItem>
-                            <SelectItem value="founder">Founder</SelectItem>
-                            <SelectItem value="investor">Investor</SelectItem>
-                            <SelectItem value="expert">Expert</SelectItem>
+                            <SelectItem value="Founder">Founder</SelectItem>
+                            <SelectItem value="Investor">Investor</SelectItem>
+                            <SelectItem value="Expert">Expert</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
