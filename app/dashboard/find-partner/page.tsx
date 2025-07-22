@@ -298,8 +298,10 @@ export default function FindPartnerPage() {
   // Filters
   const [search, setSearch] = useState("");
   const [role, setRole] = useState("");
+  const [professionalRole, setProfessionalRole] = useState("");
   const [profileType, setProfileType] = useState("");
-  const [skill, setSkill] = useState("");
+  const [skill, setSkill] = useState("all");
+  const [country, setCountry] = useState("all");
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   // Skeleton loader for cards
@@ -411,8 +413,8 @@ export default function FindPartnerPage() {
       )) {
         return false;
       }
-      // Role: must match if role is set and not 'all'
-      if (role && role !== 'all' && profile.professional_role !== role) {
+      // Professional Role: must match if set and not 'all'
+      if (professionalRole && professionalRole !== 'all' && profile.professional_role !== professionalRole) {
         return false;
       }
       // Profile type: must match if set and not 'all'
@@ -429,9 +431,13 @@ export default function FindPartnerPage() {
           return false;
         }
       }
+      // Country: must match if set and not 'all'
+      if (country && country !== 'all' && profile.country !== country) {
+        return false;
+      }
       return true;
     });
-  }, [profiles, search, role, profileType, skill]);
+  }, [profiles, search, professionalRole, profileType, skill, country]);
 
   // Filter listings client-side based on search, country, sector
   const filteredListings = useMemo(() => {
@@ -473,9 +479,16 @@ export default function FindPartnerPage() {
   const clearFilters = () => {
     setSearch("");
     setRole("all");
+    setProfessionalRole("all");
     setProfileType("all");
     setSkill("all");
+    setCountry("all");
     setSkillSearchTerm("");
+    setListingType("all");
+    setListingCountry("all");
+    setListingSector("all");
+    setListingFundingStage("all");
+    setListingCompensationType("all");
   };
 
   const handleProfileClick = (userId: string) => {
@@ -574,61 +587,107 @@ export default function FindPartnerPage() {
                         </Select>
                       </div>
 
-                      {/* Professional Category Filter */}
+                      {/* Professional Role Filter */}
                       <div className="flex flex-col gap-1">
-                        <Label className="text-xs font-medium text-muted-foreground">Professional Category</Label>
-                        <Select value={role} onValueChange={setRole}>
-                          <SelectTrigger className="w-36" aria-label="Filter by category">
-                            <User className="mr-2 h-4 w-4 text-muted-foreground" />
-                            <SelectValue placeholder="Category" />
+                        <Label className="text-xs font-medium text-muted-foreground">Profession</Label>
+                        <Select value={professionalRole} onValueChange={setProfessionalRole}>
+                          <SelectTrigger className="w-36" aria-label="Filter by professional role">
+                            <Briefcase className="mr-2 h-4 w-4 text-muted-foreground" />
+                            <SelectValue placeholder="Role" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="all">All Categories</SelectItem>
-                            {Object.keys(PROFESSIONAL_CATEGORIES).map((category) => (
-                              <SelectItem key={category} value={category}>{category}</SelectItem>
+                            <SelectItem value="all">All Roles</SelectItem>
+                            {getAllRoles.map((role) => (
+                              <SelectItem key={role} value={role}>{role}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
                       </div>
 
-                      {/* Role Filter - Shows roles based on selected category */}
+                      {/* Skills Filter */}
                       <div className="flex flex-col gap-1">
-                        <Label className="text-xs font-medium text-muted-foreground">Role</Label>
-                        <Select value={role} onValueChange={setRole}>
-                          <SelectTrigger className="w-36" aria-label="Filter by role">
-                            <User className="mr-2 h-4 w-4 text-muted-foreground" />
-                            <SelectValue placeholder="Role" />
+                        <Label className="text-xs font-medium text-muted-foreground">Skills</Label>
+                        <Select value={skill} onValueChange={setSkill}>
+                          <SelectTrigger className="w-36" aria-label="Filter by skills">
+                            <Tag className="mr-2 h-4 w-4 text-muted-foreground" />
+                            <SelectValue placeholder="Skills" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="all">All Roles</SelectItem>
-                            <div className="px-2 py-1">
-                              <Input
-                                placeholder="Search roles..."
-                                value={skillSearchTerm}
-                                onChange={e => setSkillSearchTerm(e.target.value)}
-                                className="w-full text-xs"
-                              />
-                            </div>
-                            <div className="max-h-48 overflow-y-auto">
-                              {getAllRoles
-                                .filter(r => !skillSearchTerm || r.toLowerCase().includes(skillSearchTerm.toLowerCase()))
-                                .map((r) => (
-                                  <SelectItem key={r} value={r}>{r}</SelectItem>
+                            <SelectItem value="all">All Skills</SelectItem>
+                            {Object.entries(SKILLS_CATEGORIES).map(([category, skills]) => (
+                              <React.Fragment key={category}>
+                                <SelectItem 
+                                  value={`__${category}__`} 
+                                  disabled 
+                                  className="font-semibold text-muted-foreground"
+                                >
+                                  {category}
+                                </SelectItem>
+                                {skills.map((skill, skillIndex) => (
+                                  <SelectItem 
+                                    key={`profile-${category}-${skill}-${skillIndex}`} 
+                                    value={skill}
+                                    className="pl-6"
+                                  >
+                                    {skill}
+                                  </SelectItem>
                                 ))}
-                            </div>
+                              </React.Fragment>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>
 
-                      {/* Skill Filter - Using SkillsSelector categories */}
+                      {/* Country Filter */}
                       <div className="flex flex-col gap-1">
-                        <Label className="text-xs font-medium text-muted-foreground">Skills</Label>
-                        <SkillsSelector
-                          value={skill ? [skill] : []}
-                          onChange={(skills: string[]) => setSkill(skills[0] || '')}
-                          placeholder="Select skills"
-                          showCount={false}
-                        />
+                        <Label className="text-xs font-medium text-muted-foreground">Country</Label>
+                        <Select value={country} onValueChange={setCountry}>
+                          <SelectTrigger className="w-36" aria-label="Filter by country">
+                            <MapPin className="mr-2 h-4 w-4 text-muted-foreground" />
+                            <SelectValue placeholder="Country" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Countries</SelectItem>
+                            <SelectItem value="United States">United States</SelectItem>
+                            <SelectItem value="United Kingdom">United Kingdom</SelectItem>
+                            <SelectItem value="Canada">Canada</SelectItem>
+                            <SelectItem value="Germany">Germany</SelectItem>
+                            <SelectItem value="France">France</SelectItem>
+                            <SelectItem value="Spain">Spain</SelectItem>
+                            <SelectItem value="Italy">Italy</SelectItem>
+                            <SelectItem value="Netherlands">Netherlands</SelectItem>
+                            <SelectItem value="Sweden">Sweden</SelectItem>
+                            <SelectItem value="Norway">Norway</SelectItem>
+                            <SelectItem value="Denmark">Denmark</SelectItem>
+                            <SelectItem value="Finland">Finland</SelectItem>
+                            <SelectItem value="Switzerland">Switzerland</SelectItem>
+                            <SelectItem value="Austria">Austria</SelectItem>
+                            <SelectItem value="Belgium">Belgium</SelectItem>
+                            <SelectItem value="Ireland">Ireland</SelectItem>
+                            <SelectItem value="Portugal">Portugal</SelectItem>
+                            <SelectItem value="Australia">Australia</SelectItem>
+                            <SelectItem value="New Zealand">New Zealand</SelectItem>
+                            <SelectItem value="Japan">Japan</SelectItem>
+                            <SelectItem value="South Korea">South Korea</SelectItem>
+                            <SelectItem value="Singapore">Singapore</SelectItem>
+                            <SelectItem value="India">India</SelectItem>
+                            <SelectItem value="Brazil">Brazil</SelectItem>
+                            <SelectItem value="Mexico">Mexico</SelectItem>
+                            <SelectItem value="Argentina">Argentina</SelectItem>
+                            <SelectItem value="Chile">Chile</SelectItem>
+                            <SelectItem value="South Africa">South Africa</SelectItem>
+                            <SelectItem value="Israel">Israel</SelectItem>
+                            <SelectItem value="United Arab Emirates">UAE</SelectItem>
+                            <SelectItem value="China">China</SelectItem>
+                            <SelectItem value="Russia">Russia</SelectItem>
+                            <SelectItem value="Poland">Poland</SelectItem>
+                            <SelectItem value="Czech Republic">Czech Republic</SelectItem>
+                            <SelectItem value="Estonia">Estonia</SelectItem>
+                            <SelectItem value="Latvia">Latvia</SelectItem>
+                            <SelectItem value="Lithuania">Lithuania</SelectItem>
+                            <SelectItem value="Other">Other</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                     </>
                   ) : (
@@ -698,42 +757,142 @@ export default function FindPartnerPage() {
                         </Select>
                       </div>
 
+                      {/* Skills Filter */}
+                      <div className="flex flex-col gap-1">
+                        <Label className="text-xs font-medium text-muted-foreground">Skills</Label>
+                        <Select value={skill} onValueChange={setSkill}>
+                          <SelectTrigger className="w-36" aria-label="Filter by skills">
+                            <Tag className="mr-2 h-4 w-4 text-muted-foreground" />
+                            <SelectValue placeholder="Skills" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Skills</SelectItem>
+                            {Object.entries(SKILLS_CATEGORIES).map(([category, skills]) => (
+                              <React.Fragment key={category}>
+                                <SelectItem 
+                                  value={`__${category}__`} 
+                                  disabled 
+                                  className="font-semibold text-muted-foreground"
+                                >
+                                  {category}
+                                </SelectItem>
+                                {skills.map((skill, skillIndex) => (
+                                  <SelectItem 
+                                    key={`listing-${category}-${skill}-${skillIndex}`} 
+                                    value={skill}
+                                    className="pl-6"
+                                  >
+                                    {skill}
+                                  </SelectItem>
+                                ))}
+                              </React.Fragment>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
                       {/* Country Filter */}
                       <div className="flex flex-col gap-1">
                         <Label className="text-xs font-medium text-muted-foreground">Country</Label>
-                        <CountrySelector
-                          value={listingCountry === 'all' ? '' : listingCountry}
-                          onValueChange={setListingCountry}
-                          placeholder="Country"
-                          className="w-32"
-                          disabled={loadingListings}
-                        />
+                        <Select value={listingCountry} onValueChange={setListingCountry}>
+                          <SelectTrigger className="w-36" aria-label="Filter by country">
+                            <MapPin className="mr-2 h-4 w-4 text-muted-foreground" />
+                            <SelectValue placeholder="Country" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Countries</SelectItem>
+                            <SelectItem value="United States">United States</SelectItem>
+                            <SelectItem value="United Kingdom">United Kingdom</SelectItem>
+                            <SelectItem value="Canada">Canada</SelectItem>
+                            <SelectItem value="Germany">Germany</SelectItem>
+                            <SelectItem value="France">France</SelectItem>
+                            <SelectItem value="Spain">Spain</SelectItem>
+                            <SelectItem value="Italy">Italy</SelectItem>
+                            <SelectItem value="Netherlands">Netherlands</SelectItem>
+                            <SelectItem value="Sweden">Sweden</SelectItem>
+                            <SelectItem value="Norway">Norway</SelectItem>
+                            <SelectItem value="Denmark">Denmark</SelectItem>
+                            <SelectItem value="Finland">Finland</SelectItem>
+                            <SelectItem value="Switzerland">Switzerland</SelectItem>
+                            <SelectItem value="Austria">Austria</SelectItem>
+                            <SelectItem value="Belgium">Belgium</SelectItem>
+                            <SelectItem value="Ireland">Ireland</SelectItem>
+                            <SelectItem value="Portugal">Portugal</SelectItem>
+                            <SelectItem value="Australia">Australia</SelectItem>
+                            <SelectItem value="New Zealand">New Zealand</SelectItem>
+                            <SelectItem value="Japan">Japan</SelectItem>
+                            <SelectItem value="South Korea">South Korea</SelectItem>
+                            <SelectItem value="Singapore">Singapore</SelectItem>
+                            <SelectItem value="India">India</SelectItem>
+                            <SelectItem value="Brazil">Brazil</SelectItem>
+                            <SelectItem value="Mexico">Mexico</SelectItem>
+                            <SelectItem value="Argentina">Argentina</SelectItem>
+                            <SelectItem value="Chile">Chile</SelectItem>
+                            <SelectItem value="South Africa">South Africa</SelectItem>
+                            <SelectItem value="Israel">Israel</SelectItem>
+                            <SelectItem value="United Arab Emirates">UAE</SelectItem>
+                            <SelectItem value="China">China</SelectItem>
+                            <SelectItem value="Russia">Russia</SelectItem>
+                            <SelectItem value="Poland">Poland</SelectItem>
+                            <SelectItem value="Czech Republic">Czech Republic</SelectItem>
+                            <SelectItem value="Estonia">Estonia</SelectItem>
+                            <SelectItem value="Latvia">Latvia</SelectItem>
+                            <SelectItem value="Lithuania">Lithuania</SelectItem>
+                            <SelectItem value="Other">Other</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
 
                       {/* Industry Filter */}
                       <div className="flex flex-col gap-1">
                         <Label className="text-xs font-medium text-muted-foreground">Industry</Label>
-                        <IndustrySelector
-                          value={listingSector === 'all' ? '' : listingSector}
-                          onChange={setListingSector}
-                          placeholder="Select industry"
-                          className="w-32"
-                        />
+                        <Select value={listingSector} onValueChange={setListingSector}>
+                          <SelectTrigger className="w-36" aria-label="Filter by industry">
+                            <Building2 className="mr-2 h-4 w-4 text-muted-foreground" />
+                            <SelectValue placeholder="Industry" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Industries</SelectItem>
+                            <SelectItem value="Technology">Technology</SelectItem>
+                            <SelectItem value="Finance">Finance</SelectItem>
+                            <SelectItem value="Healthcare">Healthcare</SelectItem>
+                            <SelectItem value="Education">Education</SelectItem>
+                            <SelectItem value="E-commerce">E-commerce</SelectItem>
+                            <SelectItem value="Media & Entertainment">Media & Entertainment</SelectItem>
+                            <SelectItem value="Real Estate">Real Estate</SelectItem>
+                            <SelectItem value="Transportation">Transportation</SelectItem>
+                            <SelectItem value="Manufacturing">Manufacturing</SelectItem>
+                            <SelectItem value="Energy">Energy</SelectItem>
+                            <SelectItem value="Agriculture">Agriculture</SelectItem>
+                            <SelectItem value="Food & Beverage">Food & Beverage</SelectItem>
+                            <SelectItem value="Fashion">Fashion</SelectItem>
+                            <SelectItem value="Sports">Sports</SelectItem>
+                            <SelectItem value="Travel">Travel</SelectItem>
+                            <SelectItem value="Professional Services">Professional Services</SelectItem>
+                            <SelectItem value="Non-Profit">Non-Profit</SelectItem>
+                            <SelectItem value="Government">Government</SelectItem>
+                            <SelectItem value="Other">Other</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
 
                       {/* Funding Stage Filter */}
                       <div className="flex flex-col gap-1">
                         <Label className="text-xs font-medium text-muted-foreground">Stage</Label>
                         <Select value={listingFundingStage} onValueChange={setListingFundingStage}>
-                          <SelectTrigger className="w-32" aria-label="Filter by funding stage">
+                          <SelectTrigger className="w-36" aria-label="Filter by funding stage">
                             <DollarSign className="mr-2 h-4 w-4 text-muted-foreground" />
-                            <SelectValue placeholder="Funding Stage" />
+                            <SelectValue placeholder="Stage" />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="all">All Stages</SelectItem>
-                            {FUNDING_STAGES.map((stage) => (
-                              <SelectItem key={stage} value={stage}>{stage}</SelectItem>
-                            ))}
+                            <SelectItem value="Pre-seed">Pre-seed</SelectItem>
+                            <SelectItem value="Seed">Seed</SelectItem>
+                            <SelectItem value="Series A">Series A</SelectItem>
+                            <SelectItem value="Series B">Series B</SelectItem>
+                            <SelectItem value="Series C">Series C</SelectItem>
+                            <SelectItem value="Series D">Series D</SelectItem>
+                            <SelectItem value="Growth">Growth</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -742,22 +901,19 @@ export default function FindPartnerPage() {
                       <div className="flex flex-col gap-1">
                         <Label className="text-xs font-medium text-muted-foreground">Compensation</Label>
                         <Select value={listingCompensationType} onValueChange={setListingCompensationType}>
-                          <SelectTrigger className="w-32" aria-label="Filter by compensation type">
+                          <SelectTrigger className="w-36" aria-label="Filter by compensation type">
                             <Users className="mr-2 h-4 w-4 text-muted-foreground" />
                             <SelectValue placeholder="Compensation" />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="all">All Types</SelectItem>
-                            {Object.entries(COMPENSATION_TYPES).map(([category, types]) => (
-                              <React.Fragment key={category}>
-                                <SelectItem value={`__${category}__`} disabled className="font-semibold text-muted-foreground">
-                                  {category}
-                                </SelectItem>
-                                {types.map((type) => (
-                                  <SelectItem key={type} value={type}>{type}</SelectItem>
-                                ))}
-                              </React.Fragment>
-                            ))}
+                            <SelectItem value="Cash">Cash</SelectItem>
+                            <SelectItem value="Equity">Equity</SelectItem>
+                            <SelectItem value="Salary">Salary</SelectItem>
+                            <SelectItem value="Hybrid">Hybrid</SelectItem>
+                            <SelectItem value="Salary & Equity">Salary & Equity</SelectItem>
+                            <SelectItem value="Cash & Equity">Cash & Equity</SelectItem>
+                            <SelectItem value="Volunteer">Volunteer</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -772,7 +928,7 @@ export default function FindPartnerPage() {
             </div>
 
             {/* Rest of the existing content (cards grid) */}
-            <div className="flex-1 flex flex-col px-4 md:px-8 pb-8">
+            <div className="flex-1 flex flex-col px-4 md:px-8 pb-8 pt-12">
               <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 w-full flex-1">
                 {loading || loadingListings ? (
                   skeletonCards.map((_, i) => (

@@ -533,13 +533,21 @@ export default function ProfilePage() {
                   <Card>
                     <CardHeader>
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-4">
-                          <Avatar>
+                                                  <div className="flex items-center space-x-4">
+                          <Avatar 
+                            className="cursor-pointer"
+                            onClick={() => handleProfileClick(post.author.id)}
+                          >
                             <AvatarImage src={post.author.avatar_url || undefined} alt={post.author.full_name || undefined} />
                             <AvatarFallback>{post.author.full_name?.charAt(0) || 'U'}</AvatarFallback>
                           </Avatar>
                           <div>
-                            <h4 className="font-semibold">{post.author.full_name}</h4>
+                            <h4 
+                              className="font-semibold cursor-pointer hover:text-primary transition-colors"
+                              onClick={() => handleProfileClick(post.author.id)}
+                            >
+                              {post.author.full_name}
+                            </h4>
                             <p className="text-sm text-muted-foreground">{post.author.professional_role}</p>
                             <p className="text-xs text-muted-foreground">{formatDate(post.created_at)}</p>
                           </div>
@@ -599,7 +607,10 @@ export default function ProfilePage() {
                         <div key={comment.id} className="space-y-3">
                           {/* Main Comment */}
                           <div className="flex items-start space-x-2">
-                          <Avatar className="h-7 w-7">
+                          <Avatar 
+                            className="h-7 w-7 cursor-pointer"
+                            onClick={() => handleProfileClick(comment.author.id)}
+                          >
                             <AvatarImage src={comment.author.avatar_url || undefined} alt={comment.author.full_name || undefined} />
                             <AvatarFallback>{comment.author.full_name?.charAt(0) || 'U'}</AvatarFallback>
                           </Avatar>
@@ -709,7 +720,10 @@ export default function ProfilePage() {
                             <div className="ml-9 space-y-2">
                               {comment.replies.map((reply: PostComment) => (
                                 <div key={reply.id} className="flex items-start space-x-2">
-                                  <Avatar className="h-6 w-6">
+                                  <Avatar 
+                                    className="h-6 w-6 cursor-pointer"
+                                    onClick={() => handleProfileClick(reply.author.id)}
+                                  >
                                     <AvatarImage src={reply.author.avatar_url || undefined} alt={reply.author.full_name || undefined} />
                                     <AvatarFallback>{reply.author.full_name?.charAt(0) || 'U'}</AvatarFallback>
                                   </Avatar>
