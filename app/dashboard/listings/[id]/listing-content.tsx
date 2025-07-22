@@ -152,18 +152,6 @@ Looking forward to hearing from you!`;
         variants={containerVariants}
       >
         <div className="pt-6">
-          {/* Back Button */}
-          <motion.div variants={itemVariants} className="mb-6">
-            <Link href="/dashboard/listings" legacyBehavior>
-              <div>
-                <Button variant="ghost" className="gap-2">
-                  <ArrowLeft className="h-4 w-4" />
-                  Back to listings
-                </Button>
-              </div>
-            </Link>
-          </motion.div>
-
           {/* Profile Card */}
           <motion.div variants={itemVariants} className="mb-8">
             <DashboardProfileCard profile={profile} />

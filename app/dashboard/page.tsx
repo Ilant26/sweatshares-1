@@ -210,18 +210,6 @@ export default function Page() {
     }
   }, [profileType, listingType, compensationType]);
 
-  useEffect(() => {
-    if (!sector && profileType) {
-      if (profileType === "founder") {
-        setSector("Technology");
-      } else if (profileType === "investor") {
-        setSector("Finance");
-      } else if (profileType === "expert") {
-        setSector("Professional Services");
-      }
-    }
-  }, [profileType, sector]);
-
   // --- Handler for creating a listing ---
   const handleCreateOrUpdateListing = async () => {
     if (!user) {

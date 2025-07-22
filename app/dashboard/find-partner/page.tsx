@@ -1080,17 +1080,44 @@ export default function FindPartnerPage() {
                                         </Badge>
                                       )}
                                       {listing.compensation_value && (
-                                        <Badge 
-                                          variant="secondary"
-                                          className="bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-900/20 dark:to-green-800/20 
-                                                   text-green-700 dark:text-green-400 border-green-200/50 dark:border-green-700/50 
-                                                   hover:bg-green-100 dark:hover:bg-green-800/30 transition-colors
-                                                   text-xs px-2 py-0.5 rounded-lg"
-                                        >
-                                          {typeof listing.compensation_value === 'object' 
-                                            ? listing.compensation_value.equity || listing.compensation_value.value 
-                                            : listing.compensation_value}
-                                        </Badge>
+                                        <>
+                                          {typeof listing.compensation_value === 'object' ? (
+                                            <>
+                                              {listing.compensation_value.salary && (
+                                                <Badge 
+                                                  variant="secondary"
+                                                  className="bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-900/20 dark:to-green-800/20 
+                                                           text-green-700 dark:text-green-400 border-green-200/50 dark:border-green-700/50 
+                                                           hover:bg-green-100 dark:hover:bg-green-800/30 transition-colors
+                                                           text-xs px-2 py-0.5 rounded-lg"
+                                                >
+                                                  Salary: {listing.compensation_value.salary}
+                                                </Badge>
+                                              )}
+                                              {listing.compensation_value.equity && (
+                                                <Badge 
+                                                  variant="secondary"
+                                                  className="bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-900/20 dark:to-green-800/20 
+                                                           text-green-700 dark:text-green-400 border-green-200/50 dark:border-green-700/50 
+                                                           hover:bg-green-100 dark:hover:bg-green-800/30 transition-colors
+                                                           text-xs px-2 py-0.5 rounded-lg"
+                                                >
+                                                  Equity: {listing.compensation_value.equity}
+                                                </Badge>
+                                              )}
+                                            </>
+                                          ) : (
+                                            <Badge 
+                                              variant="secondary"
+                                              className="bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-900/20 dark:to-green-800/20 
+                                                       text-green-700 dark:text-green-400 border-green-200/50 dark:border-green-700/50 
+                                                       hover:bg-green-100 dark:hover:bg-green-800/30 transition-colors
+                                                       text-xs px-2 py-0.5 rounded-lg"
+                                            >
+                                              {listing.compensation_value}
+                                            </Badge>
+                                          )}
+                                        </>
                                       )}
                                       {listing.amount && (
                                         <Badge 
