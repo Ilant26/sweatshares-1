@@ -509,8 +509,8 @@ export function HeroSection({
                                             <SelectTrigger className="w-36" aria-label="Filter by skill">
                                                 <Tag className="mr-2 h-4 w-4 text-muted-foreground" />
                                                 <SelectValue placeholder="Skill" />
-                                            </SelectTrigger>
-                                            <SelectContent>
+                                                </SelectTrigger>
+                                                <SelectContent>
                                                 <SelectItem value="all">All Skills</SelectItem>
                                                 <div className="px-2 py-1">
                                                     <Input
@@ -527,8 +527,8 @@ export function HeroSection({
                                                         i < 5 && <SelectItem key={s} value={s}>{s}</SelectItem>
                                                     ))}
                                                 </div>
-                                            </SelectContent>
-                                        </Select>
+                                                </SelectContent>
+                                            </Select>
                                                 </div>
                                             </>
                                         ) : (
@@ -552,8 +552,8 @@ export function HeroSection({
                                                 
                                                 {/* Country Filter */}
                                                 {viewType === 'listings' && (
-                                                    <div className="flex flex-col gap-1">
-                                                        <Label className="text-xs font-medium text-muted-foreground">Country</Label>
+                                                <div className="flex flex-col gap-1">
+                                                    <Label className="text-xs font-medium text-muted-foreground">Country</Label>
                                                         <CountrySelector
                                                             value={listingCountry === 'all' ? '' : listingCountry}
                                                             onValueChange={setListingCountry}
@@ -561,7 +561,7 @@ export function HeroSection({
                                                             className="w-32"
                                                             disabled={loadingListings}
                                                         />
-                                                    </div>
+                                                </div>
                                                 )}
                                                 
                                                 {/* Sector Filter */}

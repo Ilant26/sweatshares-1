@@ -28,6 +28,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { motion, AnimatePresence, Variants } from "framer-motion";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
+import { Label } from "@/components/ui/label";
+import { CountrySelector } from '@/components/ui/country-selector';
+import { SkillsSelector, SKILLS_CATEGORIES } from '@/components/ui/skills-selector';
+import { IndustrySelector } from '@/components/ui/industry-selector';
 
 const getSkillColor = (skill: string) => {
   const colors = [
@@ -47,20 +51,15 @@ const getSkillColor = (skill: string) => {
 // Function to format listing type values for display
 const formatListingType = (listingType: string): string => {
   const typeMap: { [key: string]: string } = {
-    // Founder listing types
     "find-funding": "Find Funding",
     "cofounder": "Co Founder",
     "expert-freelance": "Expert/ Freelance",
     "employee": "Employee",
     "mentor": "Mentor",
     "sell-startup": "Startup Sale",
-    
-    // Investor listing types
     "investment-opportunity": "Investment Opportunity",
     "buy-startup": "Buy Startup",
     "co-investor": "Co-investor",
-    
-    // Expert listing types
     "mission": "Mission",
     "job": "Job"
   };
@@ -68,18 +67,116 @@ const formatListingType = (listingType: string): string => {
   return typeMap[listingType] || listingType;
 };
 
-// --- Filter options ---
-const PROFILE_TYPES = [
-  "Founder",
-  "Investor",
-  "Expert",
+// Professional Role Categories
+const PROFESSIONAL_CATEGORIES = {
+  "Product & Design": [
+    "Product Designer", "UX/UI Designer", "UX/UI Researcher", "Graphic Designer", "Social Media Manager", 
+    "Brand Designer", "Content Manager", "Digital Designer", "Interaction Designer", "Web Designer"
+  ],
+  "Tech & Development": [
+    "CEO (Operational Tech Role)", "CTO", "Backend Developer", "Frontend Developer", "Full-stack Developer",
+    "Mobile Developer (iOS, Android)", "No-code Developer", "DevOps Engineer", "QA Tester", "Security Engineer",
+    "Cloud Architect", "Blockchain Developer", "AI/ML Engineer", "Performance Engineer", "Database Administrator (DBA)",
+    "Systems Architect"
+  ],
+  "Growth & Marketing": [
+    "Growth Hacker", "Marketing Specialist", "Performance Marketing Manager", "Customer Acquisition Manager",
+    "Growth Manager", "Digital Marketing Specialist", "Event Manager", "Email Marketing Specialist",
+    "Influencer Relations Manager", "PR Specialist", "Community Manager", "Content Strategist",
+    "SEO/SEM Specialist", "Affiliate Marketing Manager", "Product Marketing Manager", "Brand Marketing Manager",
+    "Partnership Manager"
+  ],
+  "Operations": [
+    "Customer Support", "Customer Success Manager", "Operations Manager", "Supply Chain Manager",
+    "Procurement Manager", "Logistics Manager", "Business Operations Analyst", "Facilities Manager",
+    "Data Entry Specialist", "Business Process Analyst"
+  ],
+  "Legal, Finance & Operations": [
+    "Legal Counsel", "Business Lawyer", "Tax Lawyer", "IP Lawyer (Intellectual Property)", "Financial Analyst",
+    "Accountant", "Bookkeeper", "Tax Consultant", "Fundraiser", "IP Agent (Intellectual Property Agent)",
+    "Regulatory Affairs Specialist", "Compliance Officer", "Sustainability Manager", "Risk Manager",
+    "Insurance Manager", "Corporate Treasurer", "Investment Analyst", "Investor Relations Manager"
+  ],
+  "Human Resources & Recruiting": [
+    "HR Manager", "Recruiter", "Talent Acquisition Specialist", "HR Generalist", "Compensation and Benefits Manager",
+    "Training and Development Manager", "Employee Engagement Manager", "HR Business Partner",
+    "Learning and Development Specialist", "HR Coordinator"
+  ],
+  "Mentorship & Advisory": [
+    "Mentor", "Advisor", "Venture Partner", "Portfolio Manager", "Investment Advisor", "Business Consultant",
+    "Startup Mentor", "Growth Advisor"
+  ],
+  "Investment Roles": [
+    "Business Angel", "Advisor (Investor + Advisor)", "Crowdfunding Contributor", "Venture Capitalists (VC)",
+    "Family Office", "Private Equity Firms", "BPI (Business Public Investment)", "Government-backed Funds",
+    "Incubators / Accelerators", "Impact Funds", "Sector-Specific Funds"
+  ],
+  "Leadership & General": [
+    "Founder", "Startup Owner", "CEO", "COO", "CFO", "Product Manager", "Software Engineer", "Data Scientist",
+    "Marketing Manager", "Sales Manager", "Business Development", "Investor", "Angel Investor",
+    "Venture Capitalist", "Freelancer", "Consultant", "Expert", "Coach"
+  ]
+};
+
+// Funding Stages from create-listing-modal.tsx
+const FUNDING_STAGES = [
+  "Pre-seed", "Seed", "Series A", "Series B", "Series C", "Series D", "Growth"
 ];
-const ROLES = [
-  "Founder", "Startup Owner", "CEO", "CTO", "COO", "CFO", "Product Manager", "Software Engineer", "Frontend Developer", "Backend Developer", "Full Stack Developer", "DevOps Engineer", "Data Scientist", "UI/UX Designer", "Graphic Designer", "Marketing Manager", "Sales Manager", "Business Development", "Investor", "Angel Investor", "Venture Capitalist", "Freelancer", "Consultant", "Expert", "Advisor", "Mentor", "Coach", "Other"
-];
-const SKILLS = [
-  "UI/UX Design", "Figma", "Sketch", "Adobe XD", "InVision", "Framer", "Adobe Photoshop", "Adobe Illustrator", "Adobe InDesign", "Prototyping", "Wireframing", "User Research", "Usability Testing", "Design Systems", "Brand Identity", "Visual Design", "Interaction Design", "Information Architecture", "Accessibility Design", "JavaScript", "TypeScript", "Python", "React", "Vue.js", "Angular", "Node.js", "Django", "Machine Learning", "Leadership", "Communication", "Team Building"
-];
+
+// Compensation Types from create-listing-modal.tsx
+const COMPENSATION_TYPES = {
+  "Standard": ["Cash", "Equity", "Salary", "Hybrid"],
+  "Combined": ["Salary & Equity", "Cash & Equity"],
+  "Special": ["Volunteer"]
+} as const;
+
+// Update LISTING_TYPES to be profile-type specific
+const LISTING_TYPES_BY_PROFILE = {
+  founder: [
+    { value: "find-funding", label: "Find funding" },
+    { value: "cofounder", label: "Find a co-founder" },
+    { value: "expert-freelance", label: "Find an expert/freelancer" },
+    { value: "employee", label: "Find an employee" },
+    { value: "mentor", label: "Find a mentor" },
+    { value: "sell-startup", label: "Sell my startup" }
+  ],
+  investor: [
+    { value: "investment-opportunity", label: "Find an investment opportunity" },
+    { value: "buy-startup", label: "Buy a startup" },
+    { value: "co-investor", label: "Find a co-investor" },
+    { value: "expert-freelance", label: "Find an expert/freelancer" }
+  ],
+  expert: [
+    { value: "mission", label: "Find a mission" },
+    { value: "job", label: "Find a job" },
+    { value: "expert-freelance", label: "Find an expert/freelancer" },
+    { value: "cofounder", label: "Find a co-founder" }
+  ]
+};
+
+// Update LISTING_TYPES to match create-listing-modal.tsx exactly
+const LISTING_TYPES = {
+  founder: [
+    { value: "find-funding", label: "Find funding" },
+    { value: "cofounder", label: "Find a co-founder" },
+    { value: "expert-freelance", label: "Find an expert/freelancer" },
+    { value: "employee", label: "Find an employee" },
+    { value: "mentor", label: "Find a mentor" },
+    { value: "sell-startup", label: "Sell my startup" }
+  ],
+  investor: [
+    { value: "investment-opportunity", label: "Find an investment opportunity" },
+    { value: "buy-startup", label: "Buy a startup" },
+    { value: "co-investor", label: "Find a co-investor" },
+    { value: "expert-freelance", label: "Find an expert/freelancer" }
+  ],
+  expert: [
+    { value: "mission", label: "Find a mission" },
+    { value: "job", label: "Find a job" },
+    { value: "expert-freelance", label: "Find an expert/freelancer" },
+    { value: "cofounder", label: "Find a co-founder" }
+  ]
+} as const;
 
 type Profile = {
   id: string;
@@ -179,19 +276,6 @@ const scaleIn: Variants = {
 };
 
 // --- Listing Section State ---
-const LISTING_TYPES = [
-  { value: "find-funding", label: "Funding offer" },
-  { value: "cofounder", label: "Co-founder offer" },
-  { value: "expert-freelance", label: "Consultancy and Freelance offers" },
-  { value: "employee", label: "Job offer" },
-  { value: "mentor", label: "Mentoring offer" },
-  { value: "sell-startup", label: "Buy a startup" },
-  { value: "investment-opportunity", label: "Find investment opportunity" },
-  { value: "buy-startup", label: "Startup Acquisition" },
-  { value: "co-investor", label: "Co-investor offers" },
-  { value: "mission", label: "Find a mission" },
-  { value: "job", label: "Available for work" },
-];
 const LISTING_SECTORS = [
   "Fintech", "Healthtech", "Edtech", "SaaS", "Marketplace", "AI", "Blockchain", "GreenTech", "Consumer", "Other"
 ];
@@ -227,12 +311,20 @@ export default function FindPartnerPage() {
   const [listingType, setListingType] = useState<string>("all");
   const { likeListing, unlikeListing, isListingLiked } = useFavorites();
 
-  const [viewType, setViewType] = useState<'all' | 'profiles' | 'listings'>('all');
-  const handleViewTypeChange = (value: string) => setViewType(value as 'all' | 'profiles' | 'listings');
+  // Add new state for skill search
+  const [skillSearchTerm, setSkillSearchTerm] = useState("");
+  const [viewType, setViewType] = useState<'profiles' | 'listings'>('profiles');
+
+  // Memoized flat skill list
+  const ALL_SKILLS: string[] = useMemo(() => {
+    return Array.from(new Set(Object.values(SKILLS_CATEGORIES).flat()));
+  }, []);
 
   const [listingSearch, setListingSearch] = useState("");
   const [listingCountry, setListingCountry] = useState("all");
   const [listingSector, setListingSector] = useState("all");
+  const [listingFundingStage, setListingFundingStage] = useState("all");
+  const [listingCompensationType, setListingCompensationType] = useState("all");
 
   useEffect(() => {
     const fetchProfiles = async () => {
@@ -266,13 +358,25 @@ export default function FindPartnerPage() {
       if (listingType && listingType !== 'all') {
         query = query.eq('listing_type', listingType);
       }
+      if (listingFundingStage && listingFundingStage !== 'all') {
+        query = query.eq('funding_stage', listingFundingStage);
+      }
+      if (listingCompensationType && listingCompensationType !== 'all') {
+        query = query.eq('compensation_type', listingCompensationType);
+      }
+      if (listingCountry && listingCountry !== 'all') {
+        query = query.eq('location_country', listingCountry);
+      }
+      if (listingSector && listingSector !== 'all') {
+        query = query.eq('sector', listingSector);
+      }
       const { data, error } = await query;
       if (error) setListingError(error.message);
       else setListings(data || []);
       setLoadingListings(false);
     };
     fetchListings();
-  }, [listingType]);
+  }, [listingType, listingFundingStage, listingCompensationType, listingCountry, listingSector]);
 
   // Helper function to check if a profile has meaningful information
   const hasProfileInformation = (profile: Profile): boolean => {
@@ -357,9 +461,7 @@ export default function FindPartnerPage() {
       data: listing,
     }));
     let items: any[] = [];
-    if (viewType === 'all') {
-      items = [...profileItems, ...listingItems];
-    } else if (viewType === 'profiles') {
+    if (viewType === 'profiles') {
       items = profileItems;
     } else {
       items = listingItems;
@@ -373,6 +475,7 @@ export default function FindPartnerPage() {
     setRole("all");
     setProfileType("all");
     setSkill("all");
+    setSkillSearchTerm("");
   };
 
   const handleProfileClick = (userId: string) => {
@@ -386,6 +489,25 @@ export default function FindPartnerPage() {
   const handleMessage = (userId: string) => {
     if (!user) return;
     router.push(`/dashboard/messages?userId=${userId}`);
+  };
+
+  // Get filtered roles based on category
+  const getRolesByCategory = (category: string) => {
+    return PROFESSIONAL_CATEGORIES[category as keyof typeof PROFESSIONAL_CATEGORIES] || [];
+  };
+
+  // Get all roles flattened
+  const getAllRoles = useMemo(() => {
+    return Object.values(PROFESSIONAL_CATEGORIES).flat();
+  }, []);
+
+  // Get filtered listing types based on profile type
+  const getFilteredListingTypes = (selectedProfileType: string) => {
+    if (!selectedProfileType || selectedProfileType === 'all') {
+      // If no profile type is selected, show all listing types
+      return Object.values(LISTING_TYPES).flat();
+    }
+    return LISTING_TYPES[selectedProfileType.toLowerCase() as keyof typeof LISTING_TYPES] || [];
   };
 
   // --- UI ---
@@ -406,457 +528,660 @@ export default function FindPartnerPage() {
                         </div>
                     </div>
                 </div>
-        <div className="flex flex-wrap gap-2 md:gap-4 w-full items-end mb-6">
-          {/* Profile Filters */}
-          <Input
-            placeholder="Search by name, company, bio, or listing title..."
-            className="w-full md:w-64"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            aria-label="Search profiles and listings"
-          />
-          <Select value={role} onValueChange={setRole}>
-            <SelectTrigger className="w-36" aria-label="Filter by role">
-              <User className="mr-2 h-4 w-4 text-muted-foreground" />
-              <SelectValue placeholder="Role" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Roles</SelectItem>
-              {ROLES.map((r) => (
-                <SelectItem key={r} value={r}>{r}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={profileType} onValueChange={setProfileType}>
-            <SelectTrigger className="w-36" aria-label="Filter by profile type">
-              <Briefcase className="mr-2 h-4 w-4 text-muted-foreground" />
-              <SelectValue placeholder="Profile Type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Types</SelectItem>
-              {PROFILE_TYPES.map((t) => (
-                <SelectItem key={t} value={t}>{t}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={skill} onValueChange={setSkill}>
-            <SelectTrigger className="w-36" aria-label="Filter by skill">
-              <Tag className="mr-2 h-4 w-4 text-muted-foreground" />
-              <SelectValue placeholder="Skill" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Skills</SelectItem>
-              {SKILLS.map((s) => (
-                <SelectItem key={s} value={s}>{s}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {/* Listing Filters */}
-          <Select value={listingType} onValueChange={setListingType}>
-            <SelectTrigger className="w-36" aria-label="Filter by listing type">
-              <ListFilter className="mr-2 h-4 w-4 text-muted-foreground" />
-              <SelectValue placeholder="Listing Type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Types</SelectItem>
-              {LISTING_TYPES.map((t) => (
-                <SelectItem key={t.value} value={t.value}>{formatListingType(t.value)}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={listingCountry} onValueChange={setListingCountry}>
-            <SelectTrigger className="w-36" aria-label="Filter by country">
-              <MapPin className="mr-2 h-4 w-4 text-muted-foreground" />
-              <SelectValue placeholder="Country" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Countries</SelectItem>
-              {[...new Set(listings.map(l => l.location_country).filter(Boolean))].map((country: string) => (
-                <SelectItem key={country} value={country}>{country}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={listingSector} onValueChange={setListingSector}>
-            <SelectTrigger className="w-36" aria-label="Filter by sector">
-              <Briefcase className="mr-2 h-4 w-4 text-muted-foreground" />
-              <SelectValue placeholder="Sector" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Sectors</SelectItem>
-              {LISTING_SECTORS.map((sector) => (
-                <SelectItem key={sector} value={sector}>{sector}</SelectItem>
-              ))}
-              {[...new Set(listings.map(l => l.sector).filter(Boolean))].filter(s => !LISTING_SECTORS.includes(s)).map((sector: string) => (
-                <SelectItem key={sector} value={sector}>{sector}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button variant="ghost" onClick={clearFilters} className="ml-2" aria-label="Clear filters">
-            <XCircle className="h-4 w-4 mr-1" /> Clear Filters
-          </Button>
-        </div>
-      </div>
-      <div className="flex-1 flex flex-col px-4 md:px-8 pb-8">
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 w-full flex-1">
-          {loading || loadingListings ? (
-            skeletonCards.map((_, i) => (
-              <Card key={i} className="flex flex-col h-full p-4">
-                <div className="flex items-center gap-4 mb-2">
-                  <Skeleton className="h-14 w-14 rounded-full" />
-                  <div className="flex-1 space-y-2">
-                    <Skeleton className="h-4 w-24" />
-                    <Skeleton className="h-3 w-16" />
-                    <Skeleton className="h-3 w-20" />
+
+                {/* Toggle for Profile/Listings */}
+                <div className="flex items-center justify-center mt-6">
+                  <div className="flex items-center gap-2 bg-background p-1 rounded-lg border border-border shadow-sm">
+                    <Button
+                      variant={viewType === 'profiles' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setViewType('profiles')}
+                      className="px-4 py-2"
+                    >
+                      <User className="h-4 w-4 mr-2" />
+                      Profiles
+                    </Button>
+                    <Button
+                      variant={viewType === 'listings' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setViewType('listings')}
+                      className="px-4 py-2"
+                    >
+                      <Briefcase className="h-4 w-4 mr-2" />
+                      Listings
+                    </Button>
                   </div>
                 </div>
-                <Skeleton className="h-3 w-20 mb-2" />
-                <Skeleton className="h-4 w-full mb-2" />
-                <div className="flex gap-2 mt-auto">
-                  <Skeleton className="h-6 w-16 rounded" />
-                  <Skeleton className="h-6 w-16 rounded" />
-                </div>
-              </Card>
-            ))
-          ) : (mergedItems.length === 0 ? (
-            <div className="flex flex-col items-center justify-center min-h-[40vh] text-muted-foreground">
-              <img src="/images/empty-state.svg" alt="No results" className="w-32 h-32 mb-4 opacity-80" />
-              <span className="text-lg font-semibold">No results found.</span>
-              <span className="text-sm mt-1">Try adjusting your filters or search terms.</span>
-            </div>
-          ) : (
-            mergedItems.map((item, idx) => {
-              if (item.type === 'profile') {
-                const profile = item.data;
-                const skillsArr = Array.isArray(profile.skills)
-                  ? profile.skills
-                  : typeof profile.skills === "string"
-                  ? profile.skills.split(",").map((s: string) => s.trim()).filter((s: string) => Boolean(s))
-                  : [];
-                return (
-                  <motion.div
-                    key={profile.id}
-                    variants={cardVariants}
-                    initial="hidden"
-                    animate="visible"
-                    whileHover="hover"
-                    transition={{ delay: idx * 0.1 }}
-                    className="h-full"
-                  >
-                    <Card className="group relative h-full bg-gradient-to-br from-white to-gray-50/50 dark:from-zinc-900/80 dark:to-zinc-800/60 border-0 shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] rounded-3xl overflow-hidden backdrop-blur-sm">
-                      {/* Gradient overlay */}
-                      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                      
-                      <CardContent className="relative p-0 flex flex-col h-full">
-                        {/* Header Section */}
-                        <div className="p-4 pb-3">
-                          <div className="flex items-start gap-4">
-                            {/* Avatar with status indicator */}
-                            <div className="relative">
-                              <Avatar className="h-12 w-12 border-4 border-white/80 dark:border-zinc-800/80 shadow-lg">
-                                <AvatarImage src={profile.avatar_url || undefined} alt={profile.full_name || undefined} />
-                                <AvatarFallback className="text-lg font-semibold bg-gradient-to-br from-primary to-primary/80 text-white">
-                                  {getInitials(profile.full_name)}
-                                </AvatarFallback>
-                              </Avatar>
-                              {/* Online status indicator */}
-                              <div className="absolute -bottom-1 -right-1 h-3 w-3 bg-green-500 border-2 border-white dark:border-zinc-800 rounded-full" />
+
+                {/* Filters Section */}
+                <div className="flex flex-wrap gap-2 md:gap-3 w-full max-w-5xl mx-auto items-end bg-background p-6 rounded-xl shadow-lg border border-border mt-6">
+                  {viewType === 'profiles' ? (
+                    <>
+                      {/* Profile Type Filter */}
+                      <div className="flex flex-col gap-1">
+                        <Label className="text-xs font-medium text-muted-foreground">Profile Type</Label>
+                        <Select value={profileType} onValueChange={setProfileType}>
+                          <SelectTrigger className="w-36" aria-label="Filter by profile type">
+                            <Briefcase className="mr-2 h-4 w-4 text-muted-foreground" />
+                            <SelectValue placeholder="Profile Type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Types</SelectItem>
+                            <SelectItem value="founder">Founder</SelectItem>
+                            <SelectItem value="investor">Investor</SelectItem>
+                            <SelectItem value="expert">Expert</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Professional Category Filter */}
+                      <div className="flex flex-col gap-1">
+                        <Label className="text-xs font-medium text-muted-foreground">Professional Category</Label>
+                        <Select value={role} onValueChange={setRole}>
+                          <SelectTrigger className="w-36" aria-label="Filter by category">
+                            <User className="mr-2 h-4 w-4 text-muted-foreground" />
+                            <SelectValue placeholder="Category" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Categories</SelectItem>
+                            {Object.keys(PROFESSIONAL_CATEGORIES).map((category) => (
+                              <SelectItem key={category} value={category}>{category}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Role Filter - Shows roles based on selected category */}
+                      <div className="flex flex-col gap-1">
+                        <Label className="text-xs font-medium text-muted-foreground">Role</Label>
+                        <Select value={role} onValueChange={setRole}>
+                          <SelectTrigger className="w-36" aria-label="Filter by role">
+                            <User className="mr-2 h-4 w-4 text-muted-foreground" />
+                            <SelectValue placeholder="Role" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Roles</SelectItem>
+                            <div className="px-2 py-1">
+                              <Input
+                                placeholder="Search roles..."
+                                value={skillSearchTerm}
+                                onChange={e => setSkillSearchTerm(e.target.value)}
+                                className="w-full text-xs"
+                              />
                             </div>
+                            <div className="max-h-48 overflow-y-auto">
+                              {getAllRoles
+                                .filter(r => !skillSearchTerm || r.toLowerCase().includes(skillSearchTerm.toLowerCase()))
+                                .map((r) => (
+                                  <SelectItem key={r} value={r}>{r}</SelectItem>
+                                ))}
+                            </div>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Skill Filter - Using SkillsSelector categories */}
+                      <div className="flex flex-col gap-1">
+                        <Label className="text-xs font-medium text-muted-foreground">Skills</Label>
+                        <SkillsSelector
+                          value={skill ? [skill] : []}
+                          onChange={(skills: string[]) => setSkill(skills[0] || '')}
+                          placeholder="Select skills"
+                          showCount={false}
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      {/* Profile Type Filter (for Listings) */}
+                      <div className="flex flex-col gap-1">
+                        <Label className="text-xs font-medium text-muted-foreground">Posted By</Label>
+                        <Select value={profileType} onValueChange={setProfileType}>
+                          <SelectTrigger className="w-32" aria-label="Filter by profile type">
+                            <Briefcase className="mr-2 h-4 w-4 text-muted-foreground" />
+                            <SelectValue placeholder="Profile Type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Types</SelectItem>
+                            <SelectItem value="founder">Founder</SelectItem>
+                            <SelectItem value="investor">Investor</SelectItem>
+                            <SelectItem value="expert">Expert</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Listing Type Filter - Dynamic based on profile type */}
+                      <div className="flex flex-col gap-1">
+                        <Label className="text-xs font-medium text-muted-foreground">Looking to</Label>
+                        <Select 
+                          value={listingType} 
+                          onValueChange={setListingType}
+                          disabled={loadingListings}
+                        >
+                          <SelectTrigger className="w-[180px]" aria-label="Filter by listing type">
+                            <ListFilter className="mr-2 h-4 w-4 text-muted-foreground" />
+                            <SelectValue placeholder="What are you looking for?" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Types</SelectItem>
+                            {profileType && profileType !== 'all' ? (
+                              // Show listing types for selected profile type
+                              LISTING_TYPES[profileType.toLowerCase() as keyof typeof LISTING_TYPES]?.map((type) => (
+                                <SelectItem key={type.value} value={type.value}>
+                                  {type.label}
+                                </SelectItem>
+                              ))
+                            ) : (
+                              // Show all listing types grouped by profile type
+                              Object.entries(LISTING_TYPES).map(([profile, types]) => (
+                                <React.Fragment key={profile}>
+                                  <SelectItem 
+                                    value={`__${profile}__`} 
+                                    disabled 
+                                    className="font-semibold text-muted-foreground"
+                                  >
+                                    {profile.charAt(0).toUpperCase() + profile.slice(1)} Listings
+                                  </SelectItem>
+                                  {types.map((type) => (
+                                    <SelectItem 
+                                      key={type.value} 
+                                      value={type.value}
+                                      className="pl-6"
+                                    >
+                                      {type.label}
+                                    </SelectItem>
+                                  ))}
+                                </React.Fragment>
+                              ))
+                            )}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Country Filter */}
+                      <div className="flex flex-col gap-1">
+                        <Label className="text-xs font-medium text-muted-foreground">Country</Label>
+                        <CountrySelector
+                          value={listingCountry === 'all' ? '' : listingCountry}
+                          onValueChange={setListingCountry}
+                          placeholder="Country"
+                          className="w-32"
+                          disabled={loadingListings}
+                        />
+                      </div>
+
+                      {/* Industry Filter */}
+                      <div className="flex flex-col gap-1">
+                        <Label className="text-xs font-medium text-muted-foreground">Industry</Label>
+                        <IndustrySelector
+                          value={listingSector === 'all' ? '' : listingSector}
+                          onChange={setListingSector}
+                          placeholder="Select industry"
+                          className="w-32"
+                        />
+                      </div>
+
+                      {/* Funding Stage Filter */}
+                      <div className="flex flex-col gap-1">
+                        <Label className="text-xs font-medium text-muted-foreground">Stage</Label>
+                        <Select value={listingFundingStage} onValueChange={setListingFundingStage}>
+                          <SelectTrigger className="w-32" aria-label="Filter by funding stage">
+                            <DollarSign className="mr-2 h-4 w-4 text-muted-foreground" />
+                            <SelectValue placeholder="Funding Stage" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Stages</SelectItem>
+                            {FUNDING_STAGES.map((stage) => (
+                              <SelectItem key={stage} value={stage}>{stage}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Compensation Type Filter */}
+                      <div className="flex flex-col gap-1">
+                        <Label className="text-xs font-medium text-muted-foreground">Compensation</Label>
+                        <Select value={listingCompensationType} onValueChange={setListingCompensationType}>
+                          <SelectTrigger className="w-32" aria-label="Filter by compensation type">
+                            <Users className="mr-2 h-4 w-4 text-muted-foreground" />
+                            <SelectValue placeholder="Compensation" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Types</SelectItem>
+                            {Object.entries(COMPENSATION_TYPES).map(([category, types]) => (
+                              <React.Fragment key={category}>
+                                <SelectItem value={`__${category}__`} disabled className="font-semibold text-muted-foreground">
+                                  {category}
+                                </SelectItem>
+                                {types.map((type) => (
+                                  <SelectItem key={type} value={type}>{type}</SelectItem>
+                                ))}
+                              </React.Fragment>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Clear Filters Button */}
+                  <Button variant="ghost" onClick={clearFilters} className="ml-2" aria-label="Clear filters">
+                    <XCircle className="h-4 w-4 mr-1" /> Clear Filters
+                  </Button>
+                </div>
+            </div>
+
+            {/* Rest of the existing content (cards grid) */}
+            <div className="flex-1 flex flex-col px-4 md:px-8 pb-8">
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 w-full flex-1">
+                {loading || loadingListings ? (
+                  skeletonCards.map((_, i) => (
+                    <Card key={i} className="flex flex-col h-full p-4">
+                      <div className="flex items-center gap-4 mb-2">
+                        <Skeleton className="h-14 w-14 rounded-full" />
+                        <div className="flex-1 space-y-2">
+                          <Skeleton className="h-4 w-24" />
+                          <Skeleton className="h-3 w-16" />
+                          <Skeleton className="h-3 w-20" />
+                        </div>
+                      </div>
+                      <Skeleton className="h-3 w-20 mb-2" />
+                      <Skeleton className="h-4 w-full mb-2" />
+                      <div className="flex gap-2 mt-auto">
+                        <Skeleton className="h-6 w-16 rounded" />
+                        <Skeleton className="h-6 w-16 rounded" />
+                      </div>
+                    </Card>
+                  ))
+                ) : (mergedItems.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center min-h-[40vh] text-muted-foreground">
+                    <img src="/images/empty-state.svg" alt="No results" className="w-32 h-32 mb-4 opacity-80" />
+                    <span className="text-lg font-semibold">No results found.</span>
+                    <span className="text-sm mt-1">Try adjusting your filters or search terms.</span>
+                  </div>
+                ) : (
+                  mergedItems.map((item, idx) => {
+                    if (item.type === 'profile') {
+                      const profile = item.data;
+                      const skillsArr = Array.isArray(profile.skills)
+                        ? profile.skills
+                        : typeof profile.skills === "string"
+                        ? profile.skills.split(",").map((s: string) => s.trim()).filter((s: string) => Boolean(s))
+                        : [];
+                      return (
+                        <motion.div
+                          key={profile.id}
+                          variants={cardVariants}
+                          initial="hidden"
+                          animate="visible"
+                          whileHover="hover"
+                          transition={{ delay: idx * 0.1 }}
+                          className="h-full"
+                        >
+                          <Card className="group relative h-full bg-gradient-to-br from-white to-gray-50/50 dark:from-zinc-900/80 dark:to-zinc-800/60 border-0 shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] rounded-3xl overflow-hidden backdrop-blur-sm">
+                            {/* Gradient overlay */}
+                            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                             
-                            {/* Profile Info */}
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between gap-2 mb-1">
-                                <h3 
-                                  className="font-bold text-base text-gray-900 dark:text-white truncate cursor-pointer hover:text-primary transition-colors"
-                                  onClick={() => handleProfileClick(profile.id)}
-                                >
-                                  {profile.full_name}
-                                </h3>
-                                <div className="flex items-center gap-1.5 shrink-0">
-                                  {profile.profile_type && (
-                                    <div className="flex items-center gap-1.5 bg-blue-500/10 text-blue-600 px-2 py-1 rounded-full text-xs font-medium">
-                                      {profile.profile_type === "Founder" && <Briefcase className="h-3.5 w-3.5" />}
-                                      {profile.profile_type === "Investor" && <DollarSign className="h-3.5 w-3.5" />}
-                                      {profile.profile_type === "Expert" && <Star className="h-3.5 w-3.5" />}
-                                      <span>{profile.profile_type}</span>
+                            <CardContent className="relative p-0 flex flex-col h-full">
+                              {/* Header Section */}
+                              <div className="p-4 pb-3">
+                                <div className="flex items-start gap-4">
+                                  {/* Avatar with status indicator */}
+                                  <div className="relative">
+                                    <Avatar className="h-12 w-12 border-4 border-white/80 dark:border-zinc-800/80 shadow-lg">
+                                      <AvatarImage src={profile.avatar_url || undefined} alt={profile.full_name || undefined} />
+                                      <AvatarFallback className="text-lg font-semibold bg-gradient-to-br from-primary to-primary/80 text-white">
+                                        {getInitials(profile.full_name)}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                    {/* Online status indicator */}
+                                    <div className="absolute -bottom-1 -right-1 h-3 w-3 bg-green-500 border-2 border-white dark:border-zinc-800 rounded-full" />
+                                  </div>
+                                  
+                                  {/* Profile Info */}
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center justify-between gap-2 mb-1">
+                                      <h3 
+                                        className="font-bold text-base text-gray-900 dark:text-white truncate cursor-pointer hover:text-primary transition-colors"
+                                        onClick={() => handleProfileClick(profile.id)}
+                                      >
+                                        {profile.full_name}
+                                      </h3>
+                                      <div className="flex items-center gap-1.5 shrink-0">
+                                        {profile.profile_type && (
+                                          <div className="flex items-center gap-1.5 bg-blue-500/10 text-blue-600 px-2 py-1 rounded-full text-xs font-medium">
+                                            {profile.profile_type === "Founder" && <Briefcase className="h-3.5 w-3.5" />}
+                                            {profile.profile_type === "Investor" && <DollarSign className="h-3.5 w-3.5" />}
+                                            {profile.profile_type === "Expert" && <Star className="h-3.5 w-3.5" />}
+                                            <span>{profile.profile_type}</span>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                    
+                                    {profile.professional_role && (
+                                      <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        {profile.professional_role}
+                                        {profile.company && (
+                                          <>
+                                            <span className="mx-1">•</span>
+                                            <span className="text-gray-600">{profile.company}</span>
+                                          </>
+                                        )}
+                                      </p>
+                                    )}
+                                    
+                                    {/* Date and Location */}
+                                    <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                                      <div className="flex items-center gap-1">
+                                        <MapPin className="h-3 w-3" />
+                                        <span>{profile.country || "Location not specified"}</span>
+                                      </div>
+                                      <span className="mx-1">•</span>
+                                      <span>{profile.created_at ? format(new Date(profile.created_at), "MMM dd, yyyy") : "Recently joined"}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Bio Section */}
+                              {profile.bio && (
+                                <div className="px-4 pb-4">
+                                  <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">About</h4>
+                                  <div className="text-xs text-gray-600 dark:text-gray-400 line-clamp-3 leading-relaxed">
+                                    {profile.bio}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Details Section */}
+                              <div className="px-4 pb-4 space-y-3">
+                                {/* Skills */}
+                                {skillsArr.length > 0 && (
+                                  <div className="space-y-2">
+                                    <h4 className="text-sm font-semibold text-gray-900 dark:text-white">Skills & Expertise</h4>
+                                    <div className="flex flex-wrap gap-1.5">
+                                      {skillsArr.map((skill: string) => (
+                                        <Badge 
+                                          key={skill} 
+                                          variant="secondary"
+                                          className="bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-900/20 dark:to-blue-800/20 
+                                                   text-blue-700 dark:text-blue-400 border-blue-200/50 dark:border-blue-700/50 
+                                                   hover:bg-blue-100 dark:hover:bg-blue-800/30 transition-colors
+                                                   text-xs px-2 py-0.5 rounded-lg"
+                                        >
+                                          {skill}
+                                        </Badge>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Action Buttons */}
+                              <div className="mt-auto p-4 pt-3">
+                                <div className="flex items-center gap-3">
+                                  <Button
+                                    variant="default"
+                                    size="sm"
+                                    className="flex-1 bg-primary hover:bg-primary/90 text-white font-semibold rounded-xl h-8"
+                                    onClick={() => handleProfileClick(profile.id)}
+                                  >
+                                    <Eye className="h-4 w-4 mr-2" />
+                                    View Profile
+                                  </Button>
+                                  
+                                  <div className="flex gap-1">
+                                    {user && profile.id !== user.id && (
+                                      <>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="h-8 w-8 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-yellow-50 dark:hover:bg-yellow-900/20"
+                                          onClick={() => {
+                                            if (isProfileSaved(profile.id)) unsaveProfile(profile.id);
+                                            else saveProfile(profile.id);
+                                          }}
+                                          disabled={favoritesLoading}
+                                        >
+                                          <Star
+                                            className={`h-4 w-4 ${
+                                              isProfileSaved(profile.id)
+                                                ? "fill-yellow-400 text-yellow-500"
+                                                : "text-gray-400 hover:text-yellow-500"
+                                            }`}
+                                            strokeWidth={isProfileSaved(profile.id) ? 0 : 1.5}
+                                          />
+                                        </Button>
+                                        <Button 
+                                          variant="ghost" 
+                                          size="sm"
+                                          className="h-8 w-8 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                                          onClick={() => handleMessage(profile.id)}
+                                        >
+                                          <Mail className="h-4 w-4 text-gray-400 hover:text-blue-500" />
+                                        </Button>
+                                      </>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        </motion.div>
+                      );
+                    } else if (item.type === 'listing') {
+                      const listing = item.data;
+                      return (
+                        <motion.div
+                          key={listing.id}
+                          variants={cardVariants}
+                          initial="hidden"
+                          animate="visible"
+                          whileHover="hover"
+                          transition={{ delay: idx * 0.1 }}
+                          className="h-full"
+                        >
+                          <Card className="group relative h-full bg-gradient-to-br from-white to-gray-50/50 dark:from-zinc-900/80 dark:to-zinc-800/60 border-0 shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] rounded-3xl overflow-hidden backdrop-blur-sm">
+                            {/* Gradient overlay */}
+                            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                            
+                            <CardContent className="relative p-0 flex flex-col h-full">
+                              {/* Header Section */}
+                              <div className="p-4 pb-3">
+                                <div className="flex items-start gap-4">
+                                  {/* Avatar */}
+                                  <Avatar className="h-12 w-12 border-4 border-white/80 dark:border-zinc-800/80 shadow-lg">
+                                    <AvatarImage src={listing.profiles?.avatar_url || undefined} alt={listing.profiles?.full_name || 'User'} />
+                                    <AvatarFallback className="text-lg font-semibold bg-gradient-to-br from-primary to-primary/80 text-white">
+                                      {listing.profiles?.full_name?.charAt(0) || 'U'}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  
+                                  {/* Listing Info */}
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center justify-between gap-2 mb-1">
+                                      <h3 
+                                        className="font-bold text-base text-gray-900 dark:text-white truncate cursor-pointer hover:text-primary transition-colors"
+                                        onClick={() => handleProfileClick(listing.profiles?.id)}
+                                      >
+                                        {listing.profiles?.full_name || 'Unknown User'}
+                                      </h3>
+                                      <div className="flex items-center gap-1.5 shrink-0">
+                                        <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/20 text-xs px-2 py-1">
+                                          {formatListingType(listing.listing_type)}
+                                        </Badge>
+                                      </div>
+                                    </div>
+                                    
+                                    {listing.profiles?.professional_role && (
+                                      <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        {listing.profiles.professional_role}
+                                      </p>
+                                    )}
+                                    
+                                    {/* Date */}
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                                      {listing.created_at ? format(new Date(listing.created_at), "MMM dd, yyyy") : "Recently posted"}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Title and Description */}
+                              <div className="px-4 pb-4">
+                                <h4 className="font-bold text-base text-gray-900 dark:text-white mb-3 line-clamp-2 group-hover:text-primary transition-colors">
+                                  {listing.title}
+                                </h4>
+                                
+                                <div 
+                                  className="text-xs text-gray-600 dark:text-gray-400 line-clamp-3 leading-relaxed mb-4"
+                                  dangerouslySetInnerHTML={{ __html: listing.description || '' }}
+                                />
+                              </div>
+
+                              {/* Details Section */}
+                              <div className="px-4 pb-4 space-y-3">
+                                {/* Skills */}
+                                {listing.skills && (
+                                  <div className="space-y-2">
+                                    <h4 className="text-sm font-semibold text-gray-900 dark:text-white">Required Skills</h4>
+                                    <div className="flex flex-wrap gap-1.5">
+                                      {(Array.isArray(listing.skills) ? listing.skills : listing.skills.split(",").map((s: string) => s.trim())).map((skill: string) => (
+                                        <Badge 
+                                          key={skill} 
+                                          variant="secondary"
+                                          className="bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-900/20 dark:to-blue-800/20 
+                                                   text-blue-700 dark:text-blue-400 border-blue-200/50 dark:border-blue-700/50 
+                                                   hover:bg-blue-100 dark:hover:bg-blue-800/30 transition-colors
+                                                   text-xs px-2 py-0.5 rounded-lg"
+                                        >
+                                          {skill}
+                                        </Badge>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Compensation Information */}
+                                {(listing.compensation_type || listing.compensation_value || listing.amount) && (
+                                  <div className="space-y-2">
+                                    <h4 className="text-sm font-semibold text-gray-900 dark:text-white">Compensation</h4>
+                                    <div className="flex flex-wrap gap-1.5">
+                                      {listing.compensation_type && (
+                                        <Badge 
+                                          variant="secondary"
+                                          className="bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-900/20 dark:to-green-800/20 
+                                                   text-green-700 dark:text-green-400 border-green-200/50 dark:border-green-700/50 
+                                                   hover:bg-green-100 dark:hover:bg-green-800/30 transition-colors
+                                                   text-xs px-2 py-0.5 rounded-lg"
+                                        >
+                                          {listing.compensation_type}
+                                        </Badge>
+                                      )}
+                                      {listing.compensation_value && (
+                                        <Badge 
+                                          variant="secondary"
+                                          className="bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-900/20 dark:to-green-800/20 
+                                                   text-green-700 dark:text-green-400 border-green-200/50 dark:border-green-700/50 
+                                                   hover:bg-green-100 dark:hover:bg-green-800/30 transition-colors
+                                                   text-xs px-2 py-0.5 rounded-lg"
+                                        >
+                                          {typeof listing.compensation_value === 'object' 
+                                            ? listing.compensation_value.equity || listing.compensation_value.value 
+                                            : listing.compensation_value}
+                                        </Badge>
+                                      )}
+                                      {listing.amount && (
+                                        <Badge 
+                                          variant="secondary"
+                                          className="bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-900/20 dark:to-green-800/20 
+                                                   text-green-700 dark:text-green-400 border-green-200/50 dark:border-green-700/50 
+                                                   hover:bg-green-100 dark:hover:bg-green-800/30 transition-colors
+                                                   text-xs px-2 py-0.5 rounded-lg"
+                                        >
+                                          Amount: {listing.amount}
+                                        </Badge>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Key Details Badges */}
+                                <div className="flex flex-wrap gap-2">
+                                  {listing.funding_stage && (
+                                    <div className="flex items-center gap-1.5 bg-purple-500/10 text-purple-600 px-3 py-1.5 rounded-full text-xs font-medium">
+                                      <Building2 className="h-3.5 w-3.5" />
+                                      <span>Stage: {listing.funding_stage}</span>
                                     </div>
                                   )}
                                 </div>
-                              </div>
-                              
-                              {profile.professional_role && (
-                                <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                  {profile.professional_role}
-                                  {profile.company && (
+
+                                {/* Location and Sector */}
+                                <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                                  <MapPin className="h-3 w-3" />
+                                  <span>{listing.location_city ? `${listing.location_city}, ` : ""}{listing.location_country}</span>
+                                  {listing.sector && (
                                     <>
                                       <span className="mx-1">•</span>
-                                      <span className="text-gray-600">{profile.company}</span>
+                                      <Badge variant="outline" className="text-xs border-gray-200 dark:border-gray-700">
+                                        {listing.sector}
+                                      </Badge>
                                     </>
                                   )}
-                                </p>
-                              )}
-                              
-                              {/* Date and Location */}
-                              <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                                <div className="flex items-center gap-1">
-                                  <MapPin className="h-3 w-3" />
-                                  <span>{profile.country || "Location not specified"}</span>
                                 </div>
-                                <span className="mx-1">•</span>
-                                <span>{profile.created_at ? format(new Date(profile.created_at), "MMM dd, yyyy") : "Recently joined"}</span>
                               </div>
-                            </div>
-                          </div>
-                        </div>
 
-                        {/* Bio Section */}
-                        {profile.bio && (
-                          <div className="px-4 pb-4">
-                            <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">About</h4>
-                            <div className="text-xs text-gray-600 dark:text-gray-400 line-clamp-3 leading-relaxed">
-                              {profile.bio}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Details Section */}
-                        <div className="px-4 pb-4 space-y-3">
-                          {/* Skills */}
-                          {skillsArr.length > 0 && (
-                            <div className="space-y-2">
-                              <h4 className="text-sm font-semibold text-gray-900 dark:text-white">Skills & Expertise</h4>
-                              <div className="flex flex-wrap gap-1.5">
-                                {skillsArr.map((skill: string) => (
-                                  <Badge 
-                                    key={skill} 
-                                    variant="secondary"
-                                    className="bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-900/20 dark:to-blue-800/20 
-                                             text-blue-700 dark:text-blue-400 border-blue-200/50 dark:border-blue-700/50 
-                                             hover:bg-blue-100 dark:hover:bg-blue-800/30 transition-colors
-                                             text-xs px-2 py-0.5 rounded-lg"
-                                  >
-                                    {skill}
-                                  </Badge>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Action Buttons */}
-                        <div className="mt-auto p-4 pt-3">
-                          <div className="flex items-center gap-3">
-                            <Button
-                              variant="default"
-                              size="sm"
-                              className="flex-1 bg-primary hover:bg-primary/90 text-white font-semibold rounded-xl h-8"
-                              onClick={() => handleProfileClick(profile.id)}
-                            >
-                              <Eye className="h-4 w-4 mr-2" />
-                              View Profile
-                            </Button>
-                            
-                            <div className="flex gap-1">
-                              {user && profile.id !== user.id && (
-                                <>
+                              {/* Action Buttons */}
+                              <div className="mt-auto p-4 pt-3">
+                                <div className="flex items-center gap-3">
                                   <Button
-                                    variant="ghost"
+                                    variant="default"
                                     size="sm"
-                                    className="h-8 w-8 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-yellow-50 dark:hover:bg-yellow-900/20"
-                                    onClick={() => {
-                                      if (isProfileSaved(profile.id)) unsaveProfile(profile.id);
-                                      else saveProfile(profile.id);
-                                    }}
-                                    disabled={favoritesLoading}
+                                    className="flex-1 bg-primary hover:bg-primary/90 text-white font-semibold rounded-xl h-8"
+                                    onClick={() => router.push(`/dashboard/listings/${listing.id}?source=find-partner`)}
                                   >
-                                    <Star
-                                      className={`h-4 w-4 ${
-                                        isProfileSaved(profile.id)
-                                          ? "fill-yellow-400 text-yellow-500"
-                                          : "text-gray-400 hover:text-yellow-500"
-                                      }`}
-                                      strokeWidth={isProfileSaved(profile.id) ? 0 : 1.5}
-                                    />
+                                    <Eye className="h-4 w-4 mr-2" />
+                                    View Listing
                                   </Button>
-                                  <Button 
-                                    variant="ghost" 
-                                    size="sm"
-                                    className="h-8 w-8 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                                    onClick={() => handleMessage(profile.id)}
-                                  >
-                                    <Mail className="h-4 w-4 text-gray-400 hover:text-blue-500" />
-                                  </Button>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                );
-              } else if (item.type === 'listing') {
-                const listing = item.data;
-                return (
-                  <motion.div
-                    key={listing.id}
-                    variants={cardVariants}
-                    initial="hidden"
-                    animate="visible"
-                    whileHover="hover"
-                    transition={{ delay: idx * 0.1 }}
-                    className="h-full"
-                  >
-                    <Card className="group relative h-full bg-gradient-to-br from-white to-gray-50/50 dark:from-zinc-900/80 dark:to-zinc-800/60 border-0 shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] rounded-3xl overflow-hidden backdrop-blur-sm">
-                      {/* Gradient overlay */}
-                      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                      
-                      <CardContent className="relative p-0 flex flex-col h-full">
-                        {/* Header Section */}
-                        <div className="p-4 pb-3">
-                          <div className="flex items-start gap-4">
-                            {/* Avatar */}
-                            <Avatar className="h-12 w-12 border-4 border-white/80 dark:border-zinc-800/80 shadow-lg">
-                              <AvatarImage src={listing.profiles?.avatar_url || undefined} alt={listing.profiles?.full_name || 'User'} />
-                              <AvatarFallback className="text-lg font-semibold bg-gradient-to-br from-primary to-primary/80 text-white">
-                                {listing.profiles?.full_name?.charAt(0) || 'U'}
-                              </AvatarFallback>
-                            </Avatar>
-                            
-                            {/* Listing Info */}
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between gap-2 mb-1">
-                                <h3 
-                                  className="font-bold text-base text-gray-900 dark:text-white truncate cursor-pointer hover:text-primary transition-colors"
-                                  onClick={() => handleProfileClick(listing.profiles?.id)}
-                                >
-                                  {listing.profiles?.full_name || 'Unknown User'}
-                                </h3>
-                                <div className="flex items-center gap-1.5 shrink-0">
-                                  <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/20 text-xs px-2 py-1">
-                                    {formatListingType(listing.listing_type)}
-                                  </Badge>
+                                  
+                                  <div className="flex gap-1">
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm"
+                                      className="h-8 w-8 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-yellow-50 dark:hover:bg-yellow-900/20" 
+                                      onClick={() => handleLikeListing(listing.id)}
+                                    >
+                                      <Star 
+                                        className={`h-4 w-4 ${
+                                          isListingLiked(listing.id) 
+                                            ? "fill-yellow-400 text-yellow-500" 
+                                            : "text-gray-400 hover:text-yellow-500"
+                                        }`} 
+                                        strokeWidth={isListingLiked(listing.id) ? 0 : 1.5} 
+                                      />
+                                    </Button>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm"
+                                      className="h-8 w-8 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                                      onClick={() => handleMessage(listing.user_id)}
+                                    >
+                                      <Mail className="h-4 w-4 text-gray-400 hover:text-blue-500" />
+                                    </Button>
+                                  </div>
                                 </div>
                               </div>
-                              
-                              {listing.profiles?.professional_role && (
-                                <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                  {listing.profiles.professional_role}
-                                </p>
-                              )}
-                              
-                              {/* Date */}
-                              <p className="text-xs text-gray-500 dark:text-gray-400">
-                                {listing.created_at ? format(new Date(listing.created_at), "MMM dd, yyyy") : "Recently posted"}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Title and Description */}
-                        <div className="px-4 pb-4">
-                          <h4 className="font-bold text-base text-gray-900 dark:text-white mb-3 line-clamp-2 group-hover:text-primary transition-colors">
-                            {listing.title}
-                          </h4>
-                          
-                          <div 
-                            className="text-xs text-gray-600 dark:text-gray-400 line-clamp-3 leading-relaxed mb-4"
-                            dangerouslySetInnerHTML={{ __html: listing.description || '' }}
-                          />
-                        </div>
-
-                        {/* Details Section */}
-                        <div className="px-4 pb-4 space-y-3">
-                          {/* Key Details Badges */}
-                          <div className="flex flex-wrap gap-2">
-                            {listing.funding_stage && (
-                              <div className="flex items-center gap-1.5 bg-purple-500/10 text-purple-600 px-3 py-1.5 rounded-full text-xs font-medium">
-                                <Building2 className="h-3.5 w-3.5" />
-                                <span>Stage: {listing.funding_stage}</span>
-                              </div>
-                            )}
-                            {listing.compensation_type === "Equity" && listing.compensation_value && (
-                              <div className="flex items-center gap-1.5 bg-green-500/10 text-green-600 px-3 py-1.5 rounded-full text-xs font-medium">
-                                <Users className="h-3.5 w-3.5" />
-                                <span>Equity Offered: {
-                                  typeof listing.compensation_value === 'object' 
-                                    ? listing.compensation_value.equity || listing.compensation_value.value 
-                                    : listing.compensation_value
-                                }</span>
-                              </div>
-                            )}
-                            {listing.amount && (
-                              <div className="flex items-center gap-1.5 bg-blue-500/10 text-blue-600 px-3 py-1.5 rounded-full text-xs font-medium">
-                                <DollarSign className="h-3.5 w-3.5" />
-                                <span>Amount Seeking: {listing.amount}</span>
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Location and Sector */}
-                          <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                            <MapPin className="h-3 w-3" />
-                            <span>{listing.location_city ? `${listing.location_city}, ` : ""}{listing.location_country}</span>
-                            {listing.sector && (
-                              <>
-                                <span className="mx-1">•</span>
-                                <Badge variant="outline" className="text-xs border-gray-200 dark:border-gray-700">
-                                  {listing.sector}
-                                </Badge>
-                              </>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Action Buttons */}
-                        <div className="mt-auto p-4 pt-3">
-                          <div className="flex items-center gap-3">
-                            <Button
-                              variant="default"
-                              size="sm"
-                              className="flex-1 bg-primary hover:bg-primary/90 text-white font-semibold rounded-xl h-8"
-                              onClick={() => router.push(`/dashboard/listings/${listing.id}?source=find-partner`)}
-                            >
-                              <Eye className="h-4 w-4 mr-2" />
-                              View Listing
-                            </Button>
-                            
-                            <div className="flex gap-1">
-                              <Button 
-                                variant="ghost" 
-                                size="sm"
-                                className="h-8 w-8 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-yellow-50 dark:hover:bg-yellow-900/20" 
-                                onClick={() => handleLikeListing(listing.id)}
-                              >
-                                <Star 
-                                  className={`h-4 w-4 ${
-                                    isListingLiked(listing.id) 
-                                      ? "fill-yellow-400 text-yellow-500" 
-                                      : "text-gray-400 hover:text-yellow-500"
-                                  }`} 
-                                  strokeWidth={isListingLiked(listing.id) ? 0 : 1.5} 
-                                />
-                              </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="sm"
-                                className="h-8 w-8 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                                onClick={() => handleMessage(listing.user_id)}
-                              >
-                                <Mail className="h-4 w-4 text-gray-400 hover:text-blue-500" />
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                );
-              }
-              return null;
-            })
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
+                            </CardContent>
+                          </Card>
+                        </motion.div>
+                      );
+                    }
+                    return null;
+                  })
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+      }
