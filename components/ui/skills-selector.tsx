@@ -25,11 +25,45 @@ export const SKILLS_CATEGORIES = {
   "DevOps & Cloud": [
     "Docker", "Kubernetes", "AWS", "Azure", "Google Cloud", "Heroku", "DigitalOcean", "Vercel", "Netlify", "Terraform", "Ansible", "Jenkins", "GitLab CI", "GitHub Actions", "CircleCI", "Travis CI", "Prometheus", "Grafana", "ELK Stack"
   ],
+  "Cybersecurity": [
+    "Security Architecture", "Penetration Testing", "Ethical Hacking", "Vulnerability Assessment", "Network Security",
+    "Application Security", "Cloud Security", "DevSecOps", "Security Auditing", "Incident Response",
+    "Malware Analysis", "Forensics", "SIEM", "Threat Intelligence", "Zero Trust Architecture",
+    "Identity & Access Management", "Encryption", "PKI", "Security Compliance", "Risk Assessment",
+    "Web Application Security", "Mobile Security", "IoT Security", "Blockchain Security", "API Security",
+    "OWASP", "SOC 2", "ISO 27001", "GDPR", "HIPAA", "PCI DSS", "Security Awareness Training",
+    "Firewall Management", "IDS/IPS", "DLP", "EDR/XDR", "CASB", "Red Team", "Blue Team", "Purple Team"
+  ],
+  "Legal Tech & Compliance": [
+    "Smart Contract Development", "Legal Software Development", "Regulatory Technology", "Legal Document Automation",
+    "E-Discovery", "Legal Research Tools", "Contract Management Systems", "Legal Project Management",
+    "Legal Data Analytics", "Compliance Monitoring", "Risk Management Systems", "Privacy Engineering",
+    "Legal Process Automation", "Digital Signatures", "Legal Knowledge Management", "Legal Design",
+    "GDPR Implementation", "CCPA Compliance", "HIPAA Compliance", "SOX Compliance", "AML Compliance",
+    "KYC Implementation", "Legal Operations", "Legal Tech Consulting", "IP Management Systems",
+    "Regulatory Reporting", "Compliance Analytics", "Legal Document Review", "Legal Workflow Automation"
+  ],
   "Mobile Development": [
     "React Native", "Flutter", "Ionic", "Xamarin", "Native iOS", "Native Android", "Cordova", "PhoneGap", "Expo", "Kotlin Multiplatform", "SwiftUI", "Jetpack Compose"
   ],
   "Data Science & AI": [
-    "Machine Learning", "Deep Learning", "TensorFlow", "PyTorch", "Scikit-learn", "Pandas", "NumPy", "Matplotlib", "Seaborn", "Jupyter", "Apache Spark", "Hadoop", "Data Analysis", "Statistical Modeling", "Natural Language Processing", "Computer Vision", "Reinforcement Learning", "Neural Networks", "Big Data", "Data Visualization"
+    "Machine Learning", "Deep Learning", "TensorFlow", "PyTorch", "Scikit-learn", "Pandas", "NumPy", "Matplotlib", "Seaborn", "Jupyter",
+    "Apache Spark", "Hadoop", "Data Analysis", "Statistical Modeling", "Natural Language Processing", "Computer Vision",
+    "Reinforcement Learning", "Neural Networks", "Big Data", "Data Visualization", "MLOps", "AI Ethics",
+    "Generative AI", "Large Language Models", "Prompt Engineering", "AI Model Training", "Model Optimization",
+    "Transfer Learning", "Federated Learning", "AutoML", "Time Series Analysis", "Anomaly Detection",
+    "Recommendation Systems", "Speech Recognition", "Image Processing", "Sentiment Analysis", "Text Mining",
+    "Data Pipeline Development", "Feature Engineering", "Model Deployment", "A/B Testing", "Experimental Design",
+    "Quantum Computing", "Edge AI", "AI Infrastructure", "AI Product Management", "AI Strategy"
+  ],
+  "Data Engineering & Analytics": [
+    "ETL Pipeline Development", "Data Warehousing", "Data Lake Architecture", "Real-time Analytics",
+    "Business Intelligence", "Data Modeling", "Data Quality Management", "Master Data Management",
+    "Data Governance", "Data Integration", "Data Migration", "Data Catalog", "Metadata Management",
+    "Data Pipeline Orchestration", "Stream Processing", "Batch Processing", "Data Security",
+    "Data Privacy", "Data Compliance", "Data Architecture", "Data Strategy", "Data Operations",
+    "Analytics Engineering", "Data Platform Development", "Data API Development", "Data Mesh",
+    "Data Fabric", "Data Observability", "Data Documentation", "Data Testing"
   ],
   "Design & UX": [
     "UI/UX Design", "Figma", "Sketch", "Adobe XD", "InVision", "Framer", "Adobe Photoshop", "Adobe Illustrator", "Adobe InDesign", "Prototyping", "Wireframing", "User Research", "Usability Testing", "Design Systems", "Brand Identity", "Visual Design", "Interaction Design", "Information Architecture", "Accessibility Design"
@@ -71,6 +105,9 @@ const CATEGORY_COLORS: Record<string, string> = {
   "Industry Expertise": "text-teal-700 bg-teal-100",
   "Soft Skills": "text-gray-700 bg-gray-100",
   "Tools & Platforms": "text-indigo-700 bg-indigo-100",
+  "Cybersecurity": "text-red-700 bg-red-100",
+  "Legal Tech & Compliance": "text-violet-700 bg-violet-100",
+  "Data Engineering & Analytics": "text-emerald-700 bg-emerald-100",
 };
 
 export function SkillsSelector({
