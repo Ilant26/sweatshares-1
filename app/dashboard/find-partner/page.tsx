@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { AnimatedGroup } from "@/components/ui/animated-group";
-import { Loader2, Star, Eye, User, Tag, Briefcase, MapPin, XCircle, Heart, Share2, Mail, DollarSign, ListFilter, Handshake, Building2, Users } from "lucide-react";
+import { Loader2, Star, Eye, User, Tag, Briefcase, MapPin, XCircle, Heart, Share2, Mail, DollarSign, ListFilter, Handshake, Building2, Users, X } from "lucide-react";
 import { format } from "date-fns";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -32,6 +32,109 @@ import { Label } from "@/components/ui/label";
 import { CountrySelector } from '@/components/ui/country-selector';
 import { SkillsSelector, SKILLS_CATEGORIES } from '@/components/ui/skills-selector';
 import { IndustrySelector } from '@/components/ui/industry-selector';
+
+// Single skill selector component for filtering
+const SingleSkillsSelector = ({ value, onChange, placeholder }: { 
+  value: string; 
+  onChange: (skill: string) => void; 
+  placeholder: string; 
+}) => {
+  const [search, setSearch] = React.useState("");
+  const [open, setOpen] = React.useState(false);
+  const inputRef = React.useRef<HTMLInputElement>(null);
+
+  // Flatten skills from all categories
+  const allSkills = React.useMemo(() => {
+    const skills: string[] = [];
+    Object.values(SKILLS_CATEGORIES).forEach(categorySkills => {
+      skills.push(...categorySkills);
+    });
+    return [...new Set(skills)].sort(); // Remove duplicates and sort
+  }, []);
+
+  const filteredSkills = search
+    ? allSkills.filter(skill => skill.toLowerCase().includes(search.toLowerCase()))
+    : allSkills;
+
+  React.useEffect(() => {
+    if (open && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [open]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearch(e.target.value);
+    setOpen(true);
+  };
+
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && filteredSkills.length > 0) {
+      onChange(filteredSkills[0]);
+      setOpen(false);
+      setSearch("");
+    }
+    if (e.key === 'Escape') {
+      setOpen(false);
+    }
+  };
+
+  return (
+    <div className="relative w-full">
+      <div className="relative">
+        <Input
+          ref={inputRef}
+          value={search !== '' || !value ? search : value}
+          onChange={handleInputChange}
+          onFocus={() => setOpen(true)}
+          onBlur={() => setTimeout(() => setOpen(false), 150)}
+          onKeyDown={handleInputKeyDown}
+          placeholder={placeholder}
+          className="w-full text-sm pr-8"
+          autoComplete="off"
+        />
+        {(search || value) && (
+          <button
+            type="button"
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-destructive"
+            onClick={() => {
+              setSearch("");
+              onChange("");
+              inputRef.current?.focus();
+            }}
+            tabIndex={-1}
+            aria-label="Clear selection"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+      {open && (
+        <div className="absolute z-50 mt-1 w-full bg-background border border-border rounded-md shadow-lg max-h-60 overflow-y-auto">
+          {filteredSkills.length === 0 ? (
+            <div className="px-3 py-2 text-muted-foreground text-sm">No skills found.</div>
+          ) : (
+            filteredSkills.map(skill => (
+              <div
+                key={skill}
+                className={cn(
+                  "px-3 py-2 cursor-pointer hover:bg-accent text-sm",
+                  value === skill && "bg-primary/10 text-primary font-semibold"
+                )}
+                onMouseDown={() => {
+                  onChange(skill);
+                  setOpen(false);
+                  setSearch("");
+                }}
+              >
+                {skill}
+              </div>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const getSkillColor = (skill: string) => {
   const colors = [
@@ -607,87 +710,25 @@ export default function FindPartnerPage() {
                       {/* Skills Filter */}
                       <div className="flex flex-col gap-1">
                         <Label className="text-xs font-medium text-muted-foreground">Skills</Label>
-                        <Select value={skill} onValueChange={setSkill}>
-                          <SelectTrigger className="w-36" aria-label="Filter by skills">
-                            <Tag className="mr-2 h-4 w-4 text-muted-foreground" />
-                            <SelectValue placeholder="Skills" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">All Skills</SelectItem>
-                            {Object.entries(SKILLS_CATEGORIES).map(([category, skills]) => (
-                              <React.Fragment key={category}>
-                                <SelectItem 
-                                  value={`__${category}__`} 
-                                  disabled 
-                                  className="font-semibold text-muted-foreground"
-                                >
-                                  {category}
-                                </SelectItem>
-                                {skills.map((skill, skillIndex) => (
-                                  <SelectItem 
-                                    key={`profile-${category}-${skill}-${skillIndex}`} 
-                                    value={skill}
-                                    className="pl-6"
-                                  >
-                                    {skill}
-                                  </SelectItem>
-                                ))}
-                              </React.Fragment>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <div className="w-36">
+                          <SingleSkillsSelector
+                            value={skill === 'all' ? '' : skill}
+                            onChange={(selectedSkill) => setSkill(selectedSkill || 'all')}
+                            placeholder="Search skills"
+                          />
+                        </div>
                       </div>
 
                       {/* Country Filter */}
                       <div className="flex flex-col gap-1">
                         <Label className="text-xs font-medium text-muted-foreground">Country</Label>
-                        <Select value={country} onValueChange={setCountry}>
-                          <SelectTrigger className="w-36" aria-label="Filter by country">
-                            <MapPin className="mr-2 h-4 w-4 text-muted-foreground" />
-                            <SelectValue placeholder="Country" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">All Countries</SelectItem>
-                            <SelectItem value="United States">United States</SelectItem>
-                            <SelectItem value="United Kingdom">United Kingdom</SelectItem>
-                            <SelectItem value="Canada">Canada</SelectItem>
-                            <SelectItem value="Germany">Germany</SelectItem>
-                            <SelectItem value="France">France</SelectItem>
-                            <SelectItem value="Spain">Spain</SelectItem>
-                            <SelectItem value="Italy">Italy</SelectItem>
-                            <SelectItem value="Netherlands">Netherlands</SelectItem>
-                            <SelectItem value="Sweden">Sweden</SelectItem>
-                            <SelectItem value="Norway">Norway</SelectItem>
-                            <SelectItem value="Denmark">Denmark</SelectItem>
-                            <SelectItem value="Finland">Finland</SelectItem>
-                            <SelectItem value="Switzerland">Switzerland</SelectItem>
-                            <SelectItem value="Austria">Austria</SelectItem>
-                            <SelectItem value="Belgium">Belgium</SelectItem>
-                            <SelectItem value="Ireland">Ireland</SelectItem>
-                            <SelectItem value="Portugal">Portugal</SelectItem>
-                            <SelectItem value="Australia">Australia</SelectItem>
-                            <SelectItem value="New Zealand">New Zealand</SelectItem>
-                            <SelectItem value="Japan">Japan</SelectItem>
-                            <SelectItem value="South Korea">South Korea</SelectItem>
-                            <SelectItem value="Singapore">Singapore</SelectItem>
-                            <SelectItem value="India">India</SelectItem>
-                            <SelectItem value="Brazil">Brazil</SelectItem>
-                            <SelectItem value="Mexico">Mexico</SelectItem>
-                            <SelectItem value="Argentina">Argentina</SelectItem>
-                            <SelectItem value="Chile">Chile</SelectItem>
-                            <SelectItem value="South Africa">South Africa</SelectItem>
-                            <SelectItem value="Israel">Israel</SelectItem>
-                            <SelectItem value="United Arab Emirates">UAE</SelectItem>
-                            <SelectItem value="China">China</SelectItem>
-                            <SelectItem value="Russia">Russia</SelectItem>
-                            <SelectItem value="Poland">Poland</SelectItem>
-                            <SelectItem value="Czech Republic">Czech Republic</SelectItem>
-                            <SelectItem value="Estonia">Estonia</SelectItem>
-                            <SelectItem value="Latvia">Latvia</SelectItem>
-                            <SelectItem value="Lithuania">Lithuania</SelectItem>
-                            <SelectItem value="Other">Other</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <div className="w-36">
+                          <CountrySelector
+                            value={country === 'all' ? '' : country}
+                            onValueChange={(selectedCountry: string) => setCountry(selectedCountry || 'all')}
+                            placeholder="Search country"
+                          />
+                        </div>
                       </div>
                     </>
                   ) : (
@@ -760,120 +801,37 @@ export default function FindPartnerPage() {
                       {/* Skills Filter */}
                       <div className="flex flex-col gap-1">
                         <Label className="text-xs font-medium text-muted-foreground">Skills</Label>
-                        <Select value={skill} onValueChange={setSkill}>
-                          <SelectTrigger className="w-36" aria-label="Filter by skills">
-                            <Tag className="mr-2 h-4 w-4 text-muted-foreground" />
-                            <SelectValue placeholder="Skills" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">All Skills</SelectItem>
-                            {Object.entries(SKILLS_CATEGORIES).map(([category, skills]) => (
-                              <React.Fragment key={category}>
-                                <SelectItem 
-                                  value={`__${category}__`} 
-                                  disabled 
-                                  className="font-semibold text-muted-foreground"
-                                >
-                                  {category}
-                                </SelectItem>
-                                {skills.map((skill, skillIndex) => (
-                                  <SelectItem 
-                                    key={`listing-${category}-${skill}-${skillIndex}`} 
-                                    value={skill}
-                                    className="pl-6"
-                                  >
-                                    {skill}
-                                  </SelectItem>
-                                ))}
-                              </React.Fragment>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <div className="w-36">
+                          <SingleSkillsSelector
+                            value={skill === 'all' ? '' : skill}
+                            onChange={(selectedSkill: string) => setSkill(selectedSkill || 'all')}
+                            placeholder="Search skills"
+                          />
+                        </div>
                       </div>
 
                       {/* Country Filter */}
                       <div className="flex flex-col gap-1">
                         <Label className="text-xs font-medium text-muted-foreground">Country</Label>
-                        <Select value={listingCountry} onValueChange={setListingCountry}>
-                          <SelectTrigger className="w-36" aria-label="Filter by country">
-                            <MapPin className="mr-2 h-4 w-4 text-muted-foreground" />
-                            <SelectValue placeholder="Country" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">All Countries</SelectItem>
-                            <SelectItem value="United States">United States</SelectItem>
-                            <SelectItem value="United Kingdom">United Kingdom</SelectItem>
-                            <SelectItem value="Canada">Canada</SelectItem>
-                            <SelectItem value="Germany">Germany</SelectItem>
-                            <SelectItem value="France">France</SelectItem>
-                            <SelectItem value="Spain">Spain</SelectItem>
-                            <SelectItem value="Italy">Italy</SelectItem>
-                            <SelectItem value="Netherlands">Netherlands</SelectItem>
-                            <SelectItem value="Sweden">Sweden</SelectItem>
-                            <SelectItem value="Norway">Norway</SelectItem>
-                            <SelectItem value="Denmark">Denmark</SelectItem>
-                            <SelectItem value="Finland">Finland</SelectItem>
-                            <SelectItem value="Switzerland">Switzerland</SelectItem>
-                            <SelectItem value="Austria">Austria</SelectItem>
-                            <SelectItem value="Belgium">Belgium</SelectItem>
-                            <SelectItem value="Ireland">Ireland</SelectItem>
-                            <SelectItem value="Portugal">Portugal</SelectItem>
-                            <SelectItem value="Australia">Australia</SelectItem>
-                            <SelectItem value="New Zealand">New Zealand</SelectItem>
-                            <SelectItem value="Japan">Japan</SelectItem>
-                            <SelectItem value="South Korea">South Korea</SelectItem>
-                            <SelectItem value="Singapore">Singapore</SelectItem>
-                            <SelectItem value="India">India</SelectItem>
-                            <SelectItem value="Brazil">Brazil</SelectItem>
-                            <SelectItem value="Mexico">Mexico</SelectItem>
-                            <SelectItem value="Argentina">Argentina</SelectItem>
-                            <SelectItem value="Chile">Chile</SelectItem>
-                            <SelectItem value="South Africa">South Africa</SelectItem>
-                            <SelectItem value="Israel">Israel</SelectItem>
-                            <SelectItem value="United Arab Emirates">UAE</SelectItem>
-                            <SelectItem value="China">China</SelectItem>
-                            <SelectItem value="Russia">Russia</SelectItem>
-                            <SelectItem value="Poland">Poland</SelectItem>
-                            <SelectItem value="Czech Republic">Czech Republic</SelectItem>
-                            <SelectItem value="Estonia">Estonia</SelectItem>
-                            <SelectItem value="Latvia">Latvia</SelectItem>
-                            <SelectItem value="Lithuania">Lithuania</SelectItem>
-                            <SelectItem value="Other">Other</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <div className="w-36">
+                          <CountrySelector
+                            value={listingCountry === 'all' ? '' : listingCountry}
+                            onValueChange={(selectedCountry: string) => setListingCountry(selectedCountry || 'all')}
+                            placeholder="Search country"
+                          />
+                        </div>
                       </div>
 
                       {/* Industry Filter */}
                       <div className="flex flex-col gap-1">
                         <Label className="text-xs font-medium text-muted-foreground">Industry</Label>
-                        <Select value={listingSector} onValueChange={setListingSector}>
-                          <SelectTrigger className="w-36" aria-label="Filter by industry">
-                            <Building2 className="mr-2 h-4 w-4 text-muted-foreground" />
-                            <SelectValue placeholder="Industry" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">All Industries</SelectItem>
-                            <SelectItem value="Technology">Technology</SelectItem>
-                            <SelectItem value="Finance">Finance</SelectItem>
-                            <SelectItem value="Healthcare">Healthcare</SelectItem>
-                            <SelectItem value="Education">Education</SelectItem>
-                            <SelectItem value="E-commerce">E-commerce</SelectItem>
-                            <SelectItem value="Media & Entertainment">Media & Entertainment</SelectItem>
-                            <SelectItem value="Real Estate">Real Estate</SelectItem>
-                            <SelectItem value="Transportation">Transportation</SelectItem>
-                            <SelectItem value="Manufacturing">Manufacturing</SelectItem>
-                            <SelectItem value="Energy">Energy</SelectItem>
-                            <SelectItem value="Agriculture">Agriculture</SelectItem>
-                            <SelectItem value="Food & Beverage">Food & Beverage</SelectItem>
-                            <SelectItem value="Fashion">Fashion</SelectItem>
-                            <SelectItem value="Sports">Sports</SelectItem>
-                            <SelectItem value="Travel">Travel</SelectItem>
-                            <SelectItem value="Professional Services">Professional Services</SelectItem>
-                            <SelectItem value="Non-Profit">Non-Profit</SelectItem>
-                            <SelectItem value="Government">Government</SelectItem>
-                            <SelectItem value="Other">Other</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <div className="w-36">
+                          <IndustrySelector
+                            value={listingSector === 'all' ? '' : listingSector}
+                            onChange={(selectedIndustry: string) => setListingSector(selectedIndustry || 'all')}
+                            placeholder="Search industry"
+                          />
+                        </div>
                       </div>
 
                       {/* Funding Stage Filter */}
@@ -1240,15 +1198,15 @@ export default function FindPartnerPage() {
                                           {typeof listing.compensation_value === 'object' ? (
                                             <>
                                               {listing.compensation_value.salary && (
-                                                <Badge 
-                                                  variant="secondary"
-                                                  className="bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-900/20 dark:to-green-800/20 
-                                                           text-green-700 dark:text-green-400 border-green-200/50 dark:border-green-700/50 
-                                                           hover:bg-green-100 dark:hover:bg-green-800/30 transition-colors
-                                                           text-xs px-2 py-0.5 rounded-lg"
-                                                >
+                                        <Badge 
+                                          variant="secondary"
+                                          className="bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-900/20 dark:to-green-800/20 
+                                                   text-green-700 dark:text-green-400 border-green-200/50 dark:border-green-700/50 
+                                                   hover:bg-green-100 dark:hover:bg-green-800/30 transition-colors
+                                                   text-xs px-2 py-0.5 rounded-lg"
+                                        >
                                                   Salary: {listing.compensation_value.salary}
-                                                </Badge>
+                                        </Badge>
                                               )}
                                               {listing.compensation_value.equity && (
                                                 <Badge 
