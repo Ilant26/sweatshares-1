@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Sweathares",
+  title: "SweatShares",
   description: "Find funding, talent, and more",
 };
 

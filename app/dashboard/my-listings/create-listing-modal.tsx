@@ -288,6 +288,7 @@ export function CreateListingModal({
                     
                     {profileType === "founder" && (listingType === "employee" || listingType === "mentor") && (
                       <>
+                        <SelectItem value="Cash">Cash</SelectItem>
                         <SelectItem value="Salary">Salary</SelectItem>
                         <SelectItem value="Equity">Equity</SelectItem>
                         <SelectItem value="Salary & Equity">Salary & Equity</SelectItem>
@@ -314,7 +315,7 @@ export function CreateListingModal({
                     
                     {profileType === "expert" && listingType === "job" && (
                       <>
-                        <SelectItem value="Salary">Annual Salary</SelectItem>
+                        <SelectItem value="Salary">Salary</SelectItem>
                         <SelectItem value="Equity">Equity</SelectItem>
                         <SelectItem value="Hybrid">Hybrid</SelectItem>
                       </>
@@ -340,29 +341,29 @@ export function CreateListingModal({
                   </SelectContent>
                 </Select>
                 {compensationType === 'Cash' && (
-                  <Input placeholder="Cash bonus (ex: 5000€)" value={compensationValue.value || compensationValue || ''} onChange={e => setCompensationValue({ value: e.target.value })} />
+                  <Input placeholder="Cash amount (ex: $5000)" value={compensationValue.value || compensationValue || ''} onChange={e => setCompensationValue({ value: e.target.value })} />
                 )}
                 {compensationType === 'Equity' && (
                   <Input placeholder="Equity (ex: 5-10%)" value={compensationValue.value || compensationValue || ''} onChange={e => setCompensationValue({ value: e.target.value })} />
                 )}
                 {compensationType === 'Salary' && (
-                  <Input placeholder="Annual salary (ex: 40-50K€)" value={compensationValue.value || compensationValue || ''} onChange={e => setCompensationValue({ value: e.target.value })} />
+                  <Input placeholder="Salary (ex: $40-50K)" value={compensationValue.value || compensationValue || ''} onChange={e => setCompensationValue({ value: e.target.value })} />
                 )}
                 {compensationType === 'Hybrid' && (
                   <div className="flex flex-col gap-2">
                     <Input placeholder="Equity (ex: 5-10%)" value={compensationValue.equity || ''} onChange={e => setCompensationValue((prev: any) => ({ ...prev, equity: e.target.value }))} />
-                    <Input placeholder="Cash bonus (ex: 5000€)" value={compensationValue.cash || ''} onChange={e => setCompensationValue((prev: any) => ({ ...prev, cash: e.target.value }))} />
+                    <Input placeholder="Cash amount (ex: $5000)" value={compensationValue.cash || ''} onChange={e => setCompensationValue((prev: any) => ({ ...prev, cash: e.target.value }))} />
                   </div>
                 )}
                 {compensationType === 'Salary & Equity' && (
                   <div className="flex flex-col gap-2">
-                    <Input placeholder="Annual salary (ex: 40-50K€)" value={compensationValue.salary || ''} onChange={e => setCompensationValue((prev: any) => ({ ...prev, salary: e.target.value }))} />
+                    <Input placeholder="Salary (ex: $40-50K)" value={compensationValue.salary || ''} onChange={e => setCompensationValue((prev: any) => ({ ...prev, salary: e.target.value }))} />
                     <Input placeholder="Equity (ex: 5-10%)" value={compensationValue.equity || ''} onChange={e => setCompensationValue((prev: any) => ({ ...prev, equity: e.target.value }))} />
                   </div>
                 )}
                 {compensationType === 'Cash & Equity' && (
                   <div className="flex flex-col gap-2">
-                    <Input placeholder="Cash amount (ex: 5000€)" value={compensationValue.cash || ''} onChange={e => setCompensationValue((prev: any) => ({ ...prev, cash: e.target.value }))} />
+                    <Input placeholder="Cash amount (ex: $5000)" value={compensationValue.cash || ''} onChange={e => setCompensationValue((prev: any) => ({ ...prev, cash: e.target.value }))} />
                     <Input placeholder="Equity (ex: 5-10%)" value={compensationValue.equity || ''} onChange={e => setCompensationValue((prev: any) => ({ ...prev, equity: e.target.value }))} />
                   </div>
                 )}
@@ -379,12 +380,88 @@ export function CreateListingModal({
               </Label>
               <Input 
                 id="amount" 
-                placeholder={(profileType === "founder" && listingType === "find-funding") ? "Ex: $1M - $5M" : "Ex: 10000€"} 
+                placeholder={(profileType === "founder" && listingType === "find-funding") ? "Ex: $1M - $5M" : "Ex: $10000"} 
                 className="col-span-3" 
                 value={amount} 
                 onChange={e => setAmount(e.target.value)} 
               />
             </div>
+          )}
+
+          {/* Investment Capacity for investors looking for opportunities or buying startups */}
+          {(profileType === "investor" && (listingType === "investment-opportunity" || listingType === "buy-startup")) && (
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="investmentCapacity" className="text-right">
+                Investment Capacity <span className="text-destructive">*</span>
+              </Label>
+              <Input 
+                id="investmentCapacity" 
+                placeholder={listingType === "buy-startup" ? "Ex: $1M - $5M for acquisition" : "Ex: $100K - $500K per deal"}
+                className="col-span-3" 
+                value={amount} 
+                onChange={e => setAmount(e.target.value)} 
+              />
+            </div>
+          )}
+
+          {/* Missing Capital and Equity Offered for co-investor search */}
+          {(profileType === "investor" && listingType === "co-investor") && (
+            <>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="missingCapital" className="text-right">
+                  Missing Capital <span className="text-destructive">*</span>
+                </Label>
+                <Input 
+                  id="missingCapital" 
+                  placeholder="Ex: $500K needed to complete the round"
+                  className="col-span-3" 
+                  value={amount} 
+                  onChange={e => setAmount(e.target.value)} 
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="equityOffered" className="text-right">
+                  Equity Offered <span className="text-destructive">*</span>
+                </Label>
+                <Input 
+                  id="equityOffered" 
+                  placeholder="Ex: 15-20% for co-investor"
+                  className="col-span-3" 
+                  value={compensationValue.value || compensationValue || ''} 
+                  onChange={e => setCompensationValue({ value: e.target.value })} 
+                />
+              </div>
+            </>
+          )}
+
+          {/* Sale Price and Percentage for founders selling startup */}
+          {profileType === "founder" && listingType === "sell-startup" && (
+            <>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="salePrice" className="text-right">
+                  Sale Price <span className="text-destructive">*</span>
+                </Label>
+                <Input 
+                  id="salePrice" 
+                  placeholder="Ex: $500K - $1M"
+                  className="col-span-3" 
+                  value={amount} 
+                  onChange={e => setAmount(e.target.value)} 
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="salePercentage" className="text-right">
+                  Percentage for Sale <span className="text-destructive">*</span>
+                </Label>
+                <Input 
+                  id="salePercentage" 
+                  placeholder="Ex: 100% for full sale, or 20-40% for partial"
+                  className="col-span-3" 
+                  value={compensationValue.value || compensationValue || ''} 
+                  onChange={e => setCompensationValue({ value: e.target.value })} 
+                />
+              </div>
+            </>
           )}
 
           {/* Title */}
