@@ -19,6 +19,52 @@ export const SKILLS_CATEGORIES = {
   "Full Stack Development": [
     "Full Stack", "Full Stack Engineer", "Full Stack Developer", "MERN Stack", "MEAN Stack", "JAMstack", "Web Application Architecture", "End-to-End Development", "Cross-Stack Integration"
   ],
+  "No-Code/Low-Code Development": [
+    // Website Builders & CMS
+    "Webflow", "Bubble", "Wix", "Squarespace", "WordPress", "Ghost", "Contentful", "Strapi", "Sanity", "Forestry", "Netlify CMS", "Directus", "Headless CMS",
+    
+    // App Development Platforms
+    "Glide", "Adalo", "FlutterFlow", "Thunkable", "AppGyver", "Appy Pie", "BuildFire", "Kodular", "MIT App Inventor", "Power Apps", "Mendix", "OutSystems", "Appian",
+    
+    // Automation & Integration
+    "Zapier", "Make (Integromat)", "Power Automate", "IFTTT", "Automate.io", "Pipedream", "n8n", "Integromat", "Microsoft Flow", "Workflow Automation", "Process Automation",
+    
+    // Database & Backend as a Service
+    "Airtable", "Firebase", "Supabase", "Backendless", "Xano", "8base", "Hasura", "AWS Amplify", "Nhost", "PlanetScale", "Fauna", "Google Sheets API",
+    
+    // E-commerce & Marketplaces
+    "Shopify", "WooCommerce", "BigCommerce", "Magento", "PrestaShop", "Gumroad", "Podia", "Teachable", "Thinkific", "ConvertKit", "Stripe", "PayPal Integration",
+    
+    // Forms & Data Collection
+    "Typeform", "JotForm", "Google Forms", "Formstack", "Wufoo", "Gravity Forms", "Ninja Forms", "Caldera Forms", "Contact Form 7", "Formidable Forms",
+    
+    // Landing Pages & Marketing
+    "Unbounce", "Leadpages", "Instapage", "ClickFunnels", "Funnel Builder", "Mailchimp", "ConvertKit", "ActiveCampaign", "HubSpot", "Pardot",
+    
+    // Visual Development
+    "Figma to Code", "Sketch to Code", "Adobe XD to Code", "Visual Site Builder", "Drag and Drop Builder", "WYSIWYG Editor", "Page Builder",
+    
+    // Workflow & Project Management
+    "Notion", "Airtable Automations", "Monday.com", "Asana Automations", "Trello Power-Ups", "ClickUp Automations", "Slack Workflows", "Teams Workflows",
+    
+    // Analytics & Tracking (No-Code Setup)
+    "Google Analytics Setup", "Google Tag Manager", "Facebook Pixel", "Hotjar", "Mixpanel", "Amplitude", "Segment", "Heap Analytics",
+    
+    // API Integration (No-Code)
+    "REST API Integration", "GraphQL Integration", "Webhook Setup", "API Connectors", "Third-party Integrations", "SaaS Integrations",
+    
+    // Prototyping & MVP Development
+    "Rapid Prototyping", "MVP Development", "Proof of Concept", "Click-through Prototypes", "Interactive Prototypes", "No-Code MVP",
+    
+    // Documentation & Knowledge Base
+    "Notion Databases", "GitBook", "Confluence", "Coda", "Obsidian", "Roam Research", "Document360", "Zendesk Guide",
+    
+    // Voice & Conversational
+    "Chatbot Development", "Voiceflow", "Dialogflow", "Botpress", "ManyChat", "Chatfuel", "Landbot", "Tars", "Drift Conversations",
+    
+    // Low-Code Development
+    "Low-Code Platforms", "Citizen Developer", "Business Process Automation", "Workflow Design", "Process Mapping", "Business Logic Design"
+  ],
   "Database & Storage": [
     "PostgreSQL", "MySQL", "MongoDB", "Redis", "SQLite", "Oracle", "SQL Server", "Cassandra", "DynamoDB", "Firebase", "Supabase", "Elasticsearch", "InfluxDB", "Neo4j", "ArangoDB", "CouchDB", "RethinkDB"
   ],
@@ -94,6 +140,8 @@ const CATEGORY_COLORS: Record<string, string> = {
   "Programming Languages": "text-blue-700 bg-blue-100",
   "Frontend Development": "text-pink-700 bg-pink-100",
   "Backend Development": "text-green-700 bg-green-100",
+  "Full Stack Development": "text-slate-700 bg-slate-100",
+  "No-Code/Low-Code Development": "text-sky-700 bg-sky-100",
   "Database & Storage": "text-yellow-700 bg-yellow-100",
   "DevOps & Cloud": "text-purple-700 bg-purple-100",
   "Mobile Development": "text-orange-700 bg-orange-100",
@@ -129,7 +177,10 @@ export function SkillsSelector({
 }) {
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
   const MAX_SKILLS = 5;
 
   // Flatten skills to [{ skill, category }], but allow duplicate skill names in different categories
@@ -149,13 +200,35 @@ export function SkillsSelector({
   }, [categories]);
 
   // Filtered skills for search
-  const filteredSkills = search
-    ? allSkills.filter(
-        ({ skill }) =>
-          skill.toLowerCase().includes(search.toLowerCase()) &&
-          !value.includes(skill)
-      )
-    : [];
+  const filteredSkills = React.useMemo(() => {
+    if (!open) return [];
+    
+    const availableSkills = allSkills.filter(({ skill }) => !value.includes(skill));
+    
+    if (search) {
+      return availableSkills.filter(({ skill }) => 
+        skill.toLowerCase().includes(search.toLowerCase())
+      );
+    }
+    
+    return availableSkills;
+  }, [allSkills, value, search, open]);
+
+  // Reset highlighted index when filtered results change
+  useEffect(() => {
+    setHighlightedIndex(-1);
+    itemRefs.current = [];
+  }, [filteredSkills]);
+
+  // Auto-scroll highlighted item into view
+  useEffect(() => {
+    if (highlightedIndex >= 0 && itemRefs.current[highlightedIndex]) {
+      itemRefs.current[highlightedIndex]?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+      });
+    }
+  }, [highlightedIndex]);
 
   // Add skill
   const addSkill = (skill: string) => {
@@ -163,6 +236,7 @@ export function SkillsSelector({
       onChange([...value, skill]);
       setSearch("");
       setOpen(false);
+      setHighlightedIndex(-1);
       inputRef.current?.focus();
     }
   };
@@ -187,15 +261,47 @@ export function SkillsSelector({
 
   // When user presses Enter, select the first filtered skill
   const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && filteredSkills.length > 0) {
-      addSkill(filteredSkills[0].skill);
+    if (!open) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setOpen(true);
+        setHighlightedIndex(0);
+      }
+      return;
     }
-    if (e.key === 'Escape') {
-      setOpen(false);
-    }
-    if (e.key === 'Backspace' && !search && value.length > 0) {
-      // Remove last skill if input is empty
-      removeSkill(value[value.length - 1]);
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setHighlightedIndex(prev => 
+          prev < filteredSkills.length - 1 ? prev + 1 : 0
+        );
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setHighlightedIndex(prev => 
+          prev > 0 ? prev - 1 : filteredSkills.length - 1
+        );
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (highlightedIndex >= 0 && highlightedIndex < filteredSkills.length) {
+          addSkill(filteredSkills[highlightedIndex].skill);
+        } else if (filteredSkills.length > 0) {
+          addSkill(filteredSkills[0].skill);
+        }
+        break;
+      case 'Escape':
+        e.preventDefault();
+        setOpen(false);
+        setHighlightedIndex(-1);
+        break;
+      case 'Backspace':
+        if (!search && value.length > 0) {
+          // Remove last skill if input is empty
+          removeSkill(value[value.length - 1]);
+        }
+        break;
     }
   };
 
@@ -252,6 +358,7 @@ export function SkillsSelector({
             onClick={() => {
               setSearch("");
               onChange([]);
+              setHighlightedIndex(-1);
               inputRef.current?.focus();
             }}
             tabIndex={-1}
@@ -261,15 +368,22 @@ export function SkillsSelector({
           </button>
         )}
       </div>
-      {open && search && filteredSkills.length > 0 && !isAtLimit && (
-        <div className="absolute z-50 mt-1 w-full bg-background border border-border rounded-md shadow-lg max-h-60 overflow-y-auto">
-          {filteredSkills.map(({ skill, category }) => {
+      {open && filteredSkills.length > 0 && !isAtLimit && (
+        <div ref={listRef} className="absolute z-50 mt-1 w-full bg-background border border-border rounded-md shadow-lg max-h-60 overflow-y-auto">
+          {filteredSkills.map(({ skill, category }, index) => {
             const key = `${skill}-${category}`;
             return (
               <div
                 key={key}
-                className="flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-accent text-sm"
+                ref={(el) => { 
+                  itemRefs.current[index] = el; 
+                }}
+                className={cn(
+                  "flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-accent text-sm",
+                  highlightedIndex === index && "bg-accent"
+                )}
                 onMouseDown={() => addSkill(skill)}
+                onMouseEnter={() => setHighlightedIndex(index)}
               >
                 <span>{skill}</span>
                 <span className={cn("ml-2 rounded px-2 py-0.5 text-xs font-semibold", CATEGORY_COLORS[category] || "bg-gray-200 text-gray-700")}>{category}</span>
@@ -278,9 +392,9 @@ export function SkillsSelector({
           })}
         </div>
       )}
-      {open && search && filteredSkills.length === 0 && (
+      {open && filteredSkills.length === 0 && !isAtLimit && (
         <div className="absolute z-50 mt-1 w-full bg-background border border-border rounded-md shadow-lg p-3 text-center text-sm text-muted-foreground">
-          No skills found.
+          {search ? "No skills found." : "All skills have been selected."}
         </div>
       )}
     </div>

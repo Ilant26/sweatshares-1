@@ -160,6 +160,7 @@ type Listing = {
     full_name: string | null;
     avatar_url: string | null;
     professional_role: string | null;
+    profile_type: string | null;
   } | null;
 };
 
@@ -191,8 +192,8 @@ export function HeroSection({
         loading: favoritesLoading,
     } = useFavorites();
 
-    // Toggle state for Profile/Listings
-    const [viewType, setViewType] = React.useState<'profiles' | 'listings'>('profiles');
+    // Toggle state for Profile/Opportunities
+    const [viewType, setViewType] = React.useState<'profiles' | 'opportunities'>('opportunities');
 
     // Profile filters
     const [role, setRole] = React.useState("all");
@@ -257,6 +258,33 @@ export function HeroSection({
         fetchProfiles();
     }, []);
 
+    // Helper functions to get proper labels based on listing type and profile type
+    const getAmountLabel = (listingType: string, profileType: string): string => {
+        if (profileType === "Founder" && listingType === "sell-startup") {
+            return "Sale Price";
+        }
+        if (profileType === "Investor" && (listingType === "investment-opportunity" || listingType === "buy-startup")) {
+            return "Investment Capacity";
+        }
+        if (profileType === "Investor" && listingType === "co-investor") {
+            return "Missing Capital";
+        }
+        if (profileType === "Founder" && listingType === "find-funding") {
+            return "Amount Seeking";
+        }
+        return "Amount";
+    };
+
+    const getCompensationValueLabel = (listingType: string, profileType: string): string => {
+        if (profileType === "Founder" && listingType === "sell-startup") {
+            return "Percentage for Sale";
+        }
+        if (profileType === "Investor" && listingType === "co-investor") {
+            return "Equity Offered";
+        }
+        return "Compensation";
+    };
+
     // Fetch listings
     React.useEffect(() => {
         const fetchListings = async () => {
@@ -267,7 +295,7 @@ export function HeroSection({
                     .select(`
                         id, title, description, listing_type, sector, location_city, location_country, 
                         funding_stage, compensation_type, compensation_value, amount, created_at,
-                        profiles!inner(id, full_name, avatar_url, professional_role)
+                        profiles!inner(id, full_name, avatar_url, professional_role, profile_type)
                     `)
                     .order("created_at", { ascending: false })
                     .limit(12); // Limit to 12 listings for hero section
@@ -452,13 +480,13 @@ export function HeroSection({
                                             Profiles
                                         </Button>
                                         <Button
-                                            variant={viewType === 'listings' ? 'default' : 'ghost'}
+                                            variant={viewType === 'opportunities' ? 'default' : 'ghost'}
                                             size="sm"
-                                            onClick={() => setViewType('listings')}
+                                            onClick={() => setViewType('opportunities')}
                                             className="px-4 py-2"
                                         >
                                             <Briefcase className="h-4 w-4 mr-2" />
-                                            Listings
+                                            Opportunities
                                         </Button>
                                     </div>
                                     
@@ -533,13 +561,13 @@ export function HeroSection({
                                             </>
                                         ) : (
                                             <>
-                                                {/* Listing Type Filter */}
+                                                {/* Opportunity Type Filter */}
                                                 <div className="flex flex-col gap-1">
-                                                    <Label className="text-xs font-medium text-muted-foreground">Listing Type</Label>
+                                                    <Label className="text-xs font-medium text-muted-foreground">Opportunity Type</Label>
                                                     <Select value={listingType} onValueChange={setListingType}>
-                                                        <SelectTrigger className="w-32" aria-label="Filter by listing type">
+                                                        <SelectTrigger className="w-32" aria-label="Filter by opportunity type">
                                                             <ListFilter className="mr-2 h-4 w-4 text-muted-foreground" />
-                                                            <SelectValue placeholder="Listing Type" />
+                                                            <SelectValue placeholder="Opportunity Type" />
                                                         </SelectTrigger>
                                                         <SelectContent>
                                                             <SelectItem value="all">All Types</SelectItem>
@@ -551,7 +579,7 @@ export function HeroSection({
                                                 </div>
                                                 
                                                 {/* Country Filter */}
-                                                {viewType === 'listings' && (
+                                                {viewType === 'opportunities' && (
                                                 <div className="flex flex-col gap-1">
                                                     <Label className="text-xs font-medium text-muted-foreground">Country</Label>
                                                         <CountrySelector
@@ -689,41 +717,41 @@ export function HeroSection({
                                                 <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                                                 
                                                 <CardContent className="relative p-0 flex flex-col h-full">
-                                                    {/* Header Section */}
-                                                    <div className="p-4 pb-3">
-                                                        <div className="flex items-start gap-4">
-                                                            {/* Avatar with status indicator */}
-                                                            <div className="relative">
-                                                                <Avatar className="h-12 w-12 border-4 border-white/80 dark:border-zinc-800/80 shadow-lg">
-                                                                    <AvatarImage src={profile.avatar_url || undefined} alt={profile.full_name || undefined} />
-                                                                    <AvatarFallback className="text-lg font-semibold bg-gradient-to-br from-primary to-primary/80 text-white">
-                                                                        {getInitials(profile.full_name)}
-                                                                    </AvatarFallback>
-                                                                </Avatar>
-                                                                {/* Online status indicator */}
-                                                                <div className="absolute -bottom-1 -right-1 h-3 w-3 bg-green-500 border-2 border-white dark:border-zinc-800 rounded-full" />
-                                                            </div>
-                                                            
-                                                            {/* Profile Info */}
-                                                            <div className="flex-1 min-w-0">
-                                                                <div className="flex items-center justify-between gap-2 mb-1">
-                                                                    <h3 
-                                                                        className="font-bold text-base text-gray-900 dark:text-white truncate cursor-pointer hover:text-primary transition-colors"
-                                                                        onClick={() => handleProfileClick(profile)}
-                                                                    >
-                                                                        {profile.full_name}
-                                                                    </h3>
-                                                                    <div className="flex items-center gap-1.5 shrink-0">
-                                                                        {profile.profile_type && (
-                                                                            <div className="flex items-center gap-1.5 bg-blue-500/10 text-blue-600 px-2 py-1 rounded-full text-xs font-medium">
-                                                                                {profile.profile_type === "Founder" && <Briefcase className="h-3.5 w-3.5" />}
-                                                                                {profile.profile_type === "Investor" && <DollarSign className="h-3.5 w-3.5" />}
-                                                                                {profile.profile_type === "Expert" && <Star className="h-3.5 w-3.5" />}
-                                                                                <span>{profile.profile_type}</span>
-                                                                            </div>
-                                                                        )}
+                                                                                                                {/* Header Section */}
+                                                            <div className="p-4 pb-3">
+                                                                {/* Profile Type Badge */}
+                                                                {profile.profile_type && (
+                                                                    <div className="flex justify-end mb-2">
+                                                                        <div className="flex items-center gap-1.5 bg-blue-500/10 text-blue-600 px-2 py-1 rounded-full text-xs font-medium">
+                                                                            {profile.profile_type === "Founder" && <Briefcase className="h-3.5 w-3.5" />}
+                                                                            {profile.profile_type === "Investor" && <DollarSign className="h-3.5 w-3.5" />}
+                                                                            {profile.profile_type === "Expert" && <Star className="h-3.5 w-3.5" />}
+                                                                            <span>{profile.profile_type}</span>
+                                                                        </div>
                                                                     </div>
-                                                                </div>
+                                                                )}
+                                                                
+                                                                <div className="flex items-start gap-4">
+                                                                    {/* Avatar with status indicator */}
+                                                                    <div className="relative">
+                                                                        <Avatar className="h-12 w-12 border-4 border-white/80 dark:border-zinc-800/80 shadow-lg">
+                                                                            <AvatarImage src={profile.avatar_url || undefined} alt={profile.full_name || undefined} />
+                                                                            <AvatarFallback className="text-lg font-semibold bg-gradient-to-br from-primary to-primary/80 text-white">
+                                                                                {getInitials(profile.full_name)}
+                                                                            </AvatarFallback>
+                                                                        </Avatar>
+                                                                        {/* Online status indicator */}
+                                                                        <div className="absolute -bottom-1 -right-1 h-3 w-3 bg-green-500 border-2 border-white dark:border-zinc-800 rounded-full" />
+                                                                    </div>
+                                                                    
+                                                                    {/* Profile Info */}
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <h3 
+                                                                            className="font-bold text-base text-gray-900 dark:text-white cursor-pointer hover:text-primary transition-colors mb-1"
+                                                                            onClick={() => handleProfileClick(profile)}
+                                                                        >
+                                                                            {profile.full_name}
+                                                                        </h3>
                                                                 
                                                                 {profile.professional_role && (
                                                                     <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -737,14 +765,12 @@ export function HeroSection({
                                                                     </p>
                                                                 )}
                                                                 
-                                                                {/* Date and Location */}
+                                                                {/* Location */}
                                                                 <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
                                                                     <div className="flex items-center gap-1">
                                                                         <MapPin className="h-3 w-3" />
                                                                         <span>{profile.country || "Location not specified"}</span>
                                                                     </div>
-                                                                    <span className="mx-1">•</span>
-                                                                    <span>{profile.created_at ? format(new Date(profile.created_at), "MMM dd, yyyy") : "Recently joined"}</span>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -882,6 +908,13 @@ export function HeroSection({
                                             <CardContent className="relative p-0 flex flex-col h-full">
                                                 {/* Header Section */}
                                                 <div className="p-4 pb-3">
+                                                    {/* Listing Type Badge */}
+                                                    <div className="flex justify-end mb-2">
+                                                        <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/20 text-xs px-2 py-1">
+                                                            {formatListingType(listing.listing_type)}
+                                                        </Badge>
+                                                    </div>
+                                                    
                                                     <div className="flex items-start gap-4">
                                                         {/* Avatar */}
                                                         <Avatar className="h-12 w-12 border-4 border-white/80 dark:border-zinc-800/80 shadow-lg">
@@ -893,30 +926,18 @@ export function HeroSection({
                                                         
                                                         {/* Listing Info */}
                                                         <div className="flex-1 min-w-0">
-                                                            <div className="flex items-center justify-between gap-2 mb-1">
-                                                                                                                                    <h3 
-                                                                        className="font-bold text-base text-gray-900 dark:text-white truncate cursor-pointer hover:text-primary transition-colors"
-                                                                        onClick={() => handleListingClick(listing)}
-                                                                    >
-                                                                    {listing.profiles?.full_name || 'Unknown User'}
-                                                                </h3>
-                                                                <div className="flex items-center gap-1.5 shrink-0">
-                                                                    <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/20 text-xs px-2 py-1">
-                                                                        {formatListingType(listing.listing_type)}
-                                                                    </Badge>
-                                                                </div>
-                                                            </div>
+                                                            <h3 
+                                                                className="font-bold text-base text-gray-900 dark:text-white cursor-pointer hover:text-primary transition-colors mb-1"
+                                                                onClick={() => handleListingClick(listing)}
+                                                            >
+                                                                {listing.profiles?.full_name || 'Unknown User'}
+                                                            </h3>
                                                             
                                                             {listing.profiles?.professional_role && (
                                                                 <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
                                                                     {listing.profiles.professional_role}
                                                                 </p>
                                                             )}
-                                                            
-                                                            {/* Date */}
-                                                            <p className="text-xs text-gray-500 dark:text-gray-400">
-                                                                {listing.created_at ? format(new Date(listing.created_at), "MMM dd, yyyy") : "Recently posted"}
-                                                            </p>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -946,9 +967,19 @@ export function HeroSection({
                                                         {listing.compensation_type === "Equity" && listing.compensation_value && (
                                                             <div className="flex items-center gap-1.5 bg-green-500/10 text-green-600 px-3 py-1.5 rounded-full text-xs font-medium">
                                                                 <Users className="h-3.5 w-3.5" />
-                                                                <span>Equity Offered: {
+                                                                <span>{getCompensationValueLabel(listing.listing_type, listing.profiles?.profile_type || '')}: {
                                                                     typeof listing.compensation_value === 'object' 
                                                                         ? listing.compensation_value.equity || listing.compensation_value.value 
+                                                                        : listing.compensation_value
+                                                                }</span>
+                                                            </div>
+                                                        )}
+                                                        {listing.compensation_value && listing.compensation_type !== "Equity" && (
+                                                            <div className="flex items-center gap-1.5 bg-green-500/10 text-green-600 px-3 py-1.5 rounded-full text-xs font-medium">
+                                                                <Users className="h-3.5 w-3.5" />
+                                                                <span>{getCompensationValueLabel(listing.listing_type, listing.profiles?.profile_type || '')}: {
+                                                                    typeof listing.compensation_value === 'object' 
+                                                                        ? listing.compensation_value.value || Object.values(listing.compensation_value).join(', ')
                                                                         : listing.compensation_value
                                                                 }</span>
                                                             </div>
@@ -956,7 +987,7 @@ export function HeroSection({
                                                         {listing.amount && (
                                                             <div className="flex items-center gap-1.5 bg-blue-500/10 text-blue-600 px-3 py-1.5 rounded-full text-xs font-medium">
                                                                 <DollarSign className="h-3.5 w-3.5" />
-                                                                <span>Amount Seeking: {listing.amount}</span>
+                                                                <span>{getAmountLabel(listing.listing_type, listing.profiles?.profile_type || '')}: {listing.amount}</span>
                                                             </div>
                                                         )}
                                                     </div>
@@ -1023,7 +1054,7 @@ export function HeroSection({
                                 </Button>
                             </div>
                         )}
-                        {viewType === 'listings' && filteredListings.length > 8 && (
+                        {viewType === 'opportunities' && filteredListings.length > 8 && (
                             <div className="text-center mt-8">
                                 <Button
                                     variant="outline"
@@ -1031,7 +1062,7 @@ export function HeroSection({
                                     className="rounded-xl"
                                     onClick={() => window.location.href = '/dashboard/find-partner'}
                                 >
-                                    View More Listings
+                                    View More Opportunities
                                     <ArrowRight className="ml-2 h-4 w-4" />
                                 </Button>
                             </div>

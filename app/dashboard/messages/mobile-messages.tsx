@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { MessageCircle, Send, Paperclip, Search, ArrowLeft, User, FileText, CreditCard, Users, Lock, X, ChevronLeft, Receipt } from 'lucide-react';
+import { MessageCircle, Send, BriefcaseBusiness, Search, ArrowLeft, User, FileText, CreditCard, Users, Lock, X, ChevronLeft, Receipt, FolderOpen, Signature, Paperclip } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { formatDistanceToNow } from 'date-fns';
 import { NewMessageDialog } from '@/components/new-message-dialog';
@@ -752,7 +752,7 @@ export function MobileMessages() {
                                                     : 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
                                             }`}>
                                                 <div className="flex items-center gap-2 mb-2">
-                                                    <FileText className={`h-5 w-5 ${
+                                                    <Signature className={`h-5 w-5 ${
                                                         signatureMsg.type === 'signature_request' 
                                                             ? 'text-blue-600' 
                                                             : 'text-purple-600'
@@ -866,7 +866,7 @@ export function MobileMessages() {
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon">
-                                <Paperclip className="h-5 w-5" />
+                                <BriefcaseBusiness className="h-5 w-5" />
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent side="top" align="start">
@@ -889,7 +889,7 @@ export function MobileMessages() {
                                     }}
                                 />
                                 <div className="flex items-center cursor-pointer w-full">
-                                    <FileText className="mr-2 h-4 w-4" /> Upload from device
+                                    <Paperclip className="mr-2 h-4 w-4" /> Upload from device
                                 </div>
                             </DropdownMenuItem>
 
@@ -897,7 +897,10 @@ export function MobileMessages() {
                                 <Receipt className="mr-2 h-4 w-4" /> Send an invoice
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={handleSendSignatureRequest} disabled={!selectedUserId}>
-                                <FileText className="mr-2 h-4 w-4" /> Send Signature Request
+                                <Signature className="mr-2 h-4 w-4" /> Send Signature Request
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => router.push('/dashboard/my-vault')} disabled={!currentUserId}>
+                                <FolderOpen className="mr-2 h-4 w-4" /> Share Documentation From Vault
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>

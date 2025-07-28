@@ -33,26 +33,28 @@ export function SidePanel({ isOpen, onClose, children, title, className }: SideP
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
             className={cn(
-              "fixed top-0 right-0 w-3/4 h-full bg-background border-l border-border z-50 overflow-hidden",
+              "fixed top-0 right-0 w-full sm:w-3/4 md:w-2/3 lg:w-1/2 xl:w-2/5 h-full bg-background border-l border-border z-50 overflow-hidden",
               className
             )}
           >
             {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-border">
-              <h2 className="text-xl font-semibold">{title}</h2>
+            <div className="flex items-center justify-between p-4 sm:p-6 border-b border-border">
+              <h2 className="text-lg sm:text-xl font-semibold truncate mr-4">{title}</h2>
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={onClose}
-                className="h-8 w-8"
+                className="h-8 w-8 flex-shrink-0"
               >
                 <X className="h-4 w-4" />
               </Button>
             </div>
             
             {/* Content */}
-            <div className="h-full overflow-y-auto">
-              {children}
+            <div className="h-full overflow-y-auto overflow-x-hidden p-4 sm:p-6 pb-20">
+              <div className="max-w-full">
+                {children}
+              </div>
             </div>
           </motion.div>
         </>

@@ -153,9 +153,9 @@ export default function MyListingsPage() {
         const { error } = await supabase.from('listings').delete().eq('id', id);
         setDeletingId(null);
         if (error) {
-            toast.error('Failed to delete listing: ' + error.message);
+            toast.error('Failed to delete opportunity: ' + error.message);
         } else {
-            toast.success('Listing deleted!');
+            toast.success('Opportunity deleted!');
             fetchListings();
         }
     };
@@ -190,7 +190,7 @@ export default function MyListingsPage() {
 
     const handleCreateOrUpdateListing = async () => {
         if (!user) {
-            toast.error('You must be logged in to create a listing.');
+            toast.error('You must be logged in to create an opportunity.');
             return;
         }
         if (!profileType || !listingType || !title || !description) {
@@ -235,9 +235,9 @@ export default function MyListingsPage() {
         }
         setIsCreating(false);
         if (error) {
-            toast.error((editingId ? 'Failed to update' : 'Failed to create') + ' listing: ' + error.message);
+            toast.error((editingId ? 'Failed to update' : 'Failed to create') + ' opportunity: ' + error.message);
         } else {
-            toast.success(editingId ? 'Listing updated!' : 'Listing created!');
+            toast.success(editingId ? 'Opportunity updated!' : 'Opportunity created!');
             setIsNewListingModalOpen(false);
             setEditingId(null);
             fetchListings();
@@ -272,7 +272,7 @@ export default function MyListingsPage() {
             toast.error('Failed to update status: ' + error.message);
         } else {
             fetchListings();
-            toast.success('Listing status updated!');
+            toast.success('Opportunity status updated!');
         }
     };
 
@@ -286,16 +286,16 @@ export default function MyListingsPage() {
                             <ListIcon className="h-6 w-6 text-primary" />
                         </div>
                         <div>
-                            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Manage Your Listings</h1>
-                            <p className="text-sm text-muted-foreground">Create and manage your professional opportunity listings</p>
+                            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Manage Your Opportunities</h1>
+                            <p className="text-sm text-muted-foreground">Create and manage your professional opportunities</p>
                         </div>
                     </div>
                     <div className="flex flex-col sm:flex-row gap-2">
                         <Button onClick={() => router.push('/dashboard/listings')} variant="outline" className="w-full sm:w-auto">
-                            View Listings
+                            View Opportunities
                         </Button>
                         <Button onClick={() => setIsNewListingModalOpen(true)} className="w-full sm:w-auto">
-                            <Plus className="mr-2 h-4 w-4" /> New Listing
+                            <Plus className="mr-2 h-4 w-4" /> New Opportunity
                         </Button>
                     </div>
                 </div>
@@ -304,13 +304,13 @@ export default function MyListingsPage() {
             <div className="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0 md:space-x-4">
                 <div className="relative w-full md:w-1/3">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input placeholder="Search your listings..." className="pl-8 w-full" />
+                    <Input placeholder="Search your opportunities..." className="pl-8 w-full" />
                 </div>
                 <div className="flex flex-wrap items-center space-x-2 w-full md:w-2/3 justify-end">
                     <Select>
                         <SelectTrigger className="w-[150px]">
                             <ListFilter className="mr-2 h-4 w-4" />
-                            <SelectValue placeholder="Listing Type" />
+                            <SelectValue placeholder="Opportunity Type" />
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="fundraising">Fundraising</SelectItem>

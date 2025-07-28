@@ -13,14 +13,14 @@ import {
   X, 
   Download, 
   Eye, 
-  FileText, 
   Calendar,
   User,
   MessageSquare,
   Clock,
   ArrowLeft,
   AlertCircle,
-  RefreshCw
+  RefreshCw,
+  Signature
 } from 'lucide-react'
 import { SignatureRequest, getSignatureRequest, declineSignatureRequest, getDocumentUrl, getSignedDocumentUrl } from '@/lib/signatures'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
@@ -328,7 +328,7 @@ export default function SignaturePage() {
           Back to Vault
         </Button>
         <div className="flex items-center space-x-2">
-          <FileText className="w-5 h-5" />
+          <Signature className="w-5 h-5" />
           <h1 className="text-2xl font-bold">Signature Request</h1>
           {getStatusBadge()}
         </div>
@@ -411,14 +411,14 @@ export default function SignaturePage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
-              <FileText className="w-5 h-5" />
+              <Signature className="w-5 h-5" />
               <span>Document</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div className="flex items-center space-x-3 p-3 bg-muted rounded-lg">
-                <FileText className="w-8 h-8 text-muted-foreground" />
+                <Signature className="w-8 h-8 text-muted-foreground" />
                 <div>
                   <p className="font-medium">{request.document?.filename}</p>
                   {request.document?.description && (

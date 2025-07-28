@@ -127,9 +127,9 @@ export function CreateListingModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{editingId ? 'Edit Listing' : 'Create New Listing'}</DialogTitle>
+          <DialogTitle>{editingId ? 'Edit Opportunity' : 'Create New Opportunity'}</DialogTitle>
           <DialogDescription>
-            Fill in the details for your {editingId ? 'listing' : 'new listing'}.
+            Fill in the details for your {editingId ? 'opportunity' : 'new opportunity'}.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
@@ -483,7 +483,7 @@ export function CreateListingModal({
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isCreating}>Cancel</Button>
-          <Button onClick={onSubmit} disabled={isCreating}>{isCreating ? (editingId ? 'Updating...' : 'Creating...') : (editingId ? 'Update Listing' : 'Create Listing')}</Button>
+          <Button onClick={onSubmit} disabled={isCreating}>{isCreating ? (editingId ? 'Updating...' : 'Creating...') : (editingId ? 'Update Opportunity' : 'Create Opportunity')}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

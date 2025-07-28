@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { MessageCircle, Send, Paperclip, Search, Plus, User, FileText, CreditCard, Users, Lock, X, Receipt } from 'lucide-react';
+import { MessageCircle, Send, BriefcaseBusiness, Search, Plus, User, FileText, CreditCard, Users, Lock, X, Receipt, FolderOpen, Signature, Paperclip } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { formatDistanceToNow } from 'date-fns';
 import { NewMessageDialog } from '@/components/new-message-dialog'
@@ -881,7 +881,7 @@ export default function MessagesPage() {
                                                                     : 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
                                                             }`}>
                                                                 <div className="flex items-center gap-2 mb-2">
-                                                                    <FileText className={`h-5 w-5 ${
+                                                                    <Signature className={`h-5 w-5 ${
                                                                         signatureMsg.type === 'signature_request' 
                                                                             ? 'text-blue-600' 
                                                                             : 'text-purple-600'
@@ -995,7 +995,7 @@ export default function MessagesPage() {
                                     <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
                                             <Button variant="ghost" size="icon" title="Attach file or action">
-                                                <Paperclip className="h-4 w-4 text-gray-500" />
+                                                <BriefcaseBusiness className="h-4 w-4 text-gray-500" />
                                             </Button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent side="top" align="start">
@@ -1018,7 +1018,7 @@ export default function MessagesPage() {
                                                     }}
                                                 />
                                                 <div className="flex items-center cursor-pointer w-full">
-                                                    <FileText className="mr-2 h-4 w-4" /> Upload from device
+                                                    <Paperclip className="mr-2 h-4 w-4" /> Upload from device
                                                 </div>
                                             </DropdownMenuItem>
 
@@ -1026,7 +1026,10 @@ export default function MessagesPage() {
                                                 <Receipt className="mr-2 h-4 w-4" /> Send an invoice
                                             </DropdownMenuItem>
                                             <DropdownMenuItem onClick={handleSendSignatureRequest} disabled={!selectedConversation}>
-                                                <FileText className="mr-2 h-4 w-4" /> Send Signature Request
+                                                <Signature className="mr-2 h-4 w-4" /> Send Signature Request
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => router.push('/dashboard/my-vault')} disabled={!currentUserId}>
+                                                <FolderOpen className="mr-2 h-4 w-4" /> Share Documentation From Vault
                                             </DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>

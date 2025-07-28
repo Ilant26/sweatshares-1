@@ -62,9 +62,9 @@ const data = {
       icon: LayoutDashboard,
     },
     {
-      title: "Listings",
+      title: "Opportunities",
       url: "/dashboard/my-listings",
-      icon: List,
+      icon: Handshake,
     },
     {
       title: "Messages",

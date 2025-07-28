@@ -34,7 +34,10 @@ export function IndustrySelector({
 }) {
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   const industries = useMemo(() => Array.from(new Set(INDUSTRY_LIST)), []);
   const filteredIndustries = search
@@ -47,20 +50,77 @@ export function IndustrySelector({
     }
   }, [open]);
 
+  // Reset highlighted index when filtered results change
+  useEffect(() => {
+    setHighlightedIndex(-1);
+    itemRefs.current = [];
+  }, [filteredIndustries]);
+
+  // Auto-scroll highlighted item into view
+  useEffect(() => {
+    if (highlightedIndex >= 0 && itemRefs.current[highlightedIndex]) {
+      itemRefs.current[highlightedIndex]?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+      });
+    }
+  }, [highlightedIndex]);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value);
     setOpen(true);
   };
 
   const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && search && filteredIndustries.length > 0) {
-      onChange(filteredIndustries[0]);
-      setOpen(false);
-      setSearch("");
+    if (!open) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setOpen(true);
+        setHighlightedIndex(0);
+      }
+      return;
     }
-    if (e.key === 'Escape') {
-      setOpen(false);
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setHighlightedIndex(prev => 
+          prev < filteredIndustries.length - 1 ? prev + 1 : 0
+        );
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setHighlightedIndex(prev => 
+          prev > 0 ? prev - 1 : filteredIndustries.length - 1
+        );
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (highlightedIndex >= 0 && highlightedIndex < filteredIndustries.length) {
+          onChange(filteredIndustries[highlightedIndex]);
+          setOpen(false);
+          setSearch("");
+          setHighlightedIndex(-1);
+        } else if (search && filteredIndustries.length > 0) {
+          onChange(filteredIndustries[0]);
+          setOpen(false);
+          setSearch("");
+          setHighlightedIndex(-1);
+        }
+        break;
+      case 'Escape':
+        e.preventDefault();
+        setOpen(false);
+        setHighlightedIndex(-1);
+        break;
     }
+  };
+
+  const handleIndustrySelect = (industry: string) => {
+    onChange(industry);
+    setOpen(false);
+    setSearch("");
+    setHighlightedIndex(-1);
   };
 
   return (
@@ -85,6 +145,7 @@ export function IndustrySelector({
             onClick={() => {
               setSearch("");
               onChange("");
+              setHighlightedIndex(-1);
               inputRef.current?.focus();
             }}
             tabIndex={-1}
@@ -95,22 +156,23 @@ export function IndustrySelector({
         )}
       </div>
       {open && (
-        <div className="absolute z-50 mt-1 w-full bg-background border border-border rounded-md shadow-lg max-h-60 overflow-y-auto">
+        <div ref={listRef} className="absolute z-50 mt-1 w-full bg-background border border-border rounded-md shadow-lg max-h-60 overflow-y-auto">
           {filteredIndustries.length === 0 ? (
             <div className="px-3 py-2 text-muted-foreground text-sm">No industries found.</div>
           ) : (
-            filteredIndustries.map(industry => (
+            filteredIndustries.map((industry, index) => (
               <div
                 key={industry}
+                ref={(el) => { 
+                  itemRefs.current[index] = el; 
+                }}
                 className={cn(
                   "px-3 py-2 cursor-pointer hover:bg-accent text-sm",
-                  value === industry && "bg-primary/10 text-primary font-semibold"
+                  value === industry && "bg-primary/10 text-primary font-semibold",
+                  highlightedIndex === index && "bg-accent"
                 )}
-                onMouseDown={() => {
-                  onChange(industry);
-                  setOpen(false);
-                  setSearch("");
-                }}
+                onMouseDown={() => handleIndustrySelect(industry)}
+                onMouseEnter={() => setHighlightedIndex(index)}
               >
                 {industry}
               </div>

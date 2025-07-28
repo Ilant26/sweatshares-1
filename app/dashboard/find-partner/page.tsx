@@ -386,13 +386,34 @@ const LISTING_SECTORS = [
 export default function FindPartnerPage() {
   const router = useRouter();
   const { user } = useUser();
-  const {
-    savedProfiles,
-    saveProfile,
-    unsaveProfile,
-    isProfileSaved,
-    loading: favoritesLoading,
-  } = useFavorites();
+  const { saveProfile, unsaveProfile, isProfileSaved, likeListing, unlikeListing, isListingLiked, loading: favoritesLoading } = useFavorites();
+
+  // Helper functions to get proper labels based on listing type and profile type
+  const getAmountLabel = (listingType: string, profileType: string): string => {
+    if (profileType === "Founder" && listingType === "sell-startup") {
+      return "Sale Price";
+    }
+    if (profileType === "Investor" && (listingType === "investment-opportunity" || listingType === "buy-startup")) {
+      return "Investment Capacity";
+    }
+    if (profileType === "Investor" && listingType === "co-investor") {
+      return "Missing Capital";
+    }
+    if (profileType === "Founder" && listingType === "find-funding") {
+      return "Amount Seeking";
+    }
+    return "Amount";
+  };
+
+  const getCompensationValueLabel = (listingType: string, profileType: string): string => {
+    if (profileType === "Founder" && listingType === "sell-startup") {
+      return "Percentage for Sale";
+    }
+    if (profileType === "Investor" && listingType === "co-investor") {
+      return "Equity Offered";
+    }
+    return "Compensation";
+  };
 
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -414,11 +435,10 @@ export default function FindPartnerPage() {
   const [loadingListings, setLoadingListings] = useState(true);
   const [listingError, setListingError] = useState<string | null>(null);
   const [listingType, setListingType] = useState<string>("all");
-  const { likeListing, unlikeListing, isListingLiked } = useFavorites();
 
   // Add new state for skill search
   const [skillSearchTerm, setSkillSearchTerm] = useState("");
-  const [viewType, setViewType] = useState<'profiles' | 'listings'>('profiles');
+  const [viewType, setViewType] = useState<'profiles' | 'opportunities'>('profiles');
 
   // Memoized flat skill list
   const ALL_SKILLS: string[] = useMemo(() => {
@@ -457,7 +477,7 @@ export default function FindPartnerPage() {
       setListingError(null);
       let query = supabase
         .from("listings")
-        .select("*, profiles(full_name, professional_role, avatar_url, country)")
+        .select("*, profiles(full_name, professional_role, avatar_url, country, profile_type)")
         .eq("status", "active")
         .order("created_at", { ascending: false });
       if (listingType && listingType !== 'all') {
@@ -648,7 +668,7 @@ export default function FindPartnerPage() {
                     </div>
                 </div>
 
-                {/* Toggle for Profile/Listings */}
+                {/* Toggle for Profile/Opportunities */}
                 <div className="flex items-center justify-center mt-6">
                   <div className="flex items-center gap-2 bg-background p-1 rounded-lg border border-border shadow-sm">
                     <Button
@@ -661,13 +681,13 @@ export default function FindPartnerPage() {
                       Profiles
                     </Button>
                     <Button
-                      variant={viewType === 'listings' ? 'default' : 'ghost'}
+                      variant={viewType === 'opportunities' ? 'default' : 'ghost'}
                       size="sm"
-                      onClick={() => setViewType('listings')}
+                      onClick={() => setViewType('opportunities')}
                       className="px-4 py-2"
                     >
                       <Briefcase className="h-4 w-4 mr-2" />
-                      Listings
+                      Opportunities
                     </Button>
                   </div>
                 </div>
@@ -753,7 +773,7 @@ export default function FindPartnerPage() {
                         </Select>
                       </div>
 
-                      {/* Listing Type Filter - Dynamic based on profile type */}
+                      {/* Opportunity Type Filter - Dynamic based on profile type */}
                       <div className="flex flex-col gap-1">
                         <Label className="text-xs font-medium text-muted-foreground">Looking to</Label>
                         <Select 
@@ -761,21 +781,21 @@ export default function FindPartnerPage() {
                           onValueChange={setListingType}
                           disabled={loadingListings}
                         >
-                          <SelectTrigger className="w-[180px]" aria-label="Filter by listing type">
+                          <SelectTrigger className="w-[180px]" aria-label="Filter by opportunity type">
                             <ListFilter className="mr-2 h-4 w-4 text-muted-foreground" />
                             <SelectValue placeholder="What are you looking for?" />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="all">All Types</SelectItem>
                             {profileType && profileType !== 'all' ? (
-                              // Show listing types for selected profile type
+                              // Show opportunity types for selected profile type
                               LISTING_TYPES[profileType.toLowerCase() as keyof typeof LISTING_TYPES]?.map((type) => (
                                 <SelectItem key={type.value} value={type.value}>
                                   {type.label}
                                 </SelectItem>
                               ))
                             ) : (
-                              // Show all listing types grouped by profile type
+                              // Show all opportunity types grouped by profile type
                               Object.entries(LISTING_TYPES).map(([profile, types]) => (
                                 <React.Fragment key={profile}>
                                   <SelectItem 
@@ -783,7 +803,7 @@ export default function FindPartnerPage() {
                                     disabled 
                                     className="font-semibold text-muted-foreground"
                                   >
-                                    {profile.charAt(0).toUpperCase() + profile.slice(1)} Listings
+                                    {profile.charAt(0).toUpperCase() + profile.slice(1)} Opportunities
                                   </SelectItem>
                                   {types.map((type) => (
                                     <SelectItem 
@@ -942,6 +962,18 @@ export default function FindPartnerPage() {
                             <CardContent className="relative p-0 flex flex-col h-full">
                               {/* Header Section */}
                               <div className="p-4 pb-3">
+                                {/* Profile Type Badge */}
+                                {profile.profile_type && (
+                                  <div className="flex justify-end mb-2">
+                                    <div className="flex items-center gap-1.5 bg-blue-500/10 text-blue-600 px-2 py-1 rounded-full text-xs font-medium">
+                                      {profile.profile_type === "Founder" && <Briefcase className="h-3.5 w-3.5" />}
+                                      {profile.profile_type === "Investor" && <DollarSign className="h-3.5 w-3.5" />}
+                                      {profile.profile_type === "Expert" && <Star className="h-3.5 w-3.5" />}
+                                      <span>{profile.profile_type}</span>
+                                    </div>
+                                  </div>
+                                )}
+                                
                                 <div className="flex items-start gap-4">
                                   {/* Avatar with status indicator */}
                                   <div className="relative">
@@ -957,24 +989,12 @@ export default function FindPartnerPage() {
                                   
                                   {/* Profile Info */}
                                   <div className="flex-1 min-w-0">
-                                    <div className="flex items-center justify-between gap-2 mb-1">
-                                      <h3 
-                                        className="font-bold text-base text-gray-900 dark:text-white truncate cursor-pointer hover:text-primary transition-colors"
-                                        onClick={() => handleProfileClick(profile.id)}
-                                      >
-                                        {profile.full_name}
-                                      </h3>
-                                      <div className="flex items-center gap-1.5 shrink-0">
-                                        {profile.profile_type && (
-                                          <div className="flex items-center gap-1.5 bg-blue-500/10 text-blue-600 px-2 py-1 rounded-full text-xs font-medium">
-                                            {profile.profile_type === "Founder" && <Briefcase className="h-3.5 w-3.5" />}
-                                            {profile.profile_type === "Investor" && <DollarSign className="h-3.5 w-3.5" />}
-                                            {profile.profile_type === "Expert" && <Star className="h-3.5 w-3.5" />}
-                                            <span>{profile.profile_type}</span>
-                                          </div>
-                                        )}
-                                      </div>
-                                    </div>
+                                    <h3 
+                                      className="font-bold text-base text-gray-900 dark:text-white cursor-pointer hover:text-primary transition-colors mb-1"
+                                      onClick={() => handleProfileClick(profile.id)}
+                                    >
+                                      {profile.full_name}
+                                    </h3>
                                     
                                     {profile.professional_role && (
                                       <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -988,14 +1008,12 @@ export default function FindPartnerPage() {
                                       </p>
                                     )}
                                     
-                                    {/* Date and Location */}
+                                    {/* Location */}
                                     <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
                                       <div className="flex items-center gap-1">
                                         <MapPin className="h-3 w-3" />
                                         <span>{profile.country || "Location not specified"}</span>
                                       </div>
-                                      <span className="mx-1">•</span>
-                                      <span>{profile.created_at ? format(new Date(profile.created_at), "MMM dd, yyyy") : "Recently joined"}</span>
                                     </div>
                                   </div>
                                 </div>
@@ -1106,6 +1124,13 @@ export default function FindPartnerPage() {
                             <CardContent className="relative p-0 flex flex-col h-full">
                               {/* Header Section */}
                               <div className="p-4 pb-3">
+                                {/* Listing Type Badge */}
+                                <div className="flex justify-end mb-2">
+                                  <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/20 text-xs px-2 py-1">
+                                    {formatListingType(listing.listing_type)}
+                                  </Badge>
+                                </div>
+                                
                                 <div className="flex items-start gap-4">
                                   {/* Avatar */}
                                   <Avatar className="h-12 w-12 border-4 border-white/80 dark:border-zinc-800/80 shadow-lg">
@@ -1117,30 +1142,18 @@ export default function FindPartnerPage() {
                                   
                                   {/* Listing Info */}
                                   <div className="flex-1 min-w-0">
-                                    <div className="flex items-center justify-between gap-2 mb-1">
-                                      <h3 
-                                        className="font-bold text-base text-gray-900 dark:text-white truncate cursor-pointer hover:text-primary transition-colors"
-                                        onClick={() => handleProfileClick(listing.profiles?.id)}
-                                      >
-                                        {listing.profiles?.full_name || 'Unknown User'}
-                                      </h3>
-                                      <div className="flex items-center gap-1.5 shrink-0">
-                                        <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/20 text-xs px-2 py-1">
-                                          {formatListingType(listing.listing_type)}
-                                        </Badge>
-                                      </div>
-                                    </div>
+                                    <h3 
+                                      className="font-bold text-base text-gray-900 dark:text-white cursor-pointer hover:text-primary transition-colors mb-1"
+                                      onClick={() => handleProfileClick(listing.profiles?.id)}
+                                    >
+                                      {listing.profiles?.full_name || 'Unknown User'}
+                                    </h3>
                                     
                                     {listing.profiles?.professional_role && (
                                       <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
                                         {listing.profiles.professional_role}
                                       </p>
                                     )}
-                                    
-                                    {/* Date */}
-                                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                                      {listing.created_at ? format(new Date(listing.created_at), "MMM dd, yyyy") : "Recently posted"}
-                                    </p>
                                   </div>
                                 </div>
                               </div>
@@ -1183,7 +1196,12 @@ export default function FindPartnerPage() {
                                 {/* Compensation Information */}
                                 {(listing.compensation_type || listing.compensation_value || listing.amount) && (
                                   <div className="space-y-2">
-                                    <h4 className="text-sm font-semibold text-gray-900 dark:text-white">Compensation</h4>
+                                    <h4 className="text-sm font-semibold text-gray-900 dark:text-white">
+                                      {listing.profiles?.profile_type === "Founder" && listing.listing_type === "sell-startup" ? "Sale Details" : 
+                                       listing.profiles?.profile_type === "Investor" && (listing.listing_type === "investment-opportunity" || listing.listing_type === "buy-startup") ? "Investment Details" :
+                                       listing.profiles?.profile_type === "Investor" && listing.listing_type === "co-investor" ? "Co-Investment Details" :
+                                       "Compensation"}
+                                    </h4>
                                     <div className="flex flex-wrap gap-1.5">
                                       {listing.compensation_type && (
                                         <Badge 
@@ -1222,6 +1240,28 @@ export default function FindPartnerPage() {
                                                   Equity: {listing.compensation_value.equity}
                                                 </Badge>
                                               )}
+                                              {listing.compensation_value.cash && (
+                                                <Badge 
+                                                  variant="secondary"
+                                                  className="bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-900/20 dark:to-green-800/20 
+                                                           text-green-700 dark:text-green-400 border-green-200/50 dark:border-green-700/50 
+                                                           hover:bg-green-100 dark:hover:bg-green-800/30 transition-colors
+                                                           text-xs px-2 py-0.5 rounded-lg"
+                                                >
+                                                  Cash: {listing.compensation_value.cash}
+                                                </Badge>
+                                              )}
+                                              {listing.compensation_value.value && (
+                                                <Badge 
+                                                  variant="secondary"
+                                                  className="bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-900/20 dark:to-green-800/20 
+                                                           text-green-700 dark:text-green-400 border-green-200/50 dark:border-green-700/50 
+                                                           hover:bg-green-100 dark:hover:bg-green-800/30 transition-colors
+                                                           text-xs px-2 py-0.5 rounded-lg"
+                                                >
+                                                  {getCompensationValueLabel(listing.listing_type, listing.profiles?.profile_type || '')}: {listing.compensation_value.value}
+                                                </Badge>
+                                              )}
                                             </>
                                           ) : (
                                             <Badge 
@@ -1231,7 +1271,7 @@ export default function FindPartnerPage() {
                                                        hover:bg-green-100 dark:hover:bg-green-800/30 transition-colors
                                                        text-xs px-2 py-0.5 rounded-lg"
                                             >
-                                              {listing.compensation_value}
+                                              {getCompensationValueLabel(listing.listing_type, listing.profiles?.profile_type || '')}: {listing.compensation_value}
                                             </Badge>
                                           )}
                                         </>
@@ -1244,7 +1284,7 @@ export default function FindPartnerPage() {
                                                    hover:bg-green-100 dark:hover:bg-green-800/30 transition-colors
                                                    text-xs px-2 py-0.5 rounded-lg"
                                         >
-                                          Amount: {listing.amount}
+                                          {getAmountLabel(listing.listing_type, listing.profiles?.profile_type || '')}: {listing.amount}
                                         </Badge>
                                       )}
                                     </div>

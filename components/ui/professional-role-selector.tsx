@@ -46,7 +46,10 @@ export function ProfessionalRoleSelector({
 }) {
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   const roles = useMemo(() => Array.from(new Set(PROFESSIONAL_ROLES)), []);
   const filteredRoles = search
@@ -59,20 +62,77 @@ export function ProfessionalRoleSelector({
     }
   }, [open]);
 
+  // Reset highlighted index when filtered results change
+  useEffect(() => {
+    setHighlightedIndex(-1);
+    itemRefs.current = [];
+  }, [filteredRoles]);
+
+  // Auto-scroll highlighted item into view
+  useEffect(() => {
+    if (highlightedIndex >= 0 && itemRefs.current[highlightedIndex]) {
+      itemRefs.current[highlightedIndex]?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+      });
+    }
+  }, [highlightedIndex]);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value);
     setOpen(true);
   };
 
   const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && search && filteredRoles.length > 0) {
-      onChange(filteredRoles[0]);
-      setOpen(false);
-      setSearch("");
+    if (!open) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setOpen(true);
+        setHighlightedIndex(0);
+      }
+      return;
     }
-    if (e.key === 'Escape') {
-      setOpen(false);
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setHighlightedIndex(prev => 
+          prev < filteredRoles.length - 1 ? prev + 1 : 0
+        );
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setHighlightedIndex(prev => 
+          prev > 0 ? prev - 1 : filteredRoles.length - 1
+        );
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (highlightedIndex >= 0 && highlightedIndex < filteredRoles.length) {
+          onChange(filteredRoles[highlightedIndex]);
+          setOpen(false);
+          setSearch("");
+          setHighlightedIndex(-1);
+        } else if (search && filteredRoles.length > 0) {
+          onChange(filteredRoles[0]);
+          setOpen(false);
+          setSearch("");
+          setHighlightedIndex(-1);
+        }
+        break;
+      case 'Escape':
+        e.preventDefault();
+        setOpen(false);
+        setHighlightedIndex(-1);
+        break;
     }
+  };
+
+  const handleRoleSelect = (role: string) => {
+    onChange(role);
+    setOpen(false);
+    setSearch("");
+    setHighlightedIndex(-1);
   };
 
   return (
@@ -97,6 +157,7 @@ export function ProfessionalRoleSelector({
             onClick={() => {
               setSearch("");
               onChange("");
+              setHighlightedIndex(-1);
               inputRef.current?.focus();
             }}
             tabIndex={-1}
@@ -107,22 +168,23 @@ export function ProfessionalRoleSelector({
         )}
       </div>
       {open && (
-        <div className="absolute z-50 mt-1 w-full bg-background border border-border rounded-md shadow-lg max-h-60 overflow-y-auto">
+        <div ref={listRef} className="absolute z-50 mt-1 w-full bg-background border border-border rounded-md shadow-lg max-h-60 overflow-y-auto">
           {filteredRoles.length === 0 ? (
             <div className="px-3 py-2 text-muted-foreground text-sm">No profession found.</div>
           ) : (
-            filteredRoles.map(role => (
+            filteredRoles.map((role, index) => (
               <div
                 key={role}
+                ref={(el) => { 
+                  itemRefs.current[index] = el; 
+                }}
                 className={cn(
                   "px-3 py-2 cursor-pointer hover:bg-accent text-sm",
-                  value === role && "bg-primary/10 text-primary font-semibold"
+                  value === role && "bg-primary/10 text-primary font-semibold",
+                  highlightedIndex === index && "bg-accent"
                 )}
-                onMouseDown={() => {
-                  onChange(role);
-                  setOpen(false);
-                  setSearch("");
-                }}
+                onMouseDown={() => handleRoleSelect(role)}
+                onMouseEnter={() => setHighlightedIndex(index)}
               >
                 {role}
               </div>

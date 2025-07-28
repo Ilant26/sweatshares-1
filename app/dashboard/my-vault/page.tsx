@@ -30,7 +30,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { EllipsisVertical, Plus, PenLine } from 'lucide-react';
+import { EllipsisVertical, Plus, Signature } from 'lucide-react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { toast } from 'sonner';
 import type { Database } from '@/lib/database.types';
@@ -703,7 +703,7 @@ export default function MyVaultPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                    <span>2. Click the "Request Signature" button (📝 icon) on the document</span>
+                    <span>2. Click the "Request Signature" button (Signature icon) on the PDF document</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
@@ -990,16 +990,18 @@ export default function MyVaultPage() {
                         <Share2 className="h-3 w-3 mr-1" />
                         Share
                       </Button>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-8 w-8"
-                        title="Request Signature"
-                        onClick={() => handleRequestSignature(doc)}
-                      >
-                        <PenLine className="h-4 w-4" />
-                        <span className="sr-only">Request Signature</span>
-                      </Button>
+                      {(doc.type === 'application/pdf' || doc.filename?.toLowerCase().endsWith('.pdf')) && (
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8"
+                          title="Request Signature"
+                          onClick={() => handleRequestSignature(doc)}
+                        >
+                          <Signature className="h-4 w-4" />
+                          <span className="sr-only">Request Signature</span>
+                        </Button>
+                      )}
                     </div>
               </div>
             </CardContent>
@@ -1185,7 +1187,7 @@ export default function MyVaultPage() {
       {/* Signature Requests Section */}
       <div className="space-y-6 mt-8">
         <h2 className="text-xl font-semibold flex items-center gap-2">
-          <FileText className="h-5 w-5 text-primary" /> Signature Requests
+          <Signature className="h-5 w-5 text-primary" /> Signature Requests
         </h2>
         <div className="overflow-x-auto">
           <Table>
