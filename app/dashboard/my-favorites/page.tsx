@@ -89,15 +89,15 @@ export default function MyFavoritesPage() {
     const hours = Math.floor(minutes / 60);
     const days = Math.floor(hours / 24);
     
-    if (minutes < 1) return 'Added to favorite just now';
-    if (minutes < 60) return `Added to favorite ${minutes} ${minutes === 1 ? 'minute' : 'minutes'} ago`;
-    if (hours < 24) return `Added to favorite ${hours} ${hours === 1 ? 'hour' : 'hours'} ago`;
-    if (days === 0) return 'Added to favorite today';
-    if (days === 1) return 'Added to favorite yesterday';
-    if (days < 7) return `Added to favorite ${days} days ago`;
-    if (days < 30) return `Added to favorite ${Math.floor(days / 7)} ${Math.floor(days / 7) === 1 ? 'week' : 'weeks'} ago`;
-    if (days < 365) return `Added to favorite ${Math.floor(days / 30)} ${Math.floor(days / 30) === 1 ? 'month' : 'months'} ago`;
-    return `Added to favorite ${Math.floor(days / 365)} ${Math.floor(days / 365) === 1 ? 'year' : 'years'} ago`;
+    if (minutes < 1) return 'to favorite just now';
+    if (minutes < 60) return `to favorite ${minutes} ${minutes === 1 ? 'minute' : 'minutes'} ago`;
+    if (hours < 24) return `to favorite ${hours} ${hours === 1 ? 'hour' : 'hours'} ago`;
+    if (days === 0) return 'to favorite today';
+    if (days === 1) return 'to favorite yesterday';
+    if (days < 7) return `to favorite ${days} days ago`;
+    if (days < 30) return `to favorite ${Math.floor(days / 7)} ${Math.floor(days / 7) === 1 ? 'week' : 'weeks'} ago`;
+    if (days < 365) return `to favorite ${Math.floor(days / 30)} ${Math.floor(days / 30) === 1 ? 'month' : 'months'} ago`;
+    return `to favorite ${Math.floor(days / 365)} ${Math.floor(days / 365) === 1 ? 'year' : 'years'} ago`;
   };
 
   const stripHtml = (html: string) => {
