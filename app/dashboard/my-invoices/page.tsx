@@ -289,7 +289,7 @@ export default function MyInvoicesPage() {
     vat_amount: 0,
     subtotal: 0,
     total: 0,
-    paymentMethod: 'standard' as 'standard' | 'payment_link' | 'escrow',
+    paymentMethod: 'standard' as 'standard' | 'escrow',
     // Escrow-specific fields
     transactionType: 'work' as 'work' | 'business_sale' | 'partnership' | 'service' | 'consulting' | 'investment' | 'other',
     completionDeadlineDays: 30,
@@ -864,7 +864,6 @@ export default function MyInvoicesPage() {
       // Show success message based on payment method
       const successMessages = {
         standard: 'Invoice created successfully!',
-        payment_link: 'Invoice with payment link created successfully!',
         escrow: 'Escrow invoice created successfully! The client will receive a secure payment link.'
       };
 
@@ -1921,56 +1920,6 @@ export default function MyInvoicesPage() {
                       <h3 className="text-base sm:text-lg font-semibold">Payment Options</h3>
                       <div className="space-y-3">
                         <div className={`flex items-center space-x-2 p-3 rounded-lg border-2 transition-colors ${
-                          newInvoice.paymentMethod === 'standard' 
-                            ? 'border-primary bg-primary/5' 
-                            : 'border-muted hover:border-muted-foreground/50'
-                        }`}>
-                          <input
-                            type="radio"
-                            id="payment-standard"
-                            name="paymentMethod"
-                            value="standard"
-                            checked={newInvoice.paymentMethod === 'standard'}
-                            onChange={(e) => setNewInvoice(prev => ({ ...prev, paymentMethod: e.target.value as 'standard' | 'payment_link' | 'escrow' }))}
-                            className="h-4 w-4 text-primary border-gray-300 focus:ring-primary"
-                          />
-                          <Label htmlFor="payment-standard" className="text-sm font-medium cursor-pointer flex-1">
-                            <div className="flex items-center gap-2">
-                              <FileText className="h-4 w-4 text-muted-foreground" />
-                              Standard Invoice
-                            </div>
-                            <p className="text-xs text-muted-foreground font-normal mt-1">
-                              Send a traditional invoice for manual payment processing
-                            </p>
-                          </Label>
-                        </div>
-                        
-                        <div className={`flex items-center space-x-2 p-3 rounded-lg border-2 transition-colors ${
-                          newInvoice.paymentMethod === 'payment_link' 
-                            ? 'border-primary bg-primary/5' 
-                            : 'border-muted hover:border-muted-foreground/50'
-                        }`}>
-                          <input
-                            type="radio"
-                            id="payment-link"
-                            name="paymentMethod"
-                            value="payment_link"
-                            checked={newInvoice.paymentMethod === 'payment_link'}
-                            onChange={(e) => setNewInvoice(prev => ({ ...prev, paymentMethod: e.target.value as 'standard' | 'payment_link' | 'escrow' }))}
-                            className="h-4 w-4 text-primary border-gray-300 focus:ring-primary"
-                          />
-                          <Label htmlFor="payment-link" className="text-sm font-medium cursor-pointer flex-1">
-                            <div className="flex items-center gap-2">
-                              <CreditCard className="h-4 w-4 text-muted-foreground" />
-                              Payment Link
-                            </div>
-                            <p className="text-xs text-muted-foreground font-normal mt-1">
-                              Generate a secure payment link for instant online payment
-                            </p>
-                          </Label>
-                        </div>
-                        
-                        <div className={`flex items-center space-x-2 p-3 rounded-lg border-2 transition-colors ${
                           newInvoice.paymentMethod === 'escrow' 
                             ? 'border-primary bg-primary/5' 
                             : 'border-muted hover:border-muted-foreground/50'
@@ -1981,16 +1930,41 @@ export default function MyInvoicesPage() {
                             name="paymentMethod"
                             value="escrow"
                             checked={newInvoice.paymentMethod === 'escrow'}
-                            onChange={(e) => setNewInvoice(prev => ({ ...prev, paymentMethod: e.target.value as 'standard' | 'payment_link' | 'escrow' }))}
+                            onChange={(e) => setNewInvoice(prev => ({ ...prev, paymentMethod: e.target.value as 'standard' | 'escrow' }))}
                             className="h-4 w-4 text-primary border-gray-300 focus:ring-primary"
                           />
                           <Label htmlFor="payment-escrow" className="text-sm font-medium cursor-pointer flex-1">
                             <div className="flex items-center gap-2">
                               <Shield className="h-4 w-4 text-muted-foreground" />
-                              Escrow Payment
+                              Secure Payment
                             </div>
                             <p className="text-xs text-muted-foreground font-normal mt-1">
                               Secure payment held in escrow until work is completed and approved
+                            </p>
+                          </Label>
+                        </div>
+                        
+                        <div className={`flex items-center space-x-2 p-3 rounded-lg border-2 transition-colors ${
+                          newInvoice.paymentMethod === 'standard' 
+                            ? 'border-primary bg-primary/5' 
+                            : 'border-muted hover:border-muted-foreground/50'
+                        }`}>
+                          <input
+                            type="radio"
+                            id="payment-standard"
+                            name="paymentMethod"
+                            value="standard"
+                            checked={newInvoice.paymentMethod === 'standard'}
+                            onChange={(e) => setNewInvoice(prev => ({ ...prev, paymentMethod: e.target.value as 'standard' | 'escrow' }))}
+                            className="h-4 w-4 text-primary border-gray-300 focus:ring-primary"
+                          />
+                          <Label htmlFor="payment-standard" className="text-sm font-medium cursor-pointer flex-1">
+                            <div className="flex items-center gap-2">
+                              <FileText className="h-4 w-4 text-muted-foreground" />
+                              Standard Invoice
+                            </div>
+                            <p className="text-xs text-muted-foreground font-normal mt-1">
+                              Send a traditional invoice for manual payment processing
                             </p>
                           </Label>
                         </div>
@@ -2224,16 +2198,12 @@ export default function MyInvoicesPage() {
                 <DialogFooter className="gap-2 sm:gap-0">
                   <Button variant="outline" onClick={() => setNewInvoiceDialogOpen(false)}>Cancel</Button>
                   <Button type="submit" onClick={handleCreateInvoice} className="gap-2">
-                    {newInvoice.paymentMethod === 'payment_link' ? (
-                      <CreditCard className="h-4 w-4" />
-                    ) : newInvoice.paymentMethod === 'escrow' ? (
+                    {newInvoice.paymentMethod === 'escrow' ? (
                       <Shield className="h-4 w-4" />
                     ) : (
                       <FileText className="h-4 w-4" />
                     )}
-                    {newInvoice.paymentMethod === 'payment_link' ? 'Create Payment Link' : 
-                     newInvoice.paymentMethod === 'escrow' ? 'Create Escrow Invoice' : 
-                     'Create Invoice'}
+                    {newInvoice.paymentMethod === 'escrow' ? 'Create Secure Payment' : 'Create Invoice'}
                   </Button>
                 </DialogFooter>
               </DialogContent>

@@ -18,6 +18,12 @@ export function useMessages({ userId }: UseMessagesProps): UseMessagesReturn {
   const [userStatus, setUserStatus] = useState<UserStatus | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
+  const [isMounted, setIsMounted] = useState(true)
+
+  useEffect(() => {
+    setIsMounted(true)
+    return () => setIsMounted(false)
+  }, [])
 
   useEffect(() => {
     // Set up presence handling
@@ -26,16 +32,18 @@ export function useMessages({ userId }: UseMessagesProps): UseMessagesReturn {
   }, [])
 
   useEffect(() => {
-    if (!userId) return
+    if (!userId || userId === 'undefined') return
 
-    let subscription: { unsubscribe: () => void } | null = null;
+    let subscription: { unsubscribe: () => void } | null = null
 
-    // Load initial messages
+    // Load messages
     const loadMessages = async () => {
       try {
         setIsLoading(true)
         const fetchedMessages = await getMessages(userId)
-        setMessages(fetchedMessages)
+        if (isMounted) {
+          setMessages(fetchedMessages)
+        }
         
         // Mark all messages as read
         const unreadMessages = fetchedMessages.filter(msg => !msg.read && msg.sender_id === userId)
@@ -47,20 +55,39 @@ export function useMessages({ userId }: UseMessagesProps): UseMessagesReturn {
           }
         }))
       } catch (err) {
-        setError(err instanceof Error ? err : new Error('Failed to load messages'))
-        console.error('Error in loadMessages:', err)
+        if (isMounted) {
+          setError(err instanceof Error ? err : new Error('Failed to load messages'))
+          console.error('Error in loadMessages:', err)
+        }
       } finally {
-        setIsLoading(false)
+        if (isMounted) {
+          setIsLoading(false)
+        }
       }
     }
 
     // Load user status
     const loadUserStatus = async () => {
+      if (!userId || userId === 'undefined') return;
+      
       try {
         const status = await getUserStatus(userId)
-        setUserStatus(status)
+        if (isMounted) {
+          setUserStatus(status)
+        }
       } catch (err) {
-        console.error('Failed to load user status:', err)
+        console.error('Failed to load user status:', err);
+        // Set a default status instead of failing
+        if (isMounted) {
+          setUserStatus({
+            id: userId,
+            username: 'Loading...',
+            full_name: null,
+            avatar_url: null,
+            last_seen: new Date().toISOString(),
+            is_online: false
+          });
+        }
       }
     }
 
@@ -70,22 +97,24 @@ export function useMessages({ userId }: UseMessagesProps): UseMessagesReturn {
     // Subscribe to new messages
     try {
       subscription = subscribeToMessages((newMessage) => {
-        setMessages(prev => {
-          // Check if message already exists
-          if (prev.some(msg => msg.id === newMessage.id)) {
-            return prev
-          }
-          
-          // Add new message and mark as read if it's from the current conversation
-          if (newMessage.sender_id === userId) {
-            try {
-              markMessageAsRead(newMessage.id)
-            } catch (err) {
-              console.error('Error marking new message as read:', err, newMessage)
+        if (isMounted) {
+          setMessages(prev => {
+            // Check if message already exists
+            if (prev.some(msg => msg.id === newMessage.id)) {
+              return prev
             }
-          }
-          return [...prev, newMessage]
-        })
+            
+            // Add new message and mark as read if it's from the current conversation
+            if (newMessage.sender_id === userId) {
+              try {
+                markMessageAsRead(newMessage.id)
+              } catch (err) {
+                console.error('Error marking new message as read:', err, newMessage)
+              }
+            }
+            return [...prev, newMessage]
+          })
+        }
       })
     } catch (err) {
       console.error('Error setting up message subscription:', err)
@@ -93,7 +122,9 @@ export function useMessages({ userId }: UseMessagesProps): UseMessagesReturn {
 
     // Subscribe to user status changes
     const statusSubscription = subscribeToUserStatus(userId, (status) => {
-      setUserStatus(status)
+      if (isMounted) {
+        setUserStatus(status)
+      }
     })
 
     return () => {
@@ -110,7 +141,7 @@ export function useMessages({ userId }: UseMessagesProps): UseMessagesReturn {
         console.error('Error unsubscribing from statusSubscription:', err)
       }
     }
-  }, [userId])
+  }, [userId, isMounted])
 
   const handleSendMessage = async (content: string) => {
     if (!userId || !content.trim()) return
@@ -118,8 +149,10 @@ export function useMessages({ userId }: UseMessagesProps): UseMessagesReturn {
     try {
       await sendMessage(userId, content)
     } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to send message'))
-      console.error('Error in sendMessage:', err, { userId, content })
+      if (isMounted) {
+        setError(err instanceof Error ? err : new Error('Failed to send message'))
+        console.error('Error in sendMessage:', err, { userId, content })
+      }
     }
   }
 

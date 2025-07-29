@@ -102,15 +102,15 @@ export function IndustrySelector({
           setSearch("");
           setHighlightedIndex(-1);
         } else if (search && filteredIndustries.length > 0) {
-          onChange(filteredIndustries[0]);
-          setOpen(false);
-          setSearch("");
+      onChange(filteredIndustries[0]);
+      setOpen(false);
+      setSearch("");
           setHighlightedIndex(-1);
-        }
+    }
         break;
       case 'Escape':
         e.preventDefault();
-        setOpen(false);
+      setOpen(false);
         setHighlightedIndex(-1);
         break;
     }

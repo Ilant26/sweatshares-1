@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { MessageCircle, Send, BriefcaseBusiness, Search, Plus, User, FileText, CreditCard, Users, Lock, X, Receipt, FolderOpen, Signature, Paperclip } from 'lucide-react';
+import { MessageCircle, Send, BriefcaseBusiness, Search, Plus, User, FileText, CreditCard, Users, Lock, X, Receipt, Vault, Signature, Upload } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { formatDistanceToNow } from 'date-fns';
 import { NewMessageDialog } from '@/components/new-message-dialog'
@@ -97,7 +97,9 @@ export default function MessagesPage() {
         sendMessage,
         error,
         userStatus
-    } = useMessages({ userId: selectedConversation || undefined });
+    } = useMessages({ 
+        userId: selectedConversation && selectedConversation !== 'undefined' ? selectedConversation : undefined 
+    });
 
     // Set pre-filled message when conversation is selected and message parameter exists
     React.useEffect(() => {
@@ -211,40 +213,100 @@ export default function MessagesPage() {
 
 
 
-    // Helper to fetch and cache a profile by userId
+    // Helper to get a user's profile (from allConnections, userProfileCache, or fallback)
+    function getUserProfile(userId: string) {
+        const connectionProfile = allConnections.find(conn => conn.id === userId);
+        const cachedProfile = userProfileCache[userId];
+        
+        return connectionProfile || cachedProfile || null;
+    }
+
+    // Enhanced profile fetching with retry mechanism
     async function fetchAndCacheProfile(userId: string) {
-        if (!userId || userProfileCache[userId]) return;
-        const { data } = await supabase
-            .from('profiles')
-            .select('id, username, full_name, avatar_url')
-            .eq('id', userId)
-            .single();
-        if (data) {
-            setUserProfileCache(prev => ({ ...prev, [userId]: data }));
+        if (!userId || userId === 'undefined' || userId === 'null' || userProfileCache[userId]) {
+            if (userId === 'undefined' || userId === 'null') {
+                console.warn('fetchAndCacheProfile called with invalid userId:', userId);
+            }
+            return userProfileCache[userId] || null;
         }
+        
+        try {
+            // First try to get the profile with basic info
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('id, username, full_name, avatar_url')
+                .eq('id', userId)
+                .single();
+            
+            if (error) {
+                console.error(`Error fetching profile for user ${userId}:`, error);
+                
+                // If user not found, create a minimal profile
+                if (error.code === 'PGRST116') {
+                    const minimalProfile = {
+                        id: userId,
+                        username: 'User',
+                        full_name: 'User',
+                        avatar_url: null
+                    };
+                    setUserProfileCache(prev => ({ ...prev, [userId]: minimalProfile }));
+                    return minimalProfile;
+                }
+                
+                // For other errors, create a fallback profile
+                const minimalProfile = {
+                    id: userId,
+                    username: 'User',
+                    full_name: 'User',
+                    avatar_url: null
+                };
+                setUserProfileCache(prev => ({ ...prev, [userId]: minimalProfile }));
+                return minimalProfile;
+            }
+            
+            if (data) {
+                setUserProfileCache(prev => ({ ...prev, [userId]: data }));
+                return data;
+            }
+        } catch (error) {
+            console.error(`Error fetching profile for user ${userId}:`, error);
+            // Create a fallback profile
+            const fallbackProfile = {
+                id: userId,
+                username: 'User',
+                full_name: 'User',
+                avatar_url: null
+            };
+            setUserProfileCache(prev => ({ ...prev, [userId]: fallbackProfile }));
+            return fallbackProfile;
+        }
+        
+        return null;
     }
 
     // Whenever allMessages change, ensure all user profiles are cached
     useEffect(() => {
-        const userIds = new Set<string>();
-        allMessages.forEach(msg => {
-            userIds.add(msg.sender_id);
-            userIds.add(msg.receiver_id);
-        });
-        userIds.forEach(id => {
-            if (id && !userProfileCache[id]) fetchAndCacheProfile(id);
-        });
-        // eslint-disable-next-line
-    }, [allMessages]);
-
-    // Helper to get a user's profile (from allConnections, userProfileCache, or fallback)
-    function getUserProfile(userId: string) {
-        return (
-            allConnections.find(conn => conn.id === userId) ||
-            userProfileCache[userId] ||
-            null
-        );
-    }
+        const fetchMissingProfiles = async () => {
+            const userIds = new Set<string>();
+            allMessages.forEach(msg => {
+                userIds.add(msg.sender_id);
+                userIds.add(msg.receiver_id);
+            });
+            
+            // Filter out current user and already cached users
+            const missingUserIds = Array.from(userIds).filter(id => 
+                id && id !== currentUserId && !userProfileCache[id] && !allConnections.find(conn => conn.id === id)
+            );
+            
+            if (missingUserIds.length > 0) {
+                // Fetch all missing profiles in parallel
+                const profilePromises = missingUserIds.map(id => fetchAndCacheProfile(id));
+                await Promise.all(profilePromises);
+            }
+        };
+        
+        fetchMissingProfiles();
+    }, [allMessages, currentUserId, userProfileCache, allConnections]);
 
     // Update conversations logic to use getUserProfile
     const conversations = React.useMemo(() => {
@@ -253,17 +315,35 @@ export default function MessagesPage() {
             const isCurrentUserSender = message.sender_id === currentUserId;
             const otherUserId = isCurrentUserSender ? message.receiver_id : message.sender_id;
             const otherUser = getUserProfile(otherUserId);
+            
             if (!acc[otherUserId]) {
                 acc[otherUserId] = {
                     id: otherUserId,
-                    name: otherUser?.full_name || otherUser?.username || 'Unknown User',
+                    name: otherUser?.full_name || otherUser?.username || 'Loading...',
                     avatar: otherUser?.avatar_url || undefined,
                     lastMessage: message.content,
                     time: message.created_at,
                     unread: 0,
                     online: false
                 };
+                
+                // If we don't have the user's profile, try to fetch it
+                if (!otherUser) {
+                    fetchAndCacheProfile(otherUserId).then(profile => {
+                        if (profile) {
+                            // Force a re-render by updating the cache
+                            setUserProfileCache(prev => ({ ...prev, [otherUserId]: profile }));
+                        }
+                    });
+                }
             }
+            
+            // Update conversation data if we have newer profile info
+            if (otherUser && acc[otherUserId].name === 'Loading...') {
+                acc[otherUserId].name = otherUser.full_name || otherUser.username || 'Unknown User';
+                acc[otherUserId].avatar = otherUser.avatar_url || undefined;
+            }
+            
             if (new Date(message.created_at) > new Date(acc[otherUserId].time)) {
                 acc[otherUserId].lastMessage = message.content;
                 acc[otherUserId].time = message.created_at;
@@ -298,6 +378,7 @@ export default function MessagesPage() {
         if (!selectedConversation) return undefined;
         const found = conversations.find(conv => conv.id === selectedConversation);
         if (found) return found;
+        
         const profile = getUserProfile(selectedConversation);
         if (profile) {
             return {
@@ -311,9 +392,17 @@ export default function MessagesPage() {
                 isPlaceholder: true,
             };
         }
+        
+        // If no profile found, try to fetch it and return a loading state
+        fetchAndCacheProfile(selectedConversation).then(fetchedProfile => {
+            if (fetchedProfile) {
+                setUserProfileCache(prev => ({ ...prev, [selectedConversation]: fetchedProfile }));
+            }
+        });
+        
         return {
             id: selectedConversation,
-            name: 'Unknown User',
+            name: 'Loading...',
             avatar: '',
             lastMessage: '',
             time: '',
@@ -393,9 +482,7 @@ export default function MessagesPage() {
     });
 
     const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-        console.log('File select triggered');
         const files = Array.from(event.target.files || []);
-        console.log('Selected files:', files);
         setSelectedFiles(prev => [...prev, ...files]);
     };
 
@@ -407,7 +494,6 @@ export default function MessagesPage() {
         if ((!messageInput.trim() && selectedFiles.length === 0) || !selectedConversation || !currentUserId) return;
         
         try {
-            console.log('Sending message with files:', selectedFiles);
             const { data: newMessage, error } = await supabase
                 .from('messages')
                 .insert({
@@ -421,20 +507,17 @@ export default function MessagesPage() {
 
             if (error) {
                 console.error('Error creating message:', error);
+                toast.error(`Failed to create message: ${error.message || 'Unknown error'}`);
                 throw error;
             }
             
             if (newMessage) {
-                console.log('Message created:', newMessage);
                 // Upload attachments if any
                 if (selectedFiles.length > 0) {
-                    console.log('Uploading attachments...');
                     const attachmentPromises = selectedFiles.map(async (file) => {
                         const fileExt = file.name.split('.').pop();
                         const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
                         const filePath = `message-attachments/${newMessage.id}/${fileName}`;
-
-                        console.log('Uploading file:', { fileName, filePath, type: file.type });
 
                         const { error: uploadError } = await supabase.storage
                             .from('message-attachments')
@@ -444,8 +527,6 @@ export default function MessagesPage() {
                             console.error('Error uploading file:', uploadError);
                             throw uploadError;
                         }
-
-                        console.log('File uploaded successfully, creating attachment record');
 
                         const { error: attachmentError } = await supabase
                             .from('message_attachments')
@@ -464,11 +545,9 @@ export default function MessagesPage() {
                     });
 
                     await Promise.all(attachmentPromises);
-                    console.log('All attachments uploaded successfully');
                 }
 
                 // Fetch complete message with attachments
-                console.log('Fetching complete message with attachments');
                 const { data: completeMessage, error: fetchError } = await supabase
                     .from('messages')
                     .select(`
@@ -488,14 +567,13 @@ export default function MessagesPage() {
                     throw fetchError;
                 }
 
-                console.log('Complete message with attachments:', completeMessage);
                 setAllMessages(prev => dedupeMessages([...prev, completeMessage]));
                 setMessageInput('');
                 setSelectedFiles([]);
             }
         } catch (error) {
             console.error('Error in handleSendMessage:', error);
-            toast.error('Failed to send message');
+            toast.error(`Failed to send message: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
     };
 
@@ -1003,7 +1081,6 @@ export default function MessagesPage() {
                                             <DropdownMenuSeparator />
                                             <DropdownMenuItem onSelect={(e) => {
                                                 e.preventDefault();
-                                                console.log('File upload menu item clicked');
                                                 fileInputRef.current?.click();
                                             }}>
                                                 <input
@@ -1018,7 +1095,7 @@ export default function MessagesPage() {
                                                     }}
                                                 />
                                                 <div className="flex items-center cursor-pointer w-full">
-                                                    <Paperclip className="mr-2 h-4 w-4" /> Upload from device
+                                                    <Upload className="mr-2 h-4 w-4" /> Upload from device
                                                 </div>
                                             </DropdownMenuItem>
 
@@ -1029,7 +1106,7 @@ export default function MessagesPage() {
                                                 <Signature className="mr-2 h-4 w-4" /> Send Signature Request
                                             </DropdownMenuItem>
                                             <DropdownMenuItem onClick={() => router.push('/dashboard/my-vault')} disabled={!currentUserId}>
-                                                <FolderOpen className="mr-2 h-4 w-4" /> Share Documentation From Vault
+                                                <Vault className="mr-2 h-4 w-4" /> Share Documentation From Vault
                                             </DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>

@@ -43,7 +43,7 @@ import { SignatureRequestDialog } from '@/components/signature-request-dialog';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 
 import {
-  Lock,
+  Lock, Vault,
   History,
   ShieldCheck,
   Search,
@@ -937,21 +937,15 @@ export default function MyVaultPage() {
                       </div>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 p-0"
-                        >
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 p-0"
+                          >
                             <EllipsisVertical className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem className="gap-2" onClick={() => handleDownload(doc)}>
-                            <Download className="h-4 w-4" /> Download
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="gap-2" onClick={() => handleShare(doc)}>
-                            <Share2 className="h-4 w-4" /> Share
-                          </DropdownMenuItem>
                           <DropdownMenuItem className="gap-2 text-red-600" onClick={() => handleDelete(doc)}>
                             <Trash2 className="h-4 w-4" /> Delete
                           </DropdownMenuItem>
@@ -991,16 +985,16 @@ export default function MyVaultPage() {
                         Share
                       </Button>
                       {(doc.type === 'application/pdf' || doc.filename?.toLowerCase().endsWith('.pdf')) && (
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          className="h-8 w-8"
-                          title="Request Signature"
-                          onClick={() => handleRequestSignature(doc)}
-                        >
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8"
+                        title="Request Signature"
+                        onClick={() => handleRequestSignature(doc)}
+                      >
                           <Signature className="h-4 w-4" />
-                          <span className="sr-only">Request Signature</span>
-                        </Button>
+                        <span className="sr-only">Request Signature</span>
+                      </Button>
                       )}
                     </div>
               </div>

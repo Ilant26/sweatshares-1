@@ -8,6 +8,7 @@ import { MapPin, Briefcase, Mail, Star, MessageCircle, Share2, Building2, Dollar
 import { format } from 'date-fns';
 import { useUser } from '@/hooks/use-user';
 import { useFavorites } from '@/hooks/use-favorites';
+import { useRouter } from 'next/navigation';
 
 interface ListingDetailViewProps {
   listing: any;
@@ -36,14 +37,21 @@ const formatListingType = (listingType: string): string => {
 export function ListingDetailView({ listing, onClose }: ListingDetailViewProps) {
   const { user } = useUser();
   const { likeListing, unlikeListing, isListingLiked } = useFavorites();
+  const router = useRouter();
 
   const handleMessage = () => {
-    if (!user) return;
+    if (!user) {
+      router.push('/auth/login');
+      return;
+    }
     window.location.href = `/dashboard/messages?userId=${listing.profiles?.id}`;
   };
 
   const handleLikeListing = async () => {
-    if (!user) return;
+    if (!user) {
+      router.push('/auth/login');
+      return;
+    }
     
     try {
       if (isListingLiked(listing.id)) {
@@ -52,7 +60,7 @@ export function ListingDetailView({ listing, onClose }: ListingDetailViewProps) 
         await likeListing(listing.id);
       }
     } catch (error) {
-      console.error('Error liking listing:', error);
+      console.error('Error toggling listing like:', error);
     }
   };
 
@@ -72,6 +80,22 @@ export function ListingDetailView({ listing, onClose }: ListingDetailViewProps) 
       const url = `${window.location.origin}/dashboard/listings/${listing.id}`;
       await navigator.clipboard.writeText(url);
     }
+  };
+
+  const handleViewProfile = () => {
+    if (!user) {
+      router.push('/auth/login');
+      return;
+    }
+    window.location.href = `/dashboard/profile/${listing.profiles?.id}`;
+  };
+
+  const handleViewFullListing = () => {
+    if (!user) {
+      router.push('/auth/login');
+      return;
+    }
+    window.location.href = `/dashboard/listings/${listing.id}`;
   };
 
   return (
@@ -240,7 +264,7 @@ export function ListingDetailView({ listing, onClose }: ListingDetailViewProps) 
             <Button 
               variant="outline" 
               size="sm"
-              onClick={() => window.location.href = `/dashboard/profile/${listing.profiles?.id}`}
+              onClick={handleViewProfile}
             >
               View Profile
               <ArrowRight className="h-4 w-4 ml-1" />
@@ -252,7 +276,7 @@ export function ListingDetailView({ listing, onClose }: ListingDetailViewProps) 
       {/* View Full Listing Button */}
       <div className="text-center pt-4">
         <Button 
-          onClick={() => window.location.href = `/dashboard/listings/${listing.id}`}
+          onClick={handleViewFullListing}
           className="w-full"
         >
           View Full Listing

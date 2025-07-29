@@ -782,7 +782,7 @@ export default function FindPartnerPage() {
                           disabled={loadingListings}
                         >
                           <SelectTrigger className="w-[180px]" aria-label="Filter by opportunity type">
-                            <ListFilter className="mr-2 h-4 w-4 text-muted-foreground" />
+                            <Handshake className="mr-2 h-4 w-4 text-muted-foreground" />
                             <SelectValue placeholder="What are you looking for?" />
                           </SelectTrigger>
                           <SelectContent>
@@ -989,12 +989,12 @@ export default function FindPartnerPage() {
                                   
                                   {/* Profile Info */}
                                   <div className="flex-1 min-w-0">
-                                    <h3 
+                                      <h3 
                                       className="font-bold text-base text-gray-900 dark:text-white cursor-pointer hover:text-primary transition-colors mb-1"
-                                      onClick={() => handleProfileClick(profile.id)}
-                                    >
-                                      {profile.full_name}
-                                    </h3>
+                                        onClick={() => handleProfileClick(profile.id)}
+                                      >
+                                        {profile.full_name}
+                                      </h3>
                                     
                                     {profile.professional_role && (
                                       <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -1142,12 +1142,12 @@ export default function FindPartnerPage() {
                                   
                                   {/* Listing Info */}
                                   <div className="flex-1 min-w-0">
-                                    <h3 
+                                      <h3 
                                       className="font-bold text-base text-gray-900 dark:text-white cursor-pointer hover:text-primary transition-colors mb-1"
-                                      onClick={() => handleProfileClick(listing.profiles?.id)}
-                                    >
-                                      {listing.profiles?.full_name || 'Unknown User'}
-                                    </h3>
+                                        onClick={() => handleProfileClick(listing.profiles?.id)}
+                                      >
+                                        {listing.profiles?.full_name || 'Unknown User'}
+                                      </h3>
                                     
                                     {listing.profiles?.professional_role && (
                                       <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">

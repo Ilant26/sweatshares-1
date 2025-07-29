@@ -110,15 +110,15 @@ export function CountrySelector({
           setSearch("");
           setHighlightedIndex(-1);
         } else if (filteredCountries.length > 0) {
-          onValueChange(filteredCountries[0]);
-          setOpen(false);
-          setSearch("");
+      onValueChange(filteredCountries[0]);
+      setOpen(false);
+      setSearch("");
           setHighlightedIndex(-1);
-        }
+    }
         break;
       case 'Escape':
         e.preventDefault();
-        setOpen(false);
+      setOpen(false);
         setHighlightedIndex(-1);
         break;
     }

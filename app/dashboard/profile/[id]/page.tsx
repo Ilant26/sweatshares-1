@@ -12,7 +12,7 @@ import { usePosts } from "@/hooks/use-posts";
 import { useFavorites } from "@/hooks/use-favorites";
 import { supabase } from "@/lib/supabase";
 import { useUser } from "@/hooks/use-user";
-import { MapPin, Briefcase, DollarSign, Heart, Share2, Mail, MessageCircle, Bookmark, FileIcon, ImageIcon, Loader2, Send, UserPlus, MoreHorizontal, Edit, Plus, Globe, ThumbsUp, Trash2, Star } from "lucide-react";
+import { MapPin, Briefcase, DollarSign, Heart, Share2, Mail, MessageCircle, Bookmark, FileIcon, ImageIcon, Loader2, Send, UserPlus, MoreHorizontal, Edit, Plus, Globe, ThumbsUp, Trash2, Star, Users, Eye, Building2 } from "lucide-react";
 import { motion, Variants } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -326,6 +326,73 @@ export default function ProfilePage() {
     router.push(`/dashboard/profile/${userId}`);
   };
 
+  const handleMessage = (userId: string) => {
+    if (userId) {
+      router.push(`/dashboard/messages?userId=${userId}`);
+    }
+  };
+
+  // Helper functions to get proper labels based on listing type and profile type
+  const getAmountLabel = (listingType: string, profileType: string): string => {
+    if (profileType === "Founder" && listingType === "sell-startup") {
+      return "Sale Price";
+    }
+    if (profileType === "Investor" && (listingType === "investment-opportunity" || listingType === "buy-startup")) {
+      return "Investment Capacity";
+    }
+    if (profileType === "Investor" && listingType === "co-investor") {
+      return "Missing Capital";
+    }
+    if (profileType === "Founder" && listingType === "find-funding") {
+      return "Amount Seeking";
+    }
+    return "Amount";
+  };
+
+  const getCompensationValueLabel = (listingType: string, profileType: string): string => {
+    if (profileType === "Founder" && listingType === "sell-startup") {
+      return "Percentage for Sale";
+    }
+    if (profileType === "Investor" && listingType === "co-investor") {
+      return "Equity Offered";
+    }
+    return "Compensation";
+  };
+
+  // Function to format listing type values for display
+  const formatListingType = (listingType: string): string => {
+    const typeMap: { [key: string]: string } = {
+      "find-funding": "Find Funding",
+      "cofounder": "Co Founder",
+      "expert-freelance": "Expert/ Freelance",
+      "employee": "Employee",
+      "mentor": "Mentor",
+      "sell-startup": "Startup Sale",
+      "investment-opportunity": "Investment Opportunity",
+      "buy-startup": "Buy Startup",
+      "co-investor": "Co-investor",
+      "mission": "Mission",
+      "job": "Job"
+    };
+    
+    return typeMap[listingType] || listingType;
+  };
+
+  const getListingTypeColor = (listingType: string) => {
+    const colors = [
+      'bg-blue-100 text-blue-800',
+      'bg-purple-100 text-purple-800',
+      'bg-green-100 text-green-800',
+      'bg-yellow-100 text-yellow-800',
+      'bg-red-100 text-red-800',
+      'bg-orange-100 text-orange-800',
+      'bg-indigo-100 text-indigo-800',
+      'bg-teal-100 text-teal-800',
+    ];
+    const index = listingType.length % colors.length;
+    return colors[index];
+  };
+
   const handleListingClick = (listingId: string) => {
     const profileName = profile?.full_name || 'User';
     const encodedName = encodeURIComponent(profileName);
@@ -347,11 +414,6 @@ export default function ProfilePage() {
         variant: "destructive",
       });
     }
-  };
-
-  const handleMessage = () => {
-    // Navigate to messages or open message dialog
-    router.push(`/dashboard/messages?userId=${id}`);
   };
 
   const handleSaveProfile = async () => {
@@ -477,7 +539,7 @@ export default function ProfilePage() {
                   <UserPlus className="h-4 w-4" />
                   {isConnected ? "Connected" : "Connect"}
                 </Button>
-                <Button variant="outline" size="sm" onClick={handleMessage}>
+                <Button variant="outline" size="sm" onClick={() => handleMessage(id as string)}>
                   <Mail className="h-4 w-4 mr-2" />
                   Message
                 </Button>
@@ -824,64 +886,213 @@ export default function ProfilePage() {
           </TabsContent>
 
           <TabsContent value="listings" className="mt-6">
-            <motion.div className="grid grid-cols-1 md:grid-cols-2 gap-6" variants={itemVariants}>
+            <motion.div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" variants={itemVariants}>
               {listings.map((listing) => (
                 <motion.div
                   key={listing.id}
-                  variants={itemVariants}
-                  whileHover={{ y: -5 }}
-                  transition={{ type: "spring", bounce: 0.2, duration: 0.3 }}
+                  variants={cardVariants}
+                  initial="hidden"
+                  animate="visible"
+                  whileHover="hover"
+                  className="h-full"
                 >
-                  <Card className="group flex flex-col justify-between h-full bg-white dark:bg-zinc-900/60 border border-primary/10 shadow-lg hover:shadow-xl transition-all duration-200 hover:border-primary/40 rounded-2xl overflow-hidden">
-                    <CardContent className="p-0 flex flex-col h-full">
-                      <div className="flex flex-col h-full">
-                        {/* Header with Badge and Avatar */}
-                        <div className="p-4 pb-2 flex items-center gap-3 border-b border-border/30">
-                          <Avatar className="h-12 w-12 border-2 border-primary/30">
-                            <AvatarImage src={listing.profiles?.avatar_url} alt={listing.profiles?.full_name} />
-                            <AvatarFallback>{listing.profiles?.full_name?.charAt(0) || 'U'}</AvatarFallback>
+                  <Card className="group relative h-full bg-gradient-to-br from-white to-gray-50/50 dark:from-zinc-900/80 dark:to-zinc-800/60 border-0 shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] rounded-3xl overflow-hidden backdrop-blur-sm">
+                    {/* Gradient overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    
+                    <CardContent className="relative p-0 flex flex-col h-full">
+                      {/* Header Section */}
+                      <div className="p-4 pb-3">
+                        {/* Listing Type Badge */}
+                        <div className="flex justify-end mb-2">
+                          <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/20 text-xs px-2 py-1">
+                            {formatListingType(listing.listing_type)}
+                          </Badge>
+                        </div>
+                        
+                        <div className="flex items-start gap-4">
+                          {/* Avatar */}
+                          <Avatar className="h-12 w-12 border-4 border-white/80 dark:border-zinc-800/80 shadow-lg">
+                            <AvatarImage src={listing.profiles?.avatar_url || undefined} alt={listing.profiles?.full_name || 'User'} />
+                            <AvatarFallback className="text-lg font-semibold bg-gradient-to-br from-primary to-primary/80 text-white">
+                              {listing.profiles?.full_name?.charAt(0) || 'U'}
+                            </AvatarFallback>
                           </Avatar>
+                          
+                          {/* Listing Info */}
                           <div className="flex-1 min-w-0">
-                            <div className="font-semibold text-base truncate">{listing.profiles?.full_name}</div>
-                            <div className="text-xs text-muted-foreground truncate">{listing.profiles?.professional_role}</div>
+                            <h3 
+                              className="font-bold text-base text-gray-900 dark:text-white cursor-pointer hover:text-primary transition-colors mb-1"
+                              onClick={() => handleProfileClick(listing.profiles?.id)}
+                            >
+                              {listing.profiles?.full_name || 'Unknown User'}
+                            </h3>
+                          
+                            {listing.profiles?.professional_role && (
+                              <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                {listing.profiles.professional_role}
+                              </p>
+                            )}
                           </div>
-                          <Badge variant="secondary" className="text-xs px-2 py-1 whitespace-nowrap">{listing.listing_type}</Badge>
+                        </div>
                         </div>
 
-                        {/* Title and Publication Date */}
-                        <div className="px-4 pt-3 pb-1">
-                          <h2 className="text-lg font-bold line-clamp-2 group-hover:text-primary transition-colors mb-1">{listing.title}</h2>
-                          <span className="text-xs text-muted-foreground">{new Date(listing.created_at).toLocaleDateString()}</span>
+                      {/* Title and Description */}
+                      <div className="px-4 pb-4">
+                        <h4 className="font-bold text-base text-gray-900 dark:text-white mb-3 line-clamp-2 group-hover:text-primary transition-colors">
+                          {listing.title}
+                        </h4>
+                        
+                        <div 
+                          className="text-xs text-gray-600 dark:text-gray-400 line-clamp-3 leading-relaxed mb-4"
+                          dangerouslySetInnerHTML={{ __html: listing.description || '' }}
+                        />
                         </div>
 
-                        {/* Description Preview */}
-                        <div className="px-4 text-sm text-muted-foreground line-clamp-3 mb-2">
-                          {stripHtml(listing.description)}
+                      {/* Details Section */}
+                      <div className="px-4 pb-4 space-y-3">
+                        {/* Skills */}
+                        {listing.skills && (
+                          <div className="space-y-2">
+                            <h4 className="text-sm font-semibold text-gray-900 dark:text-white">Required Skills</h4>
+                            <div className="flex flex-wrap gap-1.5">
+                              {(Array.isArray(listing.skills) ? listing.skills : listing.skills.split(",").map((s: string) => s.trim())).map((skill: string) => (
+                                <Badge 
+                                  key={skill} 
+                                  variant="secondary"
+                                  className="bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-900/20 dark:to-blue-800/20 
+                                           text-blue-700 dark:text-blue-400 border-blue-200/50 dark:border-blue-700/50 
+                                           hover:bg-blue-100 dark:hover:bg-blue-800/30 transition-colors
+                                           text-xs px-2 py-0.5 rounded-lg"
+                                >
+                                  {skill}
+                                </Badge>
+                              ))}
                         </div>
+                          </div>
+                        )}
 
-                        {/* Funding Stage and Compensation */}
-                        <div className="px-4 mb-2">
+                        {/* Compensation Information */}
+                        {(listing.compensation_type || listing.compensation_value || listing.amount) && (
+                          <div className="space-y-2">
+                            <h4 className="text-sm font-semibold text-gray-900 dark:text-white">
+                              {listing.profiles?.profile_type === "Founder" && listing.listing_type === "sell-startup" ? "Sale Details" : 
+                               listing.profiles?.profile_type === "Investor" && (listing.listing_type === "investment-opportunity" || listing.listing_type === "buy-startup") ? "Investment Details" :
+                               listing.profiles?.profile_type === "Investor" && listing.listing_type === "co-investor" ? "Co-Investment Details" :
+                               "Compensation"}
+                            </h4>
+                            <div className="flex flex-wrap gap-1.5">
+                              {listing.compensation_type && (
+                                <Badge 
+                                  variant="secondary"
+                                  className="bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-900/20 dark:to-green-800/20 
+                                           text-green-700 dark:text-green-400 border-green-200/50 dark:border-green-700/50 
+                                           hover:bg-green-100 dark:hover:bg-green-800/30 transition-colors
+                                           text-xs px-2 py-0.5 rounded-lg"
+                                >
+                                  {listing.compensation_type}
+                                </Badge>
+                              )}
+                              {listing.compensation_value && (
+                                <>
+                                  {typeof listing.compensation_value === 'object' ? (
+                                    <>
+                                      {(listing.compensation_value as any).salary && (
+                                        <Badge 
+                                          variant="secondary"
+                                          className="bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-900/20 dark:to-green-800/20 
+                                                   text-green-700 dark:text-green-400 border-green-200/50 dark:border-green-700/50 
+                                                   hover:bg-green-100 dark:hover:bg-green-800/30 transition-colors
+                                                   text-xs px-2 py-0.5 rounded-lg"
+                                        >
+                                          Salary: {(listing.compensation_value as any).salary}
+                                        </Badge>
+                                      )}
+                                      {(listing.compensation_value as any).equity && (
+                                        <Badge 
+                                          variant="secondary"
+                                          className="bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-900/20 dark:to-green-800/20 
+                                                   text-green-700 dark:text-green-400 border-green-200/50 dark:border-green-700/50 
+                                                   hover:bg-green-100 dark:hover:bg-green-800/30 transition-colors
+                                                   text-xs px-2 py-0.5 rounded-lg"
+                                        >
+                                          Equity: {(listing.compensation_value as any).equity}
+                                        </Badge>
+                                      )}
+                                      {(listing.compensation_value as any).cash && (
+                                        <Badge 
+                                          variant="secondary"
+                                          className="bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-900/20 dark:to-green-800/20 
+                                                   text-green-700 dark:text-green-400 border-green-200/50 dark:border-green-700/50 
+                                                   hover:bg-green-100 dark:hover:bg-green-800/30 transition-colors
+                                                   text-xs px-2 py-0.5 rounded-lg"
+                                        >
+                                          Cash: {(listing.compensation_value as any).cash}
+                                        </Badge>
+                                      )}
+                                      {(listing.compensation_value as any).value && (
+                                        <Badge 
+                                          variant="secondary"
+                                          className="bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-900/20 dark:to-green-800/20 
+                                                   text-green-700 dark:text-green-400 border-green-200/50 dark:border-green-700/50 
+                                                   hover:bg-green-100 dark:hover:bg-green-800/30 transition-colors
+                                                   text-xs px-2 py-0.5 rounded-lg"
+                                        >
+                                          {getCompensationValueLabel(listing.listing_type, listing.profiles?.profile_type || '')}: {(listing.compensation_value as any).value}
+                                        </Badge>
+                                      )}
+                                    </>
+                                  ) : (
+                                    <Badge 
+                                      variant="secondary"
+                                      className="bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-900/20 dark:to-green-800/20 
+                                               text-green-700 dark:text-green-400 border-green-200/50 dark:border-green-700/50 
+                                               hover:bg-green-100 dark:hover:bg-green-800/30 transition-colors
+                                               text-xs px-2 py-0.5 rounded-lg"
+                                    >
+                                      {getCompensationValueLabel(listing.listing_type, listing.profiles?.profile_type || '')}: {listing.compensation_value}
+                                    </Badge>
+                                  )}
+                                </>
+                              )}
+                              {listing.amount && (
+                                <Badge 
+                                  variant="secondary"
+                                  className="bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-900/20 dark:to-green-800/20 
+                                           text-green-700 dark:text-green-400 border-green-200/50 dark:border-green-700/50 
+                                           hover:bg-green-100 dark:hover:bg-green-800/30 transition-colors
+                                           text-xs px-2 py-0.5 rounded-lg"
+                                >
+                                  {getAmountLabel(listing.listing_type, listing.profiles?.profile_type || '')}: {listing.amount}
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Key Details Badges */}
                           <div className="flex flex-wrap gap-2">
                             {listing.funding_stage && (
-                              <div className="flex items-center gap-1.5 bg-primary/5 text-primary px-2.5 py-1 rounded-full text-xs font-medium">
+                            <div className="flex items-center gap-1.5 bg-purple-500/10 text-purple-600 px-3 py-1.5 rounded-full text-xs font-medium">
                                 <Briefcase className="h-3.5 w-3.5" />
-                                <span>{listing.funding_stage}</span>
+                              <span>Stage: {listing.funding_stage}</span>
                               </div>
                             )}
-                            {listing.compensation_type && (
-                              <div className="flex items-center gap-1.5 bg-primary/5 text-primary px-2.5 py-1 rounded-full text-xs font-medium">
-                                <DollarSign className="h-3.5 w-3.5" />
-                                <span>{listing.compensation_type}</span>
-                              </div>
-                            )}
-                          </div>
                         </div>
 
                         {/* Location and Sector */}
-                        <div className="px-4 flex items-center gap-3 text-muted-foreground text-xs mb-2">
-                          <MapPin className="h-4 w-4" />
+                        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                          <MapPin className="h-3 w-3" />
                           <span>{listing.location_city ? `${listing.location_city}, ` : ""}{listing.location_country}</span>
-                          {listing.sector && <><span className="mx-2">•</span><Badge variant="outline" className="text-xs">{listing.sector}</Badge></>}
+                          {listing.sector && (
+                            <>
+                              <span className="mx-1">•</span>
+                              <Badge variant="outline" className="text-xs border-gray-200 dark:border-gray-700">
+                                {listing.sector}
+                              </Badge>
+                            </>
+                          )}
+                        </div>
                         </div>
 
                         {/* Action Buttons */}
@@ -892,6 +1103,7 @@ export default function ProfilePage() {
                               className="flex-1 font-semibold"
                               onClick={() => handleListingClick(listing.id)}
                             >
+                            <Eye className="h-4 w-4 mr-2" />
                               View Details
                             </Button>
                             <div className="flex gap-1">
@@ -906,10 +1118,9 @@ export default function ProfilePage() {
                               <Button variant="ghost" size="icon" className="h-8 w-8">
                                 <Share2 className="h-4 w-4" />
                               </Button>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleMessage(listing.profiles?.id)}>
                                 <Mail className="h-4 w-4" />
                               </Button>
-                            </div>
                           </div>
                         </div>
                       </div>

@@ -213,7 +213,7 @@ export default function Page() {
   // --- Handler for creating a listing ---
   const handleCreateOrUpdateListing = async () => {
     if (!user) {
-      toast({ title: 'You must be logged in to create a listing.', variant: 'destructive' });
+      toast({ title: 'You must be logged in to create an opportunity.', variant: 'destructive' });
       return;
     }
     if (!profileType || !listingType || !title || !description) {
@@ -259,9 +259,9 @@ export default function Page() {
       }
       setIsCreating(false);
       if (error) {
-        toast({ title: (editingId ? 'Failed to update' : 'Failed to create') + ' listing: ' + error.message, variant: 'destructive' });
+        toast({ title: (editingId ? 'Failed to update' : 'Failed to create') + ' opportunity: ' + error.message, variant: 'destructive' });
       } else {
-        toast({ title: editingId ? 'Listing updated!' : 'Listing created!' });
+        toast({ title: editingId ? 'Opportunity updated!' : 'Opportunity created!' });
         setIsCreateListingOpen(false);
         setEditingId(null);
         // Optionally, refresh listings here if needed
@@ -522,7 +522,7 @@ export default function Page() {
         </h2>
         <div className="flex items-center space-x-2">
           <Button onClick={() => setIsCreateListingOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" /> New Listing
+            <Plus className="mr-2 h-4 w-4" /> New Opportunity
           </Button>
         </div>
       </div>
@@ -545,13 +545,13 @@ export default function Page() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Listings</CardTitle>
+            <CardTitle className="text-sm font-medium">Active Opportunities</CardTitle>
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{listings.length}</div>
             <p className="text-xs text-muted-foreground">
-              {listings.length > 0 ? `${listings.length} active` : "No active listings"}
+              {listings.length > 0 ? `${listings.length} active` : "No active opportunities"}
             </p>
           </CardContent>
         </Card>
@@ -860,7 +860,7 @@ export default function Page() {
                   <div>
                     <p className="text-sm font-medium leading-none">{alert.name}</p>
                       <p className="text-sm text-muted-foreground">
-                        {alert.alert_type === 'profile' ? 'Profile Alert' : 'Listing Alert'} • {alert.frequency}
+                        {alert.alert_type === 'profile' ? 'Profile Alert' : 'Opportunity Alert'} • {alert.frequency}
                       </p>
                   </div>
                 </div>
@@ -892,7 +892,7 @@ export default function Page() {
               <div key={item.id} className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                     {item.type === 'profiles' && <UserPlus className="h-4 w-4 text-purple-500" />}
-                    {item.type === 'listings' && <Lightbulb className="h-4 w-4 text-orange-500" />}
+                    {item.type === 'opportunities' && <Lightbulb className="h-4 w-4 text-orange-500" />}
                     {item.type === 'networking' && <Users className="h-4 w-4 text-blue-500" />}
                   <div>
                     <p className="text-sm font-medium leading-none">{item.title}</p>

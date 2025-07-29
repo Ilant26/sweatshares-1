@@ -1,6 +1,7 @@
 import React from 'react'
 import Link from 'next/link'
-import { ArrowRight, User, Tag, Briefcase, MapPin, XCircle, Eye, Star, Mail, DollarSign, ListFilter, Building2, Users } from 'lucide-react'
+import { useRouter } from "next/navigation"
+import { ArrowRight, User, Tag, Briefcase, MapPin, XCircle, Eye, Star, Mail, DollarSign, Building2, Users, Handshake } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { AnimatedGroup } from '@/components/ui/animated-group'
 import { Transition } from 'framer-motion'
@@ -184,11 +185,15 @@ export function HeroSection({
     }) => void;
 }) {
     const { user } = useUser();
+    const router = useRouter();
     const {
         savedProfiles,
         saveProfile,
         unsaveProfile,
         isProfileSaved,
+        likeListing,
+        unlikeListing,
+        isListingLiked,
         loading: favoritesLoading,
     } = useFavorites();
 
@@ -292,11 +297,8 @@ export function HeroSection({
             try {
                 const { data, error } = await supabase
                     .from("listings")
-                    .select(`
-                        id, title, description, listing_type, sector, location_city, location_country, 
-                        funding_stage, compensation_type, compensation_value, amount, created_at,
-                        profiles!inner(id, full_name, avatar_url, professional_role, profile_type)
-                    `)
+                    .select("*, profiles(full_name, professional_role, avatar_url, country, profile_type)")
+                    .eq("status", "active")
                     .order("created_at", { ascending: false })
                     .limit(12); // Limit to 12 listings for hero section
                 if (error) throw error;
@@ -414,6 +416,12 @@ export function HeroSection({
         setIsListingPanelOpen(true);
     };
 
+    const handleLikeListing = async (listingId: string) => {
+        if (!user) return;
+        if (isListingLiked(listingId)) await unlikeListing(listingId);
+        else await likeListing(listingId);
+    };
+
     return (
         <>
             <Menu />
@@ -485,7 +493,7 @@ export function HeroSection({
                                             onClick={() => setViewType('opportunities')}
                                             className="px-4 py-2"
                                         >
-                                            <Briefcase className="h-4 w-4 mr-2" />
+                                            <Handshake className="h-4 w-4 mr-2" />
                                             Opportunities
                                         </Button>
                                     </div>
@@ -566,7 +574,7 @@ export function HeroSection({
                                                     <Label className="text-xs font-medium text-muted-foreground">Opportunity Type</Label>
                                                     <Select value={listingType} onValueChange={setListingType}>
                                                         <SelectTrigger className="w-32" aria-label="Filter by opportunity type">
-                                                            <ListFilter className="mr-2 h-4 w-4 text-muted-foreground" />
+                                                            <Handshake className="mr-2 h-4 w-4 text-muted-foreground" />
                                                             <SelectValue placeholder="Opportunity Type" />
                                                         </SelectTrigger>
                                                         <SelectContent>
@@ -717,8 +725,8 @@ export function HeroSection({
                                                 <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                                                 
                                                 <CardContent className="relative p-0 flex flex-col h-full">
-                                                                                                                {/* Header Section */}
-                                                            <div className="p-4 pb-3">
+                                                    {/* Header Section */}
+                                                    <div className="p-4 pb-3">
                                                                 {/* Profile Type Badge */}
                                                                 {profile.profile_type && (
                                                                     <div className="flex justify-end mb-2">
@@ -731,27 +739,27 @@ export function HeroSection({
                                                                     </div>
                                                                 )}
                                                                 
-                                                                <div className="flex items-start gap-4">
-                                                                    {/* Avatar with status indicator */}
-                                                                    <div className="relative">
-                                                                        <Avatar className="h-12 w-12 border-4 border-white/80 dark:border-zinc-800/80 shadow-lg">
-                                                                            <AvatarImage src={profile.avatar_url || undefined} alt={profile.full_name || undefined} />
-                                                                            <AvatarFallback className="text-lg font-semibold bg-gradient-to-br from-primary to-primary/80 text-white">
-                                                                                {getInitials(profile.full_name)}
-                                                                            </AvatarFallback>
-                                                                        </Avatar>
-                                                                        {/* Online status indicator */}
-                                                                        <div className="absolute -bottom-1 -right-1 h-3 w-3 bg-green-500 border-2 border-white dark:border-zinc-800 rounded-full" />
-                                                                    </div>
-                                                                    
-                                                                    {/* Profile Info */}
-                                                                    <div className="flex-1 min-w-0">
-                                                                        <h3 
+                                                        <div className="flex items-start gap-4">
+                                                            {/* Avatar with status indicator */}
+                                                            <div className="relative">
+                                                                <Avatar className="h-12 w-12 border-4 border-white/80 dark:border-zinc-800/80 shadow-lg">
+                                                                    <AvatarImage src={profile.avatar_url || undefined} alt={profile.full_name || undefined} />
+                                                                    <AvatarFallback className="text-lg font-semibold bg-gradient-to-br from-primary to-primary/80 text-white">
+                                                                        {getInitials(profile.full_name)}
+                                                                    </AvatarFallback>
+                                                                </Avatar>
+                                                                {/* Online status indicator */}
+                                                                <div className="absolute -bottom-1 -right-1 h-3 w-3 bg-green-500 border-2 border-white dark:border-zinc-800 rounded-full" />
+                                                            </div>
+                                                            
+                                                            {/* Profile Info */}
+                                                            <div className="flex-1 min-w-0">
+                                                                    <h3 
                                                                             className="font-bold text-base text-gray-900 dark:text-white cursor-pointer hover:text-primary transition-colors mb-1"
-                                                                            onClick={() => handleProfileClick(profile)}
-                                                                        >
-                                                                            {profile.full_name}
-                                                                        </h3>
+                                                                        onClick={() => handleProfileClick(profile)}
+                                                                    >
+                                                                        {profile.full_name}
+                                                                    </h3>
                                                                 
                                                                 {profile.professional_role && (
                                                                     <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -926,12 +934,12 @@ export function HeroSection({
                                                         
                                                         {/* Listing Info */}
                                                         <div className="flex-1 min-w-0">
-                                                            <h3 
+                                                                                                                                    <h3 
                                                                 className="font-bold text-base text-gray-900 dark:text-white cursor-pointer hover:text-primary transition-colors mb-1"
-                                                                onClick={() => handleListingClick(listing)}
-                                                            >
-                                                                {listing.profiles?.full_name || 'Unknown User'}
-                                                            </h3>
+                                                                        onClick={() => handleListingClick(listing)}
+                                                                    >
+                                                                    {listing.profiles?.full_name || 'Unknown User'}
+                                                                </h3>
                                                             
                                                             {listing.profiles?.professional_role && (
                                                                 <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -956,38 +964,131 @@ export function HeroSection({
 
                                                 {/* Details Section */}
                                                 <div className="px-4 pb-4 space-y-3">
+                                                    {/* Skills */}
+                                                    {(listing as any).skills && (
+                                                        <div className="space-y-2">
+                                                            <h4 className="text-sm font-semibold text-gray-900 dark:text-white">Required Skills</h4>
+                                                            <div className="flex flex-wrap gap-1.5">
+                                                                {(Array.isArray((listing as any).skills) ? (listing as any).skills : (listing as any).skills.split(",").map((s: string) => s.trim())).map((skill: string) => (
+                                                                    <Badge 
+                                                                        key={skill} 
+                                                                        variant="secondary"
+                                                                        className="bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-900/20 dark:to-blue-800/20 
+                                                                                 text-blue-700 dark:text-blue-400 border-blue-200/50 dark:border-blue-700/50 
+                                                                                 hover:bg-blue-100 dark:hover:bg-blue-800/30 transition-colors
+                                                                                 text-xs px-2 py-0.5 rounded-lg"
+                                                                    >
+                                                                        {skill}
+                                                                    </Badge>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Compensation Information */}
+                                                    {(listing.compensation_type || listing.compensation_value || listing.amount) && (
+                                                        <div className="space-y-2">
+                                                            <h4 className="text-sm font-semibold text-gray-900 dark:text-white">
+                                                                {listing.profiles?.profile_type === "Founder" && listing.listing_type === "sell-startup" ? "Sale Details" : 
+                                                                 listing.profiles?.profile_type === "Investor" && (listing.listing_type === "investment-opportunity" || listing.listing_type === "buy-startup") ? "Investment Details" :
+                                                                 listing.profiles?.profile_type === "Investor" && listing.listing_type === "co-investor" ? "Co-Investment Details" :
+                                                                 "Compensation"}
+                                                            </h4>
+                                                            <div className="flex flex-wrap gap-1.5">
+                                                                {listing.compensation_type && (
+                                                                    <Badge 
+                                                                        variant="secondary"
+                                                                        className="bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-900/20 dark:to-green-800/20 
+                                                                                 text-green-700 dark:text-green-400 border-green-200/50 dark:border-green-700/50 
+                                                                                 hover:bg-green-100 dark:hover:bg-green-800/30 transition-colors
+                                                                                 text-xs px-2 py-0.5 rounded-lg"
+                                                                    >
+                                                                        {listing.compensation_type}
+                                                                    </Badge>
+                                                                )}
+                                                                {listing.compensation_value && (
+                                                                    <>
+                                                                        {typeof listing.compensation_value === 'object' ? (
+                                                                            <>
+                                                                                {listing.compensation_value.salary && (
+                                                                            <Badge 
+                                                                                variant="secondary"
+                                                                                className="bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-900/20 dark:to-green-800/20 
+                                                                                         text-green-700 dark:text-green-400 border-green-200/50 dark:border-green-700/50 
+                                                                                         hover:bg-green-100 dark:hover:bg-green-800/30 transition-colors
+                                                                                         text-xs px-2 py-0.5 rounded-lg"
+                                                                            >
+                                                                                        Salary: {listing.compensation_value.salary}
+                                                                            </Badge>
+                                                                                )}
+                                                                                {listing.compensation_value.equity && (
+                                                                                    <Badge 
+                                                                                        variant="secondary"
+                                                                                        className="bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-900/20 dark:to-green-800/20 
+                                                                                                 text-green-700 dark:text-green-400 border-green-200/50 dark:border-green-700/50 
+                                                                                                 hover:bg-green-100 dark:hover:bg-green-800/30 transition-colors
+                                                                                                 text-xs px-2 py-0.5 rounded-lg"
+                                                                                    >
+                                                                                        Equity: {listing.compensation_value.equity}
+                                                                                    </Badge>
+                                                                                )}
+                                                                                {listing.compensation_value.cash && (
+                                                                                    <Badge 
+                                                                                        variant="secondary"
+                                                                                        className="bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-900/20 dark:to-green-800/20 
+                                                                                                 text-green-700 dark:text-green-400 border-green-200/50 dark:border-green-700/50 
+                                                                                                 hover:bg-green-100 dark:hover:bg-green-800/30 transition-colors
+                                                                                                 text-xs px-2 py-0.5 rounded-lg"
+                                                                                    >
+                                                                                        Cash: {listing.compensation_value.cash}
+                                                                                    </Badge>
+                                                                                )}
+                                                                                {listing.compensation_value.value && (
+                                                                                    <Badge 
+                                                                                        variant="secondary"
+                                                                                        className="bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-900/20 dark:to-green-800/20 
+                                                                                                 text-green-700 dark:text-green-400 border-green-200/50 dark:border-green-700/50 
+                                                                                                 hover:bg-green-100 dark:hover:bg-green-800/30 transition-colors
+                                                                                                 text-xs px-2 py-0.5 rounded-lg"
+                                                                                    >
+                                                                                        {getCompensationValueLabel(listing.listing_type, listing.profiles?.profile_type || '')}: {listing.compensation_value.value}
+                                                                                    </Badge>
+                                                                                )}
+                                                                            </>
+                                                                        ) : (
+                                                                            <Badge 
+                                                                                variant="secondary"
+                                                                                className="bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-900/20 dark:to-green-800/20 
+                                                                                         text-green-700 dark:text-green-400 border-green-200/50 dark:border-green-700/50 
+                                                                                         hover:bg-green-100 dark:hover:bg-green-800/30 transition-colors
+                                                                                         text-xs px-2 py-0.5 rounded-lg"
+                                                                            >
+                                                                                {getCompensationValueLabel(listing.listing_type, listing.profiles?.profile_type || '')}: {listing.compensation_value}
+                                                                            </Badge>
+                                                                        )}
+                                                                    </>
+                                                                )}
+                                                                {listing.amount && (
+                                                                    <Badge 
+                                                                        variant="secondary"
+                                                                        className="bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-900/20 dark:to-green-800/20 
+                                                                                 text-green-700 dark:text-green-400 border-green-200/50 dark:border-green-700/50 
+                                                                                 hover:bg-green-100 dark:hover:bg-green-800/30 transition-colors
+                                                                                 text-xs px-2 py-0.5 rounded-lg"
+                                                                    >
+                                                                        {getAmountLabel(listing.listing_type, listing.profiles?.profile_type || '')}: {listing.amount}
+                                                                    </Badge>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    )}
+
                                                     {/* Key Details Badges */}
                                                     <div className="flex flex-wrap gap-2">
                                                         {listing.funding_stage && (
                                                             <div className="flex items-center gap-1.5 bg-purple-500/10 text-purple-600 px-3 py-1.5 rounded-full text-xs font-medium">
                                                                 <Building2 className="h-3.5 w-3.5" />
                                                                 <span>Stage: {listing.funding_stage}</span>
-                                                            </div>
-                                                        )}
-                                                        {listing.compensation_type === "Equity" && listing.compensation_value && (
-                                                            <div className="flex items-center gap-1.5 bg-green-500/10 text-green-600 px-3 py-1.5 rounded-full text-xs font-medium">
-                                                                <Users className="h-3.5 w-3.5" />
-                                                                <span>{getCompensationValueLabel(listing.listing_type, listing.profiles?.profile_type || '')}: {
-                                                                    typeof listing.compensation_value === 'object' 
-                                                                        ? listing.compensation_value.equity || listing.compensation_value.value 
-                                                                        : listing.compensation_value
-                                                                }</span>
-                                                            </div>
-                                                        )}
-                                                        {listing.compensation_value && listing.compensation_type !== "Equity" && (
-                                                            <div className="flex items-center gap-1.5 bg-green-500/10 text-green-600 px-3 py-1.5 rounded-full text-xs font-medium">
-                                                                <Users className="h-3.5 w-3.5" />
-                                                                <span>{getCompensationValueLabel(listing.listing_type, listing.profiles?.profile_type || '')}: {
-                                                                    typeof listing.compensation_value === 'object' 
-                                                                        ? listing.compensation_value.value || Object.values(listing.compensation_value).join(', ')
-                                                                        : listing.compensation_value
-                                                                }</span>
-                                                            </div>
-                                                        )}
-                                                        {listing.amount && (
-                                                            <div className="flex items-center gap-1.5 bg-blue-500/10 text-blue-600 px-3 py-1.5 rounded-full text-xs font-medium">
-                                                                <DollarSign className="h-3.5 w-3.5" />
-                                                                <span>{getAmountLabel(listing.listing_type, listing.profiles?.profile_type || '')}: {listing.amount}</span>
                                                             </div>
                                                         )}
                                                     </div>
@@ -999,7 +1100,9 @@ export function HeroSection({
                                                         {listing.sector && (
                                                             <>
                                                                 <span className="mx-1">•</span>
-                                                                <span>{listing.sector}</span>
+                                                                <Badge variant="outline" className="text-xs border-gray-200 dark:border-gray-700">
+                                                                    {listing.sector}
+                                                                </Badge>
                                                             </>
                                                         )}
                                                     </div>
@@ -1017,19 +1120,6 @@ export function HeroSection({
                                                             <Eye className="h-4 w-4 mr-2" />
                                                             View Listing
                                                         </Button>
-                                                        
-                                                        <div className="flex gap-1">
-                                                            {user && listing.profiles?.id !== user.id && (
-                                                                <Button 
-                                                                    variant="ghost" 
-                                                                    size="sm"
-                                                                    className="h-8 w-8 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                                                                    onClick={() => handleMessage(listing.profiles?.id || '')}
-                                                                >
-                                                                    <Mail className="h-4 w-4 text-gray-400 hover:text-blue-500" />
-                                                                </Button>
-                                                            )}
-                                                        </div>
                                                     </div>
                                                 </div>
                                             </CardContent>

@@ -231,29 +231,88 @@ export function MobileMessages() {
 
     // Helper to fetch and cache a profile by userId
     async function fetchAndCacheProfile(userId: string) {
-        if (!userId || userProfileCache[userId]) return;
-        const { data } = await supabase
-            .from('profiles')
-            .select('id, username, full_name, avatar_url')
-            .eq('id', userId)
-            .single();
-        if (data) {
-            setUserProfileCache(prev => ({ ...prev, [userId]: data }));
+        if (!userId || userId === 'undefined' || userId === 'null' || userProfileCache[userId]) {
+            if (userId === 'undefined' || userId === 'null') {
+                console.warn('fetchAndCacheProfile called with invalid userId:', userId);
+            }
+            return userProfileCache[userId] || null;
         }
+        
+        try {
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('id, username, full_name, avatar_url')
+                .eq('id', userId)
+                .single();
+            
+            if (error) {
+                console.error(`Error fetching profile for user ${userId}:`, error);
+                
+                // If user not found, create a minimal profile
+                if (error.code === 'PGRST116') {
+                    const minimalProfile = {
+                        id: userId,
+                        username: 'User',
+                        full_name: 'User',
+                        avatar_url: null
+                    };
+                    setUserProfileCache(prev => ({ ...prev, [userId]: minimalProfile }));
+                    return minimalProfile;
+                }
+                
+                // For other errors, create a fallback profile
+                const minimalProfile = {
+                    id: userId,
+                    username: 'User',
+                    full_name: 'User',
+                    avatar_url: null
+                };
+                setUserProfileCache(prev => ({ ...prev, [userId]: minimalProfile }));
+                return minimalProfile;
+            }
+            
+            if (data) {
+                setUserProfileCache(prev => ({ ...prev, [userId]: data }));
+                return data;
+            }
+        } catch (error) {
+            console.error(`Error fetching profile for user ${userId}:`, error);
+            // Create a fallback profile
+            const fallbackProfile = {
+                id: userId,
+                username: 'User',
+                full_name: 'User',
+                avatar_url: null
+            };
+            setUserProfileCache(prev => ({ ...prev, [userId]: fallbackProfile }));
+            return fallbackProfile;
+        }
+        return null;
     }
 
     // Whenever allMessages change, ensure all user profiles are cached
     useEffect(() => {
-        const userIds = new Set<string>();
-        allMessages.forEach(msg => {
-            userIds.add(msg.sender_id);
-            userIds.add(msg.receiver_id);
-        });
-        userIds.forEach(id => {
-            if (id && !userProfileCache[id]) fetchAndCacheProfile(id);
-        });
-        // eslint-disable-next-line
-    }, [allMessages]);
+        const fetchMissingProfiles = async () => {
+            const userIds = new Set<string>();
+            allMessages.forEach(msg => {
+                userIds.add(msg.sender_id);
+                userIds.add(msg.receiver_id);
+            });
+            
+            // Filter out current user and already cached users
+            const missingUserIds = Array.from(userIds).filter(id => 
+                id && id !== currentUserId && !userProfileCache[id] && !allConnections.find(conn => conn.id === id)
+            );
+            
+            if (missingUserIds.length > 0) {
+                // Fetch all missing profiles in parallel
+                const profilePromises = missingUserIds.map(id => fetchAndCacheProfile(id));
+                await Promise.all(profilePromises);
+            }
+        };
+        
+        fetchMissingProfiles();
+    }, [allMessages, currentUserId, userProfileCache, allConnections]);
 
     // Helper to get a user's profile (from allConnections, userProfileCache, or fallback)
     function getUserProfile(userId: string) {
@@ -271,17 +330,35 @@ export function MobileMessages() {
             const isCurrentUserSender = message.sender_id === currentUserId;
             const otherUserId = isCurrentUserSender ? message.receiver_id : message.sender_id;
             const otherUser = getUserProfile(otherUserId);
+            
             if (!acc[otherUserId]) {
                 acc[otherUserId] = {
                     id: otherUserId,
-                    name: otherUser?.full_name || otherUser?.username || 'Unknown User',
+                    name: otherUser?.full_name || otherUser?.username || 'Loading...',
                     avatar: otherUser?.avatar_url || undefined,
                     lastMessage: message.content,
                     time: message.created_at,
                     unread: 0,
                     online: false
                 };
+                
+                // If we don't have the user's profile, try to fetch it
+                if (!otherUser) {
+                    fetchAndCacheProfile(otherUserId).then(profile => {
+                        if (profile) {
+                            // Force a re-render by updating the cache
+                            setUserProfileCache(prev => ({ ...prev, [otherUserId]: profile }));
+                        }
+                    });
+                }
             }
+            
+            // Update conversation data if we have newer profile info
+            if (otherUser && acc[otherUserId].name === 'Loading...') {
+                acc[otherUserId].name = otherUser.full_name || otherUser.username || 'Unknown User';
+                acc[otherUserId].avatar = otherUser.avatar_url || undefined;
+            }
+            
             if (new Date(message.created_at) > new Date(acc[otherUserId].time)) {
                 acc[otherUserId].lastMessage = message.content;
                 acc[otherUserId].time = message.created_at;
@@ -373,9 +450,7 @@ export function MobileMessages() {
     }, [messages, selectedUserId, currentUserId]);
 
     const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-        console.log('Mobile: File select triggered');
         const files = Array.from(event.target.files || []);
-        console.log('Mobile: Selected files:', files);
         setSelectedFiles(prev => [...prev, ...files]);
     };
 
@@ -874,7 +949,6 @@ export function MobileMessages() {
                             <DropdownMenuSeparator />
                             <DropdownMenuItem onSelect={(e) => {
                                 e.preventDefault();
-                                console.log('Mobile: File upload menu item clicked');
                                 fileInputRef.current?.click();
                             }}>
                                 <input

@@ -29,6 +29,7 @@ export interface Message {
 export interface UserStatus {
   id: string
   username: string
+  full_name?: string | null
   avatar_url: string | null
   last_seen: string
   is_online: boolean
@@ -141,14 +142,39 @@ export async function markMessageAsRead(messageId: string) {
 }
 
 export async function getUserStatus(userId: string): Promise<UserStatus | null> {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('id, username, avatar_url, last_seen, is_online')
-    .eq('id', userId)
-    .single()
+  if (!userId || userId === 'undefined' || userId === 'null') {
+    console.warn('getUserStatus called with invalid userId:', userId);
+    return null;
+  }
+  
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, username, full_name, avatar_url, last_seen, is_online')
+      .eq('id', userId)
+      .single()
 
-  if (error) throw error
-  return data
+    if (error) {
+      console.error('Error fetching user status:', error);
+      // If user not found, return null instead of throwing
+      if (error.code === 'PGRST116') {
+        return null;
+      }
+      throw error;
+    }
+    
+    return {
+      id: data.id,
+      username: data.username || data.full_name || 'Unknown User',
+      full_name: data.full_name,
+      avatar_url: data.avatar_url,
+      last_seen: data.last_seen || new Date().toISOString(),
+      is_online: data.is_online || false
+    };
+  } catch (error) {
+    console.error('Error in getUserStatus:', error);
+    return null;
+  }
 }
 
 export async function updateUserStatus(isOnline: boolean) {

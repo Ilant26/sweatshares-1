@@ -288,18 +288,18 @@ export function SkillsSelector({
         if (highlightedIndex >= 0 && highlightedIndex < filteredSkills.length) {
           addSkill(filteredSkills[highlightedIndex].skill);
         } else if (filteredSkills.length > 0) {
-          addSkill(filteredSkills[0].skill);
-        }
+      addSkill(filteredSkills[0].skill);
+    }
         break;
       case 'Escape':
         e.preventDefault();
-        setOpen(false);
+      setOpen(false);
         setHighlightedIndex(-1);
         break;
       case 'Backspace':
         if (!search && value.length > 0) {
-          // Remove last skill if input is empty
-          removeSkill(value[value.length - 1]);
+      // Remove last skill if input is empty
+      removeSkill(value[value.length - 1]);
         }
         break;
     }

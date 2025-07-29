@@ -15,7 +15,7 @@ import {
   Users,
   BellRing,
   Star,
-  Lock,
+  Lock, Vault,
   LayoutDashboard,
   MessageCircle,
   List,
@@ -89,7 +89,7 @@ const data = {
     {
       title: "Vault",
       url: "/dashboard/my-vault",
-      icon: Lock,
+      icon: Vault,
     },
     {
       title: "Invoices",

@@ -714,7 +714,7 @@ export default function NewsFeedPage() {
                         </>
                       ) : (
                         <>
-                          Publish <Share2 className="ml-2 h-4 w-4" />
+                          Publish
                         </>
                       )}
                     </Button>

@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useFavorites } from '@/hooks/use-favorites';
 import { useToast } from '@/components/ui/use-toast';
-import { Search, SlidersHorizontal, Eye, Heart, Share2, Mail, Briefcase, MapPin, Building2, Loader2, Star } from 'lucide-react';
+import { Search, SlidersHorizontal, Eye, Heart, Share2, Briefcase, MapPin, Building2, Loader2, Star } from 'lucide-react';
 
 interface Profile {
   id: string;
@@ -45,6 +45,7 @@ export default function MyFavoritesPage() {
   const [softRemovedItems, setSoftRemovedItems] = useState<Set<string>>(new Set());
   const [removedProfilesCache, setRemovedProfilesCache] = useState<Profile[]>([]);
   const [removedListingsCache, setRemovedListingsCache] = useState<Listing[]>([]);
+  const [itemOrder, setItemOrder] = useState<string[]>([]);
   const router = useRouter();
   const { toast } = useToast();
   const { 
@@ -54,21 +55,49 @@ export default function MyFavoritesPage() {
     saveProfile,
     unsaveProfile, 
     likeListing,
-    unlikeListing
+    unlikeListing 
   } = useFavorites();
+
+  // Initialize and maintain item order
+  useEffect(() => {
+    const allItems = [
+      ...savedProfiles.map(p => ({ id: p.profile.id, type: 'profile' })),
+      ...likedListings.map(l => ({ id: l.listing.id, type: 'listing' }))
+    ];
+    
+    setItemOrder(prev => {
+      const newOrder = [...prev];
+      // Add new items at their original positions
+      allItems.forEach(({ id }) => {
+        if (!newOrder.includes(id)) {
+          newOrder.push(id);
+        }
+      });
+      // Remove items that no longer exist and aren't in soft-removed cache
+      return newOrder.filter(id => 
+        allItems.some(item => item.id === id) || 
+        softRemovedItems.has(id)
+      );
+    });
+  }, [savedProfiles, likedListings]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
     const diff = now.getTime() - date.getTime();
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const minutes = Math.floor(diff / (1000 * 60));
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
     
-    if (days === 0) return 'Today';
-    if (days === 1) return 'Yesterday';
-    if (days < 7) return `${days} days ago`;
-    if (days < 30) return `${Math.floor(days / 7)} weeks ago`;
-    if (days < 365) return `${Math.floor(days / 30)} months ago`;
-    return `${Math.floor(days / 365)} years ago`;
+    if (minutes < 1) return 'Added to favorite just now';
+    if (minutes < 60) return `Added to favorite ${minutes} ${minutes === 1 ? 'minute' : 'minutes'} ago`;
+    if (hours < 24) return `Added to favorite ${hours} ${hours === 1 ? 'hour' : 'hours'} ago`;
+    if (days === 0) return 'Added to favorite today';
+    if (days === 1) return 'Added to favorite yesterday';
+    if (days < 7) return `Added to favorite ${days} days ago`;
+    if (days < 30) return `Added to favorite ${Math.floor(days / 7)} ${Math.floor(days / 7) === 1 ? 'week' : 'weeks'} ago`;
+    if (days < 365) return `Added to favorite ${Math.floor(days / 30)} ${Math.floor(days / 30) === 1 ? 'month' : 'months'} ago`;
+    return `Added to favorite ${Math.floor(days / 365)} ${Math.floor(days / 365) === 1 ? 'year' : 'years'} ago`;
   };
 
   const stripHtml = (html: string) => {
@@ -94,69 +123,65 @@ export default function MyFavoritesPage() {
   };
 
   // Transform saved profiles data and include cached removed items
-  const activeProfiles: Profile[] = savedProfiles
-    .map(saved => ({
-      id: saved.profile.id,
-      type: 'profile' as const,
-      addedDate: formatDate(saved.created_at),
-      image: saved.profile.avatar_url || '',
-      name: saved.profile.full_name || 'Unknown',
-      title: saved.profile.professional_role || 'No title',
-      description: saved.profile.bio || 'No description available.',
-      skills: (saved.profile.skills || []).map((skill: string) => ({
-        label: skill,
-        color: getSkillColor(skill)
-      })),
-      location: saved.profile.country || 'Unknown location',
-    }));
-
-  // Combine active profiles with cached removed profiles (avoid duplicates)
-  const profiles: Profile[] = [
-    ...activeProfiles, 
-    ...removedProfilesCache.filter(cached => !activeProfiles.some(active => active.id === cached.id))
-  ];
+  const activeProfiles = savedProfiles.map(saved => ({
+    id: saved.profile.id,
+    type: 'profile' as const,
+    addedDate: formatDate(saved.created_at),
+    image: saved.profile.avatar_url || '',
+    name: saved.profile.full_name || 'Anonymous',
+    title: saved.profile.professional_role || 'Role not specified',
+    description: saved.profile.bio || 'No description available',
+    skills: (saved.profile.skills || []).map((skill: string) => ({
+      label: skill,
+      color: getSkillColor(skill),
+    })),
+    location: saved.profile.country || 'Location not specified',
+  }));
 
   // Transform liked listings data and include cached removed items
-  const activeListings: Listing[] = likedListings
-    .map(liked => ({
-      id: liked.listing.id,
-      type: 'listing' as const,
-      addedDate: formatDate(liked.created_at),
-      icon: <Briefcase className="h-8 w-8 text-muted-foreground" />,
-      title: liked.listing.title,
-      company: liked.listing_profile?.full_name || 'Unknown',
-      location: `${liked.listing.location_city ? `${liked.listing.location_city}, ` : ''}${liked.listing.location_country}`,
-      description: stripHtml(liked.listing.description),
-      postedAgo: formatDate(liked.listing.created_at),
-    }));
+  const listings = likedListings.map(liked => ({
+    id: liked.listing.id,
+    type: 'listing' as const,
+    addedDate: formatDate(liked.created_at),
+    icon: <Building2 className="h-4 w-4" />,
+    title: liked.listing.title || 'Untitled Listing',
+    company: liked.listing.sector || 'Company not specified',
+    location: liked.listing.location_country || 'Location not specified',
+    description: stripHtml(liked.listing.description || 'No description available'),
+    postedAgo: formatDate(liked.listing.created_at),
+  }));
 
-  // Combine active listings with cached removed listings (avoid duplicates)
-  const listings: Listing[] = [
-    ...activeListings, 
-    ...removedListingsCache.filter(cached => !activeListings.some(active => active.id === cached.id))
-  ];
+  // Combine active and cached items, maintaining order
+  const allItems = [...activeProfiles, ...removedProfilesCache, ...listings, ...removedListingsCache]
+    .filter((item, index, self) => 
+      // Remove duplicates, keeping the active version if it exists
+      index === self.findIndex(t => t.id === item.id)
+    )
+    .sort((a, b) => {
+      const aIndex = itemOrder.indexOf(a.id);
+      const bIndex = itemOrder.indexOf(b.id);
+      // If both items are in the order, use their order
+      if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
+      // If only one item is in the order, put the other at the end
+      if (aIndex !== -1) return -1;
+      if (bIndex !== -1) return 1;
+      // If neither item is in the order, maintain their current order
+      return 0;
+    });
 
-  const filteredContent: FavoriteItem[] = [
-    ...profiles.filter(profile => {
-      const matchesSearch = searchTerm === '' || 
-        profile.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        profile.description.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesTab = activeTab === 'all' || activeTab === 'profiles';
-      return matchesSearch && matchesTab;
-    }),
-    ...listings.filter(listing => {
-      const matchesSearch = searchTerm === '' || 
-        listing.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        listing.description.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        listing.company.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesTab = activeTab === 'all' || activeTab === 'listings';
-      return matchesSearch && matchesTab;
-    }),
-  ];
+  // Filter items based on search and tab
+  const filteredItems = allItems.filter(item => {
+    const matchesSearch = searchTerm === '' || 
+      (item.type === 'profile' ? item.name : item.title)?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (item.type === 'listing' && item.company.toLowerCase().includes(searchTerm.toLowerCase()));
+    const matchesTab = activeTab === 'all' || activeTab === item.type + 's';
+    return matchesSearch && matchesTab;
+  });
 
   const handleRemoveFavorite = async (item: FavoriteItem) => {
     try {
-      // Add to soft removed items
+      // Add to soft removed items without changing order
       setSoftRemovedItems(prev => new Set([...prev, item.id]));
       
       if (item.type === 'profile') {
@@ -180,7 +205,7 @@ export default function MyFavoritesPage() {
         
         await unlikeListing(item.id);
         toast({
-          title: "Listing removed from favorites", 
+          title: "Listing removed from favorites",
           description: "The listing has been removed from your favorites.",
         });
       }
@@ -323,82 +348,81 @@ export default function MyFavoritesPage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {filteredContent.length > 0 ? (
-          filteredContent.map((item) => {
+        {filteredItems.length > 0 ? (
+          filteredItems.map((item) => {
             const isSoftRemoved = softRemovedItems.has(item.id);
             return (
-              <Card key={item.id} className="flex flex-col">
-                <CardHeader className="flex-row items-center gap-4 space-y-0 pb-2">
-                  {item.type === 'profile' ? (
-                    <Avatar className="h-12 w-12">
-                      <AvatarImage src={item.image} alt={item.name} />
-                      <AvatarFallback>{item.name.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                  ) : (
-                    (item as Listing).icon
-                  )}
-                  <div className="flex-1">
-                    <CardDescription className="text-xs font-semibold">Added {item.addedDate}</CardDescription>
-                    <CardTitle className="text-lg leading-tight">
-                      {item.type === 'profile' ? item.name : item.title}
-                    </CardTitle>
-                    {item.type === 'listing' && (
-                      <CardDescription className="text-sm text-muted-foreground">
-                        {(item as Listing).company} &bull; {(item as Listing).location}
-                      </CardDescription>
-                    )}
-                    {item.type === 'profile' && (
-                      <CardDescription className="text-sm text-muted-foreground">
-                        {item.title}
-                      </CardDescription>
-                    )}
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4 pt-2">
-                  <p className="text-sm text-muted-foreground line-clamp-3">
-                    {item.description}
-                  </p>
-                  {item.type === 'profile' && item.skills && item.skills.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {item.skills.map((skill, index) => (
-                        <Badge key={index} className={skill.color}>
-                          {skill.label}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
+            <Card key={item.id} className="flex flex-col">
+              <CardHeader className="flex-row items-center gap-4 space-y-0 pb-2">
+                {item.type === 'profile' ? (
+                  <Avatar className="h-12 w-12">
+                    <AvatarImage src={item.image} alt={item.name} />
+                    <AvatarFallback>{item.name.charAt(0)}</AvatarFallback>
+                  </Avatar>
+                ) : (
+                  (item as Listing).icon
+                )}
+                <div className="flex-1">
+                  <CardDescription className="text-xs font-semibold">Added {item.addedDate}</CardDescription>
+                  <CardTitle className="text-lg leading-tight">
+                    {item.type === 'profile' ? item.name : item.title}
+                  </CardTitle>
                   {item.type === 'listing' && (
-                    <div className="flex items-center text-sm text-muted-foreground">
-                      <MapPin className="mr-1 h-4 w-4" />
-                      <span>{(item as Listing).location}</span>
-                    </div>
+                    <CardDescription className="text-sm text-muted-foreground">
+                      {(item as Listing).company} &bull; {(item as Listing).location}
+                    </CardDescription>
                   )}
-                </CardContent>
-                <CardFooter className="mt-auto flex justify-between pt-4">
+                  {item.type === 'profile' && (
+                    <CardDescription className="text-sm text-muted-foreground">
+                      {item.title}
+                    </CardDescription>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4 pt-2">
+                <p className="text-sm text-muted-foreground line-clamp-3">
+                  {item.description}
+                </p>
+                {item.type === 'profile' && item.skills && item.skills.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {item.skills.map((skill, index) => (
+                      <Badge key={index} className={skill.color}>
+                        {skill.label}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+                {item.type === 'listing' && (
+                  <div className="flex items-center text-sm text-muted-foreground">
+                    <MapPin className="mr-1 h-4 w-4" />
+                    <span>{(item as Listing).location}</span>
+                  </div>
+                )}
+              </CardContent>
+              <CardFooter className="mt-auto flex justify-between pt-4">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => handleViewItem(item)}
+                >
+                  {item.type === 'profile' ? 'View Profile' : 'View Listing'}
+                </Button>
+                <div className="flex items-center gap-2">
                   <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => handleViewItem(item)}
-                  >
-                    {item.type === 'profile' ? 'View Profile' : 'View Listing'}
-                  </Button>
-                  <div className="flex items-center gap-2">
-                    <Button 
-                      variant="ghost" 
-                      size="icon"
+                    variant="ghost" 
+                    size="icon"
                       onClick={() => handleToggleFavorite(item)}
                       className={isSoftRemoved 
                         ? "text-gray-400 hover:text-yellow-500 hover:bg-yellow-50" 
                         : "text-yellow-500 hover:text-yellow-700 hover:bg-yellow-50"
                       }
-                    >
+                  >
                       <Star className={`h-4 w-4 ${isSoftRemoved ? 'text-gray-400' : 'fill-yellow-400 text-yellow-500'}`} />
-                    </Button>
-                    <Button variant="ghost" size="icon"><Share2 className="h-4 w-4" /></Button>
-                    <Button variant="ghost" size="icon"><Mail className="h-4 w-4" /></Button>
-                  </div>
-                </CardFooter>
-              </Card>
+                  </Button>
+                  <Button variant="ghost" size="icon"><Share2 className="h-4 w-4" /></Button>
+                </div>
+              </CardFooter>
+            </Card>
             );
           })
         ) : (
