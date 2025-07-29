@@ -271,7 +271,7 @@ export const Menu = () => {
 
                 {/* Curved Mobile Menu */}
                 <AnimatePresence mode="wait">
-                    {menuState && (
+                {menuState && (
                         <motion.div
                             initial={{ x: "calc(100% + 100px)" }}
                             animate={{ 
@@ -313,9 +313,9 @@ export const Menu = () => {
                                     </div>
                                     
                                     <div className="space-y-2">
-                                        {menuItems.map((item, index) => {
-                                            const isActive = pathname === item.href;
-                                            return (
+                                    {menuItems.map((item, index) => {
+                                        const isActive = pathname === item.href;
+                                        return (
                                                 <motion.div
                                                     key={index}
                                                     initial={{ opacity: 0, x: 20 }}
@@ -329,12 +329,12 @@ export const Menu = () => {
                                                     }}
                                                     className="group"
                                                 >
-                                                    <Link
-                                                        href={item.href}
-                                                        onClick={() => setMenuState(false)}
-                                                        className={cn(
+                                                <Link
+                                                    href={item.href}
+                                                    onClick={() => setMenuState(false)}
+                                                    className={cn(
                                                             "flex items-center gap-4 px-4 py-4 rounded-xl font-medium text-lg transition-all duration-200",
-                                                            isActive 
+                                                        isActive 
                                                                 ? "bg-primary text-primary-foreground" 
                                                                 : "text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800"
                                                         )}
@@ -346,10 +346,10 @@ export const Menu = () => {
                                                                 : "text-gray-600 dark:text-gray-400"
                                                         )} />
                                                         <span className="font-medium">{item.name}</span>
-                                                    </Link>
+                                                </Link>
                                                 </motion.div>
-                                            );
-                                        })}
+                                        );
+                                    })}
                                     </div>
                                 </div>
 
@@ -376,11 +376,11 @@ export const Menu = () => {
 
                                     {/* Auth Buttons */}
                                     <div className="space-y-3">
-                                        {user ? (
+                                    {user ? (
                                             <>
-                                                <Button
-                                                    asChild
-                                                    variant="outline"
+                                            <Button
+                                                asChild
+                                                variant="outline"
                                                     className="w-full h-12 text-base font-medium border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800"
                                                 >
                                                     <Link 
@@ -390,52 +390,52 @@ export const Menu = () => {
                                                     >
                                                         <LayoutDashboard className="h-4 w-4" />
                                                         <span>Dashboard</span>
-                                                    </Link>
-                                                </Button>
-                                                <Button
-                                                    variant="outline"
+                                                </Link>
+                                            </Button>
+                                            <Button
+                                                variant="outline"
                                                     className="w-full h-12 text-base font-medium border-red-300 dark:border-red-600 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
                                                     onClick={() => {
                                                         handleSignOut();
                                                         setMenuState(false);
                                                     }}
                                                 >
-                                                    <LogOut className="h-4 w-4 mr-2" />
+                                                <LogOut className="h-4 w-4 mr-2" />
                                                     <span>Sign Out</span>
-                                                </Button>
+                                            </Button>
                                             </>
-                                        ) : (
+                                    ) : (
                                             <>
-                                                <Button
-                                                    asChild
-                                                    variant="outline"
+                                            <Button
+                                                asChild
+                                                variant="outline"
                                                     className="w-full h-12 text-base font-medium border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800"
                                                 >
                                                     <Link 
                                                         href="/auth/login"
                                                         onClick={() => setMenuState(false)}
                                                     >
-                                                        Login
-                                                    </Link>
-                                                </Button>
-                                                <Button
-                                                    asChild
+                                                    Login
+                                                </Link>
+                                            </Button>
+                                            <Button
+                                                asChild
                                                     className="w-full h-12 text-base font-medium bg-primary hover:bg-primary/90"
                                                 >
                                                     <Link 
                                                         href="/auth/sign-up"
                                                         onClick={() => setMenuState(false)}
                                                     >
-                                                        Sign Up
-                                                    </Link>
-                                                </Button>
+                                                    Sign Up
+                                                </Link>
+                                            </Button>
                                             </>
-                                        )}
-                                    </div>
+                                    )}
+                                </div>
                                 </motion.div>
                             </div>
                         </motion.div>
-                    )}
+                )}
                 </AnimatePresence>
             </nav>
         </header>
