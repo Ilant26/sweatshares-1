@@ -1,7 +1,7 @@
 "use client";
 import React from 'react';
 import Link from 'next/link';
-import { Menu as MenuIcon, X, Home, List, DollarSign, Mail, LayoutDashboard, LogOut } from 'lucide-react';
+import { Menu as MenuIcon, X, Home, List, DollarSign, Mail, LayoutDashboard, LogOut, User, Building2, TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
@@ -12,9 +12,9 @@ import { supabase } from '@/lib/supabase';
 import { useRouter, usePathname } from 'next/navigation';
 
 const menuItems = [
-    { name: 'For Independants', href: '/for-independants', icon: Home },
-    { name: 'For Companies', href: '/for-companies', icon: List },
-    { name: 'For Investors', href: '/for-investors', icon: DollarSign },
+    { name: 'For Independants', href: '/for-independants', icon: User },
+    { name: 'For Companies', href: '/for-companies', icon: Building2 },
+    { name: 'For Investors', href: '/for-investors', icon: TrendingUp },
 ];
 
 export const Menu = () => {
@@ -120,32 +120,35 @@ export const Menu = () => {
             {/* Main Menu */}
             <nav
                 data-state={menuState && 'active'}
-                className="relative w-full bg-background/95 backdrop-blur-md border-b border-border/40">
-                <div className="flex items-center py-2 sm:py-3 lg:py-4 px-3 sm:px-6 lg:px-12">
+                className="relative w-full bg-white dark:bg-gray-900 border-b border-border/40">
+                <div className="flex items-center py-3 lg:py-4 px-3 sm:px-6 lg:px-12">
                     {/* Left Group: Logo + Navigation */}
                     <div className="flex items-center">
-                        {/* Logo */}
+                        {/* Logo - Hidden when menu is open */}
                         <Link
                             href="/"
                             aria-label="home"
-                            className="flex items-center space-x-2 relative z-50">
+                            className={cn(
+                                "flex items-center space-x-2 relative z-50 transition-opacity duration-300",
+                                menuState ? "opacity-0 lg:opacity-100" : "opacity-100"
+                            )}>
                             {/* Light mode logo */}
                             <Image
                               src="/logo/logo-svg-dark-text.svg"
                               alt="SweatShares Logo"
-                              width={120}
-                              height={40}
+                              width={160}
+                              height={50}
                               priority
-                              className="block dark:hidden sm:w-[160px] sm:h-[50px]"
+                              className="block dark:hidden w-[160px] h-[50px] sm:w-[180px] sm:h-[56px]"
                             />
                             {/* Dark mode logo */}
                             <Image
                               src="/logo/logo-svg-white-text.svg"
                               alt="SweatShares Logo (White)"
-                              width={120}
-                              height={40}
+                              width={160}
+                              height={50}
                               priority
-                              className="hidden dark:block sm:w-[160px] sm:h-[50px]"
+                              className="hidden dark:block w-[160px] h-[50px] sm:w-[180px] sm:h-[56px]"
                             />
                         </Link>
 
@@ -197,8 +200,7 @@ export const Menu = () => {
                                         asChild
                                         variant="outline"
                                         size="sm">
-                                        <Link href="/dashboard" className="flex items-center gap-2">
-                                            <LayoutDashboard className="h-4 w-4" />
+                                        <Link href="/dashboard">
                                             Dashboard
                                         </Link>
                                     </Button>
@@ -206,7 +208,6 @@ export const Menu = () => {
                                         variant="outline"
                                         size="sm"
                                         onClick={handleSignOut}>
-                                        <LogOut className="h-4 w-4 mr-2" />
                                         Sign Out
                                     </Button>
                                 </>
@@ -232,24 +233,25 @@ export const Menu = () => {
                         </div>
 
                         {/* Mobile Menu Button */}
-                        <button
+                        <div
                             onClick={() => setMenuState(!menuState)}
-                            aria-label={menuState ? 'Close Menu' : 'Open Menu'}
-                            className="relative z-50 -m-2 block cursor-pointer p-2 lg:hidden transition-colors duration-200 hover:bg-accent rounded-md">
-                            <motion.div
-                                animate={{ rotate: menuState ? 180 : 0 }}
-                                transition={{ duration: 0.2 }}
-                            >
-                            <MenuIcon className={cn(
-                                    "m-auto size-6 transition-opacity duration-200",
-                                    menuState ? "opacity-0" : "opacity-100"
-                            )} />
-                            <X className={cn(
-                                    "m-auto size-6 absolute inset-0 transition-opacity duration-200",
-                                    menuState ? "opacity-100" : "opacity-0"
-                            )} />
-                            </motion.div>
-                        </button>
+                            className={cn(
+                                "fixed right-4 z-50 w-10 h-10 flex items-center justify-center cursor-pointer lg:hidden transition-all duration-300",
+                                user ? "top-4" : "top-12" // Account for banner when user is not logged in
+                            )}
+                        >
+                            {!menuState ? (
+                                // Hamburger lines
+                                <div className="relative w-5 h-4 flex flex-col justify-between items-center">
+                                    <span className="block h-0.5 w-5 bg-black dark:bg-white transition-transform duration-300"></span>
+                                    <span className="block h-0.5 w-5 bg-black dark:bg-white transition-opacity duration-300"></span>
+                                    <span className="block h-0.5 w-5 bg-black dark:bg-white transition-transform duration-300"></span>
+                                </div>
+                            ) : (
+                                // Clean X icon
+                                <X className="w-5 h-5 text-black dark:text-white" />
+                            )}
+                        </div>
                     </div>
                 </div>
 
@@ -260,121 +262,180 @@ export const Menu = () => {
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            transition={{ duration: 0.2 }}
-                            className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 lg:hidden"
+                            transition={{ duration: 0.3 }}
+                            className="fixed inset-0 bg-black/50 z-40 lg:hidden"
                             onClick={() => setMenuState(false)}
                         />
                     )}
                 </AnimatePresence>
 
-                {/* Mobile Menu */}
-                <AnimatePresence>
-                {menuState && (
+                {/* Curved Mobile Menu */}
+                <AnimatePresence mode="wait">
+                    {menuState && (
                         <motion.div
-                            initial={{ opacity: 0, y: -20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -20 }}
-                            transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                            className="fixed inset-x-0 bg-background/95 backdrop-blur-xl border-b border-border/40 shadow-lg lg:hidden"
-                            style={{
-                                top: `${safeTopPosition}px`,
-                                maxHeight: `calc(100vh - ${safeTopPosition}px)`,
-                                overflowY: 'auto',
-                                zIndex: 45
+                            initial={{ x: "calc(100% + 100px)" }}
+                            animate={{ 
+                                x: "0", 
+                                transition: { duration: 0.8, ease: [0.76, 0, 0.24, 1] }
                             }}
+                            exit={{
+                                x: "calc(100% + 100px)",
+                                transition: { duration: 0.8, ease: [0.76, 0, 0.24, 1] }
+                            }}
+                            className="h-screen w-screen max-w-sm fixed right-0 top-0 z-40 bg-white dark:bg-gray-900 lg:hidden"
                         >
-                            <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6">
-                            <div className="space-y-6">
-                                    <ul className="space-y-1">
-                                    {menuItems.map((item, index) => {
-                                        const isActive = pathname === item.href;
-                                        return (
-                                                <motion.li 
+                            {/* Curved SVG */}
+                            <svg
+                                className="absolute top-0 -left-[99px] w-[100px] stroke-none h-full"
+                                style={{ fill: "currentColor" }}
+                            >
+                                <motion.path
+                                    initial={{
+                                        d: `M100 0 L200 0 L200 ${typeof window !== 'undefined' ? window.innerHeight : 800} L100 ${typeof window !== 'undefined' ? window.innerHeight : 800} Q-100 ${typeof window !== 'undefined' ? window.innerHeight / 2 : 400} 100 0`
+                                    }}
+                                    animate={{
+                                        d: `M100 0 L200 0 L200 ${typeof window !== 'undefined' ? window.innerHeight : 800} L100 ${typeof window !== 'undefined' ? window.innerHeight : 800} Q100 ${typeof window !== 'undefined' ? window.innerHeight / 2 : 400} 100 0`,
+                                        transition: { duration: 1, ease: [0.76, 0, 0.24, 1] }
+                                    }}
+                                    exit={{
+                                        d: `M100 0 L200 0 L200 ${typeof window !== 'undefined' ? window.innerHeight : 800} L100 ${typeof window !== 'undefined' ? window.innerHeight : 800} Q-100 ${typeof window !== 'undefined' ? window.innerHeight / 2 : 400} 100 0`,
+                                        transition: { duration: 0.8, ease: [0.76, 0, 0.24, 1] }
+                                    }}
+                                    className="text-white dark:text-gray-900"
+                                />
+                            </svg>
+
+                            <div className="h-full pt-16 flex flex-col justify-between">
+                                {/* Navigation Section */}
+                                <div className="flex flex-col gap-3 px-10">
+                                    <div className="text-gray-600 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700 uppercase text-xs font-medium tracking-wider mb-6 pb-2">
+                                        <p>Navigation</p>
+                                    </div>
+                                    
+                                    <div className="space-y-2">
+                                        {menuItems.map((item, index) => {
+                                            const isActive = pathname === item.href;
+                                            return (
+                                                <motion.div
                                                     key={index}
-                                                    initial={{ opacity: 0, x: -20 }}
-                                                    animate={{ opacity: 1, x: 0 }}
-                                                    transition={{ delay: index * 0.1 }}
+                                                    initial={{ opacity: 0, x: 20 }}
+                                                    animate={{ 
+                                                        opacity: 1, 
+                                                        x: 0,
+                                                        transition: { 
+                                                            delay: index * 0.1 + 0.2,
+                                                            duration: 0.3
+                                                        }
+                                                    }}
+                                                    className="group"
                                                 >
-                                                <Link
-                                                    href={item.href}
-                                                    onClick={() => setMenuState(false)}
-                                                    className={cn(
-                                                            "flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium transition-all duration-200",
-                                                        isActive 
-                                                                ? "text-primary bg-primary/10 border border-primary/20" 
-                                                                : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
-                                                    )}>
+                                                    <Link
+                                                        href={item.href}
+                                                        onClick={() => setMenuState(false)}
+                                                        className={cn(
+                                                            "flex items-center gap-4 px-4 py-4 rounded-xl font-medium text-lg transition-all duration-200",
+                                                            isActive 
+                                                                ? "bg-primary text-primary-foreground" 
+                                                                : "text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800"
+                                                        )}
+                                                    >
                                                         <item.icon className={cn(
                                                             "size-5 transition-colors duration-200",
-                                                            isActive ? "text-primary" : "text-muted-foreground"
+                                                            isActive 
+                                                                ? "text-primary-foreground" 
+                                                                : "text-gray-600 dark:text-gray-400"
                                                         )} />
-                                                        {item.name}
-                                                </Link>
-                                                </motion.li>
-                                        );
-                                    })}
-                                </ul>
+                                                        <span className="font-medium">{item.name}</span>
+                                                    </Link>
+                                                </motion.div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
 
-                                    <motion.div 
-                                        initial={{ opacity: 0, y: 20 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: 0.3 }}
-                                        className="space-y-4 pt-4 border-t border-border/60"
-                                    >
-                                        <div className="flex items-center justify-between px-4">
-                                            <span className="text-sm font-medium text-muted-foreground">Theme</span>
+                                {/* Footer Section */}
+                                <motion.div 
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ 
+                                        opacity: 1, 
+                                        y: 0,
+                                        transition: { 
+                                            delay: 0.5,
+                                            duration: 0.3
+                                        }
+                                    }}
+                                    className="px-10 pb-8 space-y-6"
+                                >
+                                    {/* Theme Toggle */}
+                                    <div className="flex items-center justify-between py-4 border-t border-gray-200 dark:border-gray-700">
+                                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                            Theme
+                                        </span>
                                         <ThemeSwitcher />
                                     </div>
-                                        
-                                        <div className="px-4">
-                                    {user ? (
-                                                <div className="flex flex-col gap-3">
-                                            <Button
-                                                asChild
-                                                variant="outline"
-                                                        size="lg"
-                                                        className="w-full h-12 text-base">
-                                                        <Link href="/dashboard" className="flex items-center justify-center gap-2">
-                                                            <LayoutDashboard className="h-5 w-5" />
-                                                    Dashboard
-                                                </Link>
-                                            </Button>
-                                            <Button
-                                                variant="outline"
-                                                        size="lg"
-                                                        className="w-full h-12 text-base"
-                                                onClick={handleSignOut}>
-                                                        <LogOut className="h-5 w-5 mr-2" />
-                                                Sign Out
-                                            </Button>
-                                        </div>
-                                    ) : (
-                                                <div className="flex flex-col gap-3">
-                                            <Button
-                                                asChild
-                                                variant="outline"
-                                                        size="lg"
-                                                        className="w-full h-12 text-base">
-                                                <Link href="/auth/login">
-                                                    Login
-                                                </Link>
-                                            </Button>
-                                            <Button
-                                                asChild
-                                                        size="lg"
-                                                        className="w-full h-12 text-base">
-                                                <Link href="/auth/sign-up">
-                                                    Sign Up
-                                                </Link>
-                                            </Button>
-                                        </div>
-                                    )}
-                                        </div>
-                                    </motion.div>
-                                </div>
+
+                                    {/* Auth Buttons */}
+                                    <div className="space-y-3">
+                                        {user ? (
+                                            <>
+                                                <Button
+                                                    asChild
+                                                    variant="outline"
+                                                    className="w-full h-12 text-base font-medium border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800"
+                                                >
+                                                    <Link 
+                                                        href="/dashboard"
+                                                        onClick={() => setMenuState(false)}
+                                                        className="flex items-center justify-center gap-2"
+                                                    >
+                                                        <LayoutDashboard className="h-4 w-4" />
+                                                        <span>Dashboard</span>
+                                                    </Link>
+                                                </Button>
+                                                <Button
+                                                    variant="outline"
+                                                    className="w-full h-12 text-base font-medium border-red-300 dark:border-red-600 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                                    onClick={() => {
+                                                        handleSignOut();
+                                                        setMenuState(false);
+                                                    }}
+                                                >
+                                                    <LogOut className="h-4 w-4 mr-2" />
+                                                    <span>Sign Out</span>
+                                                </Button>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Button
+                                                    asChild
+                                                    variant="outline"
+                                                    className="w-full h-12 text-base font-medium border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800"
+                                                >
+                                                    <Link 
+                                                        href="/auth/login"
+                                                        onClick={() => setMenuState(false)}
+                                                    >
+                                                        Login
+                                                    </Link>
+                                                </Button>
+                                                <Button
+                                                    asChild
+                                                    className="w-full h-12 text-base font-medium bg-primary hover:bg-primary/90"
+                                                >
+                                                    <Link 
+                                                        href="/auth/sign-up"
+                                                        onClick={() => setMenuState(false)}
+                                                    >
+                                                        Sign Up
+                                                    </Link>
+                                                </Button>
+                                            </>
+                                        )}
+                                    </div>
+                                </motion.div>
                             </div>
                         </motion.div>
-                )}
+                    )}
                 </AnimatePresence>
             </nav>
         </header>
