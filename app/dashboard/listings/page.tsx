@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/lib/supabase";
-import { MapPin, Heart, Share2, Mail, Briefcase, ArrowRight, ListFilter, Settings2, Filter, DollarSign, Star, Search, Users } from "lucide-react";
+import { MapPin, Heart, Share2, Mail, Briefcase, ArrowRight, ListFilter, Settings2, Filter, DollarSign, Star, Search, Users, Eye, Building2, Handshake } from "lucide-react";
 import { AnimatedGroup } from "@/components/ui/animated-group";
 import { motion, AnimatePresence, Variants } from "framer-motion";
 import { Transition } from "framer-motion";
@@ -41,6 +41,33 @@ const formatListingType = (listingType: string): string => {
   };
   
   return typeMap[listingType] || listingType;
+};
+
+// Helper functions to get proper labels based on listing type and profile type
+const getAmountLabel = (listingType: string, profileType: string): string => {
+  if (profileType === "Founder" && listingType === "sell-startup") {
+    return "Sale Price";
+  }
+  if (profileType === "Investor" && (listingType === "investment-opportunity" || listingType === "buy-startup")) {
+    return "Investment Capacity";
+  }
+  if (profileType === "Investor" && listingType === "co-investor") {
+    return "Missing Capital";
+  }
+  if (profileType === "Founder" && listingType === "find-funding") {
+    return "Amount Seeking";
+  }
+  return "Amount";
+};
+
+const getCompensationValueLabel = (listingType: string, profileType: string): string => {
+  if (profileType === "Founder" && listingType === "sell-startup") {
+    return "Percentage for Sale";
+  }
+  if (profileType === "Investor" && listingType === "co-investor") {
+    return "Equity Offered";
+  }
+  return "Compensation";
 };
 
 const transitionVariants = {
@@ -242,7 +269,7 @@ export default function DashboardListingsPage() {
       setError(null);
       let query = supabase
         .from("listings")
-        .select("*, profiles(full_name, professional_role, avatar_url, country)")
+        .select("*, profiles(full_name, professional_role, avatar_url, country, profile_type)")
         .eq("status", "active")
         .order("created_at", { ascending: false });
 
@@ -303,17 +330,8 @@ export default function DashboardListingsPage() {
     }
   };
 
-  const handleReplyToListing = (listing: any) => {
-    const messageContent = `Hi ${listing.profiles?.full_name || listing.profiles?.username || 'there'}! 👋
-
-I'm interested in your listing: "${listing.title}"
-
-I'd love to learn more about this opportunity and discuss how we might work together. Could you tell me more about what you're looking for and how I might be able to help?
-
-Looking forward to hearing from you!`;
-    
-    const encodedMessage = encodeURIComponent(messageContent);
-    router.push(`/dashboard/messages?userId=${listing.profiles.id}&message=${encodedMessage}`);
+  const handleMessage = (userId: string) => {
+    router.push(`/dashboard/messages?userId=${userId}`);
   };
 
   const handleShare = async (listing: any) => {
@@ -381,10 +399,10 @@ Looking forward to hearing from you!`;
         >
           <Card className="p-4">
             <div className="flex items-center gap-2">
-              <Briefcase className="h-5 w-5 text-primary" />
+              <Handshake className="h-5 w-5 text-primary" />
               <div>
                 <p className="text-2xl font-bold">{listings.length}</p>
-                <p className="text-sm text-muted-foreground">Active Listings</p>
+                <p className="text-sm text-muted-foreground">Active Opportunities</p>
               </div>
             </div>
           </Card>
@@ -425,7 +443,7 @@ Looking forward to hearing from you!`;
           <div className="flex flex-col md:flex-row gap-4 flex-1">
             <div className="relative flex-1 max-w-md">
               <Input
-                placeholder="Search listings..."
+                placeholder="Search opportunities..."
                 className="pl-10"
               />
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -452,7 +470,7 @@ Looking forward to hearing from you!`;
         {/* Listings Grid */}
         <motion.div 
           variants={contentVariants}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
         >
           <AnimatePresence>
             {listings.map((listing, index) => (
@@ -464,106 +482,246 @@ Looking forward to hearing from you!`;
                 exit="hidden"
                 transition={{ delay: index * 0.1 }}
                 whileHover="hover"
+                className="h-full"
               >
-                <Card className="h-full cursor-pointer transition-all duration-300 hover:shadow-lg">
-                  <CardContent className="p-6 space-y-4">
-                    {/* Header */}
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-10 w-10">
-                          <AvatarImage src={listing.profiles?.avatar_url} alt={listing.profiles?.full_name} />
-                          <AvatarFallback>{listing.profiles?.full_name?.[0] || '?'}</AvatarFallback>
+                <Card className="group relative h-full bg-gradient-to-br from-white to-gray-50/50 dark:from-zinc-900/80 dark:to-zinc-800/60 border-0 shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] rounded-3xl overflow-hidden backdrop-blur-sm">
+                  {/* Gradient overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  
+                  <CardContent className="relative p-0 flex flex-col h-full">
+                    {/* Header Section */}
+                    <div className="p-4 pb-3">
+                      {/* Listing Type Badge */}
+                      <div className="flex justify-end mb-2">
+                        <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/20 text-xs px-2 py-1">
+                          {formatListingType(listing.listing_type)}
+                        </Badge>
+                      </div>
+                      
+                      <div className="flex items-start gap-4">
+                        {/* Avatar */}
+                        <Avatar className="h-12 w-12 border-4 border-white/80 dark:border-zinc-800/80 shadow-lg">
+                          <AvatarImage src={listing.profiles?.avatar_url || undefined} alt={listing.profiles?.full_name || 'User'} />
+                          <AvatarFallback className="text-lg font-semibold bg-gradient-to-br from-primary to-primary/80 text-white">
+                            {listing.profiles?.full_name?.charAt(0) || 'U'}
+                          </AvatarFallback>
                         </Avatar>
-                        <div className="min-w-0 flex-1">
-                          <p className="font-semibold truncate">{listing.profiles?.full_name}</p>
-                          <p className="text-sm text-muted-foreground truncate">{listing.profiles?.professional_role}</p>
+                        
+                        {/* Listing Info */}
+                        <div className="flex-1 min-w-0">
+                            <h3 
+                            className="font-bold text-base text-gray-900 dark:text-white cursor-pointer hover:text-primary transition-colors mb-1"
+                              onClick={() => handleProfileClick(listing.profiles?.id)}
+                            >
+                              {listing.profiles?.full_name || 'Unknown User'}
+                            </h3>
+                          
+                          {listing.profiles?.professional_role && (
+                            <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
+                              {listing.profiles.professional_role}
+                            </p>
+                          )}
                         </div>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleLikeListing(listing.id);
-                        }}
-                        className="text-muted-foreground hover:text-primary"
-                      >
-                        <Heart className={cn("h-4 w-4", isListingLiked(listing.id) && "fill-current text-primary")} />
-                      </Button>
                     </div>
 
-                    {/* Badges */}
-                    <div className="flex flex-wrap gap-2">
-                      <Badge variant="default" className="text-xs">{listing.profile_type}</Badge>
-                      <Badge variant="secondary" className="text-xs">{formatListingType(listing.listing_type)}</Badge>
-                      {listing.sector && <Badge variant="outline" className="text-xs">{listing.sector}</Badge>}
-                    </div>
-
-                    {/* Title */}
-                    <div>
-                      <h3 className="font-semibold text-lg line-clamp-2 mb-2">{listing.title}</h3>
+                    {/* Title and Description */}
+                    <div className="px-4 pb-4">
+                      <h4 className="font-bold text-base text-gray-900 dark:text-white mb-3 line-clamp-2 group-hover:text-primary transition-colors">
+                        {listing.title}
+                      </h4>
+                      
                       <div 
-                        className="text-sm text-muted-foreground line-clamp-3 prose prose-sm max-w-none dark:prose-invert prose-headings:font-semibold prose-p:text-muted-foreground prose-a:text-primary hover:prose-a:text-primary/80 prose-img:rounded-md prose-img:shadow-md
-                        [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:my-1
-                        [&_p]:my-2 [&_h1]:text-2xl [&_h2]:text-xl [&_h3]:text-lg [&_h4]:text-base
-                        [&_blockquote]:border-l-4 [&_blockquote]:border-muted [&_blockquote]:pl-4 [&_blockquote]:italic
-                        [&_pre]:bg-muted [&_pre]:p-4 [&_pre]:rounded-md [&_pre]:overflow-x-auto
-                        [&_code]:bg-muted [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-sm
-                        [&_hr]:my-4 [&_hr]:border-muted"
+                        className="text-xs text-gray-600 dark:text-gray-400 line-clamp-3 leading-relaxed mb-4"
                         dangerouslySetInnerHTML={{ __html: listing.description || '' }}
                       />
                     </div>
 
-                    {/* Details */}
-                    <div className="space-y-2">
-                      {listing.location_country && (
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <MapPin className="h-4 w-4" />
-                          <span>{listing.location_country}{listing.location_city && `, ${listing.location_city}`}</span>
+                    {/* Details Section */}
+                    <div className="px-4 pb-4 space-y-3">
+                      {/* Skills */}
+                      {listing.skills && (
+                        <div className="space-y-2">
+                          <h4 className="text-sm font-semibold text-gray-900 dark:text-white">Required Skills</h4>
+                          <div className="flex flex-wrap gap-1.5">
+                            {(Array.isArray(listing.skills) ? listing.skills : listing.skills.split(",").map((s: string) => s.trim())).map((skill: string) => (
+                              <Badge 
+                                key={skill} 
+                                variant="secondary"
+                                className="bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-900/20 dark:to-blue-800/20 
+                                         text-blue-700 dark:text-blue-400 border-blue-200/50 dark:border-blue-700/50 
+                                         hover:bg-blue-100 dark:hover:bg-blue-800/30 transition-colors
+                                         text-xs px-2 py-0.5 rounded-lg"
+                              >
+                                {skill}
+                              </Badge>
+                            ))}
+                          </div>
                         </div>
                       )}
-                      {listing.amount && (
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <DollarSign className="h-4 w-4" />
-                          <span>{listing.amount}</span>
+
+                      {/* Compensation Information */}
+                      {(listing.compensation_type || listing.compensation_value || listing.amount) && (
+                        <div className="space-y-2">
+                          <h4 className="text-sm font-semibold text-gray-900 dark:text-white">
+                            {listing.profiles?.profile_type === "Founder" && listing.listing_type === "sell-startup" ? "Sale Details" : 
+                             listing.profiles?.profile_type === "Investor" && (listing.listing_type === "investment-opportunity" || listing.listing_type === "buy-startup") ? "Investment Details" :
+                             listing.profiles?.profile_type === "Investor" && listing.listing_type === "co-investor" ? "Co-Investment Details" :
+                             "Compensation"}
+                          </h4>
+                          <div className="flex flex-wrap gap-1.5">
+                            {listing.compensation_type && (
+                              <Badge 
+                                variant="secondary"
+                                className="bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-900/20 dark:to-green-800/20 
+                                         text-green-700 dark:text-green-400 border-green-200/50 dark:border-green-700/50 
+                                         hover:bg-green-100 dark:hover:bg-green-800/30 transition-colors
+                                         text-xs px-2 py-0.5 rounded-lg"
+                              >
+                                {listing.compensation_type}
+                              </Badge>
+                            )}
+                            {listing.compensation_value && (
+                              <>
+                                {typeof listing.compensation_value === 'object' ? (
+                                  <>
+                                    {listing.compensation_value.salary && (
+                              <Badge 
+                                variant="secondary"
+                                className="bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-900/20 dark:to-green-800/20 
+                                         text-green-700 dark:text-green-400 border-green-200/50 dark:border-green-700/50 
+                                         hover:bg-green-100 dark:hover:bg-green-800/30 transition-colors
+                                         text-xs px-2 py-0.5 rounded-lg"
+                              >
+                                        Salary: {listing.compensation_value.salary}
+                              </Badge>
+                                    )}
+                                    {listing.compensation_value.equity && (
+                                      <Badge 
+                                        variant="secondary"
+                                        className="bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-900/20 dark:to-green-800/20 
+                                                 text-green-700 dark:text-green-400 border-green-200/50 dark:border-green-700/50 
+                                                 hover:bg-green-100 dark:hover:bg-green-800/30 transition-colors
+                                                 text-xs px-2 py-0.5 rounded-lg"
+                                      >
+                                        Equity: {listing.compensation_value.equity}
+                                      </Badge>
+                                    )}
+                                    {listing.compensation_value.cash && (
+                                      <Badge 
+                                        variant="secondary"
+                                        className="bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-900/20 dark:to-green-800/20 
+                                                 text-green-700 dark:text-green-400 border-green-200/50 dark:border-green-700/50 
+                                                 hover:bg-green-100 dark:hover:bg-green-800/30 transition-colors
+                                                 text-xs px-2 py-0.5 rounded-lg"
+                                      >
+                                        Cash: {listing.compensation_value.cash}
+                                      </Badge>
+                                    )}
+                                    {listing.compensation_value.value && (
+                                      <Badge 
+                                        variant="secondary"
+                                        className="bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-900/20 dark:to-green-800/20 
+                                                 text-green-700 dark:text-green-400 border-green-200/50 dark:border-green-700/50 
+                                                 hover:bg-green-100 dark:hover:bg-green-800/30 transition-colors
+                                                 text-xs px-2 py-0.5 rounded-lg"
+                                      >
+                                        {getCompensationValueLabel(listing.listing_type, listing.profiles?.profile_type || '')}: {listing.compensation_value.value}
+                                      </Badge>
+                                    )}
+                                  </>
+                                ) : (
+                                  <Badge 
+                                    variant="secondary"
+                                    className="bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-900/20 dark:to-green-800/20 
+                                             text-green-700 dark:text-green-400 border-green-200/50 dark:border-green-700/50 
+                                             hover:bg-green-100 dark:hover:bg-green-800/30 transition-colors
+                                             text-xs px-2 py-0.5 rounded-lg"
+                                  >
+                                    {getCompensationValueLabel(listing.listing_type, listing.profiles?.profile_type || '')}: {listing.compensation_value}
+                                  </Badge>
+                                )}
+                              </>
+                            )}
+                            {listing.amount && (
+                              <Badge 
+                                variant="secondary"
+                                className="bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-900/20 dark:to-green-800/20 
+                                         text-green-700 dark:text-green-400 border-green-200/50 dark:border-green-700/50 
+                                         hover:bg-green-100 dark:hover:bg-green-800/30 transition-colors
+                                         text-xs px-2 py-0.5 rounded-lg"
+                              >
+                                {getAmountLabel(listing.listing_type, listing.profiles?.profile_type || '')}: {listing.amount}
+                              </Badge>
+                            )}
+                          </div>
                         </div>
                       )}
+
+                      {/* Key Details Badges */}
+                      <div className="flex flex-wrap gap-2">
+                        {listing.funding_stage && (
+                          <div className="flex items-center gap-1.5 bg-purple-500/10 text-purple-600 px-3 py-1.5 rounded-full text-xs font-medium">
+                            <Building2 className="h-3.5 w-3.5" />
+                            <span>Stage: {listing.funding_stage}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Location and Sector */}
+                      <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                        <MapPin className="h-3 w-3" />
+                        <span>{listing.location_city ? `${listing.location_city}, ` : ""}{listing.location_country}</span>
+                        {listing.sector && (
+                          <>
+                            <span className="mx-1">•</span>
+                            <Badge variant="outline" className="text-xs border-gray-200 dark:border-gray-700">
+                              {listing.sector}
+                            </Badge>
+                          </>
+                        )}
+                      </div>
                     </div>
 
-                    {/* Actions */}
-                    <div className="flex gap-2 pt-2">
-                      <Button
-                        size="sm"
-                        className="flex-1"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          router.push(`/dashboard/listings/${listing.id}`);
-                        }}
-                      >
-                        View Details
-                        <ArrowRight className="h-4 w-4 ml-1" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleReplyToListing(listing);
-                        }}
-                      >
-                        <Mail className="h-4 w-4 mr-1" />
-                        Reply to listing
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleShare(listing);
-                        }}
-                      >
-                        <Share2 className="h-4 w-4" />
-                      </Button>
+                    {/* Action Buttons */}
+                    <div className="mt-auto p-4 pt-3">
+                      <div className="flex items-center gap-3">
+                        <Button
+                          variant="default"
+                          size="sm"
+                          className="flex-1 bg-primary hover:bg-primary/90 text-white font-semibold rounded-xl h-8"
+                          onClick={() => router.push(`/dashboard/listings/${listing.id}`)}
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
+                          View Listing
+                        </Button>
+                        
+                        <div className="flex gap-1">
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            className="h-8 w-8 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-yellow-50 dark:hover:bg-yellow-900/20" 
+                            onClick={() => handleLikeListing(listing.id)}
+                          >
+                            <Star 
+                              className={`h-4 w-4 ${
+                                isListingLiked(listing.id) 
+                                  ? "fill-yellow-400 text-yellow-500" 
+                                  : "text-gray-400 hover:text-yellow-500"
+                              }`} 
+                              strokeWidth={isListingLiked(listing.id) ? 0 : 1.5} 
+                            />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            className="h-8 w-8 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                            onClick={() => handleMessage(listing.user_id)}
+                          >
+                            <Mail className="h-4 w-4 text-gray-400 hover:text-blue-500" />
+                          </Button>
+                        </div>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -578,8 +736,8 @@ Looking forward to hearing from you!`;
             variants={fadeIn}
             className="flex flex-col items-center justify-center py-12 text-center"
           >
-            <Briefcase className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No listings found</h3>
+            <Handshake className="h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold mb-2">No opportunities found</h3>
             <p className="text-muted-foreground mb-4">
               Try adjusting your filters or check back later for new opportunities.
             </p>
