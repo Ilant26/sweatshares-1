@@ -196,7 +196,6 @@ function SignUpForm() {
     setError(null);
 
     const formData = new FormData(event.currentTarget);
-    const name = formData.get("name") as string;
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
 
@@ -224,10 +223,6 @@ function SignUpForm() {
             {error}
           </div>
         )}
-        <div className="grid gap-1">
-          <Label htmlFor="name">Full Name</Label>
-          <Input id="name" name="name" type="text" placeholder="John Doe" required autoComplete="name" />
-        </div>
         <div className="grid gap-2">
           <Label htmlFor="email">Email</Label>
           <Input id="email" name="email" type="email" placeholder="m@example.com" required autoComplete="email" />
