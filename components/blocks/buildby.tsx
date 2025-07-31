@@ -5,9 +5,9 @@ import { motion } from 'framer-motion'
 const generatePlaceholderProfiles = () => {
     const names = [
         "Sarah Chen", "Maria Rodriguez", "Niels Patel", "Marion Duville", "Kering Thompson",
-        "Alexa Johnson", "Mario Garcia", "Jamia Wilson", "Eirc Anderson", "Robert Taylor",
+        "Alexa Johnson", "Mario Garcia", "Jamia Wilson", "Eric Anderson", "Rafaela Taylor",
         "Jules Leonard", "Olivia Brown", "James Davis", "Christiane Miller", "Bastian White",
-        "Daniela Martinez", "Corio Johnson", "Collin Garcia", "Nicole Rodriguez", "Kevin Lee",
+        "Daniela Martinez", "Corio Johnson", "Collin Garcia", "Nicole Rodriguez", "Mariana Perez",
         "Stephanie Clark", "Andrew Hall", "Rachel Lewis", "Joshua Young", "Megan Allen",
         "Ryan King", "Lauren Scott", "Brandon Green", "Hannah Baker", "Tyler Adams"
     ];
