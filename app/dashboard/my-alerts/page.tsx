@@ -39,109 +39,59 @@ import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import type { Database } from '@/lib/database.types';
 import { toast } from 'sonner';
 
-// Professional roles from profile settings
-const PROFESSIONAL_ROLES = [
-  // Experts & Operators - Product & Design
-  "Product Designer", "UX/UI Designer", "UX/UI Researcher", "Graphic Designer", "Social Media Manager",
-  "Brand Designer", "Content Manager", "Digital Designer", "Interaction Designer", "Web Designer",
-  
-  // Tech & Development
-  "CEO (Operational Tech Role)", "CTO", "Backend Developer", "Frontend Developer", "Full-stack Developer",
-  "Mobile Developer (iOS, Android)", "No-code Developer", "DevOps Engineer", "QA Tester", "Security Engineer",
-  "Cloud Architect", "Blockchain Developer", "AI/ML Engineer", "Performance Engineer", "Database Administrator (DBA)",
-  "Systems Architect",
-  
-  // Growth & Marketing
-  "Growth Hacker", "Marketing Specialist", "Performance Marketing Manager", "Customer Acquisition Manager",
-  "Growth Manager", "Digital Marketing Specialist", "Event Manager", "Email Marketing Specialist",
-  "Influencer Relations Manager", "PR Specialist", "Community Manager", "Content Strategist",
-  "SEO/SEM Specialist", "Affiliate Marketing Manager", "Product Marketing Manager", "Brand Marketing Manager",
-  "Partnership Manager",
-  
-  // Operations
-  "Customer Support", "Customer Success Manager", "Operations Manager", "Supply Chain Manager",
-  "Procurement Manager", "Logistics Manager", "Business Operations Analyst", "Facilities Manager",
-  "Data Entry Specialist", "Business Process Analyst",
-  
-  // Legal, Finance & Operations
-  "Legal Counsel", "Business Lawyer", "Tax Lawyer", "IP Lawyer (Intellectual Property)", "Financial Analyst",
-  "Accountant", "Bookkeeper", "Tax Consultant", "Fundraiser", "IP Agent (Intellectual Property Agent)",
-  "Regulatory Affairs Specialist", "Compliance Officer", "Sustainability Manager", "Risk Manager",
-  "Insurance Manager", "Corporate Treasurer", "Investment Analyst", "Investor Relations Manager",
-  
-  // Human Resources & Recruiting
-  "HR Manager", "Recruiter", "Talent Acquisition Specialist", "HR Generalist", "Compensation and Benefits Manager",
-  "Training and Development Manager", "Employee Engagement Manager", "HR Business Partner",
-  "Learning and Development Specialist", "HR Coordinator",
-  
-  // Mentorship & Advisory
-  "Mentor", "Advisor", "Venture Partner", "Portfolio Manager", "Investment Advisor", "Business Consultant",
-  "Startup Mentor", "Growth Advisor",
-  
-  // Investors
-  "Business Angel", "Advisor (Investor + Advisor)", "Crowdfunding Contributor", "Venture Capitalists (VC)",
-  "Family Office", "Private Equity Firms", "BPI (Business Public Investment)", "Government-backed Funds",
-  "Incubators / Accelerators", "Crowdfunding", "Impact Funds", "Sector-Specific Funds",
-  
-  // Legacy roles
-  "Founder", "Startup Owner", "CEO", "COO", "CFO", "Product Manager", "Software Engineer", "Data Scientist",
-  "UI/UX Designer", "Marketing Manager", "Sales Manager", "Business Development", "Investor", "Angel Investor",
-  "Venture Capitalist", "Freelancer", "Consultant", "Expert", "Coach", "Other"
+
+
+import { CountrySelector } from '@/components/ui/country-selector';
+import { SkillsSelector } from '@/components/ui/skills-selector';
+import { ProfessionalRoleSelector } from '@/components/ui/professional-role-selector';
+import { IndustrySelector } from '@/components/ui/industry-selector';
+
+// Profile types from create-listing-modal
+const PROFILE_TYPES = [
+  { value: "founder", label: "Founder" },
+  { value: "investor", label: "Investor" },
+  { value: "expert", label: "Expert" }
 ];
 
-const SKILLS_CATEGORIES = {
-  "Programming Languages": [
-    "JavaScript", "TypeScript", "Python", "Java", "C++", "C#", "Go", "Rust", "PHP", "Ruby", "Swift", "Kotlin"
-  ],
-  "Frontend Development": [
-    "React", "Vue.js", "Angular", "Svelte", "Next.js", "HTML5", "CSS3", "Tailwind CSS", "Bootstrap"
-  ],
-  "Backend Development": [
-    "Node.js", "Express.js", "Django", "Flask", "Spring Boot", "ASP.NET", "Laravel", "FastAPI"
-  ],
-  "Database & Storage": [
-    "PostgreSQL", "MySQL", "MongoDB", "Redis", "SQLite", "Firebase", "Supabase"
-  ],
-  "DevOps & Cloud": [
-    "Docker", "Kubernetes", "AWS", "Azure", "Google Cloud", "Heroku", "Vercel", "Netlify"
-  ],
-  "Design & UX": [
-    "UI/UX Design", "Figma", "Sketch", "Adobe XD", "Prototyping", "User Research", "Design Systems"
-  ],
-  "Business & Management": [
-    "Product Management", "Project Management", "Agile", "Scrum", "Business Strategy", "Leadership"
-  ],
-  "Marketing & Growth": [
-    "Digital Marketing", "SEO", "SEM", "Social Media Marketing", "Content Marketing", "Growth Hacking"
-  ]
+// Listing types based on profile type (from create-listing-modal)
+const getListingTypesForProfile = (profileType: string) => {
+  switch (profileType) {
+    case "founder":
+      return [
+        { value: "find-funding", label: "💰 Find funding", category: "Funding" },
+        { value: "cofounder", label: "🤝 Find a co-founder", category: "Partnership" },
+        { value: "expert-freelance", label: "💼 Find an expert/freelancer", category: "Work" },
+        { value: "employee", label: "💼 Find an employee", category: "Work" },
+        { value: "mentor", label: "🎓 Find a mentor", category: "Learning" },
+        { value: "sell-startup", label: "🏢 Sell his startup", category: "Business" }
+      ];
+    case "investor":
+      return [
+        { value: "investment-opportunity", label: "💰 Find an investment opportunity", category: "Funding" },
+        { value: "buy-startup", label: "🏢 Buy a startup", category: "Business" },
+        { value: "co-investor", label: "🤝 Find a co-investor", category: "Partnership" },
+        { value: "expert-freelance", label: "💼 Find an expert/freelancer", category: "Work" }
+      ];
+    case "expert":
+      return [
+        { value: "mission", label: "💼 Find a mission", category: "Work" },
+        { value: "job", label: "💼 Find a job", category: "Work" },
+        { value: "expert-freelance", label: "💼 Find an expert/freelancer", category: "Work" },
+        { value: "cofounder", label: "🤝 Find a co-founder", category: "Partnership" }
+      ];
+    default:
+      return [];
+  }
 };
 
-import { COUNTRIES } from '@/components/ui/country-selector';
-
-const LISTING_TYPES_SIMPLIFIED = [
-  // What people are looking for (simplified)
-  { value: "find-funding", label: "💰 Looking for Funding", category: "Funding" },
-  { value: "investment-opportunity", label: "💰 Investment Opportunities", category: "Funding" },
-  
-  { value: "cofounder", label: "🤝 Co-founder Opportunities", category: "Partnership" },
-  { value: "co-investor", label: "🤝 Co-investor Opportunities", category: "Partnership" },
-  
-  { value: "expert-freelance", label: "💼 Expert/Freelance Work", category: "Work" },
-  { value: "mission", label: "💼 Project/Mission Work", category: "Work" },
-  { value: "job", label: "💼 Full-time Jobs", category: "Work" },
-  { value: "employee", label: "💼 Hiring Employees", category: "Work" },
-  
-  { value: "mentor", label: "🎓 Mentorship", category: "Learning" },
-  
-  { value: "sell-startup", label: "🏢 Startup for Sale", category: "Business" },
-  { value: "buy-startup", label: "🏢 Looking to Buy Startup", category: "Business" }
-];
-
-const SECTORS_SIMPLIFIED = [
-  "Technology", "SaaS", "Fintech", "Healthtech", "Edtech", "E-commerce", 
-  "AI/ML", "Blockchain", "Gaming", "Media", "Real Estate", "Transportation",
-  "Food & Beverage", "Fashion", "Energy", "Sustainability", "Other"
-];
+// All listing types for filtering (when no profile type selected)
+const ALL_LISTING_TYPES = [
+  ...getListingTypesForProfile("founder"),
+  ...getListingTypesForProfile("investor"),
+  ...getListingTypesForProfile("expert")
+].filter((type, index, self) => 
+  index === self.findIndex(t => t.value === type.value)
+);
 
 // Listing types that require skills
 const SKILL_REQUIRED_TYPES = [
@@ -193,6 +143,17 @@ export default function MyAlertsPage() {
   const [selectedListingTypes, setSelectedListingTypes] = useState<string[]>([]);
   const [selectedProfileTypes, setSelectedProfileTypes] = useState<string[]>([]);
   const [selectedSectors, setSelectedSectors] = useState<string[]>([]);
+  
+  // Single values for cleaner UX
+  const [selectedCountry, setSelectedCountry] = useState<string>('');
+  const [selectedSector, setSelectedSector] = useState<string>('');
+  
+  // Additional conditional fields from create-listing-modal
+  const [fundingStage, setFundingStage] = useState<string>('');
+  const [compensationType, setCompensationType] = useState<string>('');
+  const [compensationValue, setCompensationValue] = useState<any>({});
+  const [amount, setAmount] = useState<string>('');
+  const [locationCity, setLocationCity] = useState<string>('');
 
   useEffect(() => {
     if (user) {
@@ -230,13 +191,23 @@ export default function MyAlertsPage() {
     if (alertType === 'profile') {
       if (selectedProfessionalRoles.length > 0) criteria.professional_roles = selectedProfessionalRoles;
       if (selectedSkills.length > 0) criteria.skills = selectedSkills;
-      if (selectedCountries.length > 0) criteria.countries = selectedCountries;
-    } else {
-      if (selectedListingTypes.length > 0) criteria.listing_types = selectedListingTypes;
-      if (selectedSkills.length > 0) criteria.skills = selectedSkills;
-      if (selectedCountries.length > 0) criteria.countries = selectedCountries;
-      if (selectedSectors.length > 0) criteria.sectors = selectedSectors;
-    }
+      if (selectedCountry) criteria.countries = [selectedCountry];
+         } else {
+       if (selectedListingTypes.length === 0) {
+         toast.error('Please select what type of opportunity you\'re looking for');
+         return;
+       }
+       if (selectedListingTypes.length > 0) criteria.listing_types = selectedListingTypes;
+       if (selectedProfileTypes.length > 0) criteria.profile_types = selectedProfileTypes;
+       if (selectedSkills.length > 0) criteria.skills = selectedSkills;
+       if (selectedCountry) criteria.countries = [selectedCountry];
+       if (selectedSector) criteria.sectors = [selectedSector];
+       if (fundingStage) criteria.funding_stage = fundingStage;
+       if (compensationType) criteria.compensation_type = compensationType;
+       if (Object.keys(compensationValue).length > 0) criteria.compensation_value = compensationValue;
+       if (amount) criteria.amount = amount;
+       if (locationCity) criteria.location_city = locationCity;
+     }
 
     if (Object.keys(criteria).length === 0) {
       toast.error('Please select at least one criteria');
@@ -284,6 +255,13 @@ export default function MyAlertsPage() {
     setSelectedListingTypes([]);
     setSelectedProfileTypes([]);
     setSelectedSectors([]);
+    setSelectedCountry('');
+    setSelectedSector('');
+    setFundingStage('');
+    setCompensationType('');
+    setCompensationValue({});
+    setAmount('');
+    setLocationCity('');
   };
 
   const toggleAlertStatus = async (alertId: string, currentStatus: boolean) => {
@@ -500,15 +478,15 @@ export default function MyAlertsPage() {
                   {/* Alert Type */}
                 <div className="grid grid-cols-4 items-center gap-4">
                     <Label className="text-right">
-                      Alert Type <span className="text-destructive">*</span>
+                      I want to be notified about <span className="text-destructive">*</span>
                   </Label>
                     <Select value={alertType} onValueChange={(value: 'profile' | 'listing') => setAlertType(value)}>
                       <SelectTrigger className="col-span-3">
-                        <SelectValue />
+                        <SelectValue placeholder="What do you want to be alerted about?" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="profile">Profile Alerts (Get notified of new profiles)</SelectItem>
-                        <SelectItem value="listing">Listing Alerts (Get notified of new listings)</SelectItem>
+                        <SelectItem value="profile">New People (profiles joining the platform)</SelectItem>
+                        <SelectItem value="listing">New Opportunities (people posting what they need)</SelectItem>
                       </SelectContent>
                     </Select>
                 </div>
@@ -548,22 +526,17 @@ export default function MyAlertsPage() {
                               ))}
                             </div>
                           )}
-                          <Select onValueChange={(value) => {
-                            if (!selectedProfessionalRoles.includes(value)) {
-                              setSelectedProfessionalRoles(prev => [...prev, value]);
-                            }
-                          }}>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select professional roles..." />
-                            </SelectTrigger>
-                            <SelectContent className="max-h-60">
-                              {PROFESSIONAL_ROLES.map((role) => (
-                                <SelectItem key={role} value={role} disabled={selectedProfessionalRoles.includes(role)}>
-                                  {role}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          <div className="relative">
+                            <ProfessionalRoleSelector
+                              value=""
+                              onChange={(role) => {
+                                if (role && !selectedProfessionalRoles.includes(role)) {
+                                  setSelectedProfessionalRoles(prev => [...prev, role]);
+                                }
+                              }}
+                              placeholder="Search and select professional roles..."
+                            />
+                          </div>
                         </div>
                       </div>
                     </>
@@ -572,69 +545,74 @@ export default function MyAlertsPage() {
                   {/* Listing Criteria */}
                   {alertType === 'listing' && (
                     <>
-                      {/* What are you looking for? */}
+                      {/* What I'm looking for */}
                       <div className="grid grid-cols-4 items-start gap-4">
-                        <Label className="text-right pt-2">Looking for <span className="text-destructive">*</span></Label>
+                        <Label className="text-right pt-2">When user is looking to <span className="text-destructive">*</span></Label>
                         <div className="col-span-3 space-y-3">
-                          {selectedListingTypes.length > 0 && (
-                            <div className="flex flex-wrap gap-2">
-                              {selectedListingTypes.map((type) => {
-                                const typeInfo = LISTING_TYPES_SIMPLIFIED.find(t => t.value === type);
-                                return (
-                                  <Badge key={type} variant="secondary" className="flex items-center gap-1">
-                                    {typeInfo?.label || type}
-                                    <X 
-                                      className="h-3 w-3 cursor-pointer" 
-                                      onClick={() => {
-                                        setSelectedListingTypes(prev => prev.filter(t => t !== type));
-                                        // Clear skills if no skill-required types are selected
-                                        const remainingTypes = selectedListingTypes.filter(t => t !== type);
-                                        const hasSkillRequiredTypes = remainingTypes.some(t => SKILL_REQUIRED_TYPES.includes(t));
-                                        if (!hasSkillRequiredTypes) {
-                                          setSelectedSkills([]);
-                                        }
-                                      }}
-                                    />
-                                  </Badge>
-                                );
-                              })}
-                            </div>
-                          )}
+                                                    <p className="text-xs text-muted-foreground">
+                            Select one type of opportunity you want to be notified about
+                          </p>
                           
                           <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto border rounded-md p-3">
                             {Object.entries(
-                              LISTING_TYPES_SIMPLIFIED.reduce((acc, type) => {
+                              ALL_LISTING_TYPES.reduce((acc, type) => {
                                 if (!acc[type.category]) acc[type.category] = [];
                                 acc[type.category].push(type);
                                 return acc;
-                              }, {} as Record<string, typeof LISTING_TYPES_SIMPLIFIED>)
+                              }, {} as Record<string, typeof ALL_LISTING_TYPES>)
                             ).map(([category, types]) => (
                               <div key={category} className="space-y-2">
                                 <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                                   {category}
                                 </div>
                                 <div className="grid grid-cols-1 gap-1">
-                                  {types.map((type) => (
-                                    <label key={type.value} className="flex items-center space-x-2 cursor-pointer hover:bg-muted/50 p-2 rounded">
-                                      <Checkbox
-                                        checked={selectedListingTypes.includes(type.value)}
-                                        onCheckedChange={(checked) => {
-                                          if (checked) {
-                                            setSelectedListingTypes(prev => [...prev, type.value]);
-                                          } else {
-                                            setSelectedListingTypes(prev => prev.filter(t => t !== type.value));
-                                            // Clear skills if no skill-required types are selected
-                                            const remainingTypes = selectedListingTypes.filter(t => t !== type.value);
-                                            const hasSkillRequiredTypes = remainingTypes.some(t => SKILL_REQUIRED_TYPES.includes(t));
-                                            if (!hasSkillRequiredTypes) {
-                                              setSelectedSkills([]);
-                                            }
-                                          }
-                                        }}
-                                      />
-                                      <span className="text-sm">{type.label}</span>
-                                    </label>
-                                  ))}
+                                                                     {types.map((type) => (
+                                     <label key={type.value} className="flex items-center space-x-2 cursor-pointer hover:bg-muted/50 p-2 rounded">
+                                       <Checkbox
+                                         checked={selectedListingTypes.includes(type.value)}
+                                         onCheckedChange={(checked) => {
+                                           if (checked) {
+                                             // Clear previous selection and set new one (single selection)
+                                             setSelectedListingTypes([type.value]);
+                                             
+                                             // Clear previous conditional fields
+                                             setFundingStage('');
+                                             setCompensationType('');
+                                             setCompensationValue({});
+                                             setAmount('');
+                                             
+                                             // Auto-select appropriate profile types based on listing type
+                                             const profileTypesForListing: string[] = [];
+                                             if (getListingTypesForProfile("founder").some(t => t.value === type.value)) {
+                                               profileTypesForListing.push("founder");
+                                             }
+                                             if (getListingTypesForProfile("investor").some(t => t.value === type.value)) {
+                                               profileTypesForListing.push("investor");
+                                             }
+                                             if (getListingTypesForProfile("expert").some(t => t.value === type.value)) {
+                                               profileTypesForListing.push("expert");
+                                             }
+                                             setSelectedProfileTypes(profileTypesForListing);
+                                             
+                                             // Clear skills if this type doesn't require them
+                                             if (!SKILL_REQUIRED_TYPES.includes(type.value)) {
+                                               setSelectedSkills([]);
+                                             }
+                                           } else {
+                                             // If unchecking, clear everything
+                                             setSelectedListingTypes([]);
+                                             setSelectedSkills([]);
+                                             setSelectedProfileTypes([]);
+                                             setFundingStage('');
+                                             setCompensationType('');
+                                             setCompensationValue({});
+                                             setAmount('');
+                                           }
+                                         }}
+                                       />
+                                       <span className="text-sm">{type.label}</span>
+                                     </label>
+                                   ))}
                                 </div>
                               </div>
                             ))}
@@ -646,35 +624,11 @@ export default function MyAlertsPage() {
                       <div className="grid grid-cols-4 items-start gap-4">
                         <Label className="text-right pt-2">Industry</Label>
                         <div className="col-span-3 space-y-2">
-                          {selectedSectors.length > 0 && (
-                            <div className="flex flex-wrap gap-2">
-                              {selectedSectors.map((sector) => (
-                                <Badge key={sector} variant="secondary" className="flex items-center gap-1">
-                                  {sector}
-                                  <X 
-                                    className="h-3 w-3 cursor-pointer" 
-                                    onClick={() => setSelectedSectors(prev => prev.filter(s => s !== sector))}
-                                  />
-                                </Badge>
-                              ))}
-                            </div>
-                          )}
-                          <Select onValueChange={(value) => {
-                            if (!selectedSectors.includes(value)) {
-                              setSelectedSectors(prev => [...prev, value]);
-                            }
-                          }}>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select industries you're interested in..." />
-                            </SelectTrigger>
-                            <SelectContent className="max-h-60">
-                              {SECTORS_SIMPLIFIED.map((sector) => (
-                                <SelectItem key={sector} value={sector} disabled={selectedSectors.includes(sector)}>
-                                  {sector}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          <IndustrySelector
+                            value={selectedSector}
+                            onChange={setSelectedSector}
+                            placeholder="Select an industry you're interested in..."
+                          />
                         </div>
                       </div>
                     </>
@@ -695,42 +649,14 @@ export default function MyAlertsPage() {
                             : 'What skills should be mentioned in the work/job listings?'
                           }
                         </p>
-                        {selectedSkills.length > 0 && (
-                          <div className="flex flex-wrap gap-2">
-                            {selectedSkills.map((skill) => (
-                              <Badge key={skill} variant="secondary" className="flex items-center gap-1">
-                                {skill}
-                                <X 
-                                  className="h-3 w-3 cursor-pointer" 
-                                  onClick={() => setSelectedSkills(prev => prev.filter(s => s !== skill))}
-                                />
-                              </Badge>
-                            ))}
-                          </div>
-                        )}
-                        <Select onValueChange={(value) => {
-                          if (!selectedSkills.includes(value) && selectedSkills.length < 5) {
-                            setSelectedSkills(prev => [...prev, value]);
+                        <SkillsSelector
+                          value={selectedSkills}
+                          onChange={setSelectedSkills}
+                          placeholder={alertType === 'profile' 
+                            ? 'Search and select skills profiles should have...' 
+                            : 'Search and select required skills...'
                           }
-                        }}>
-                          <SelectTrigger>
-                            <SelectValue placeholder={`Select skills... (${selectedSkills.length}/5)`} />
-                          </SelectTrigger>
-                          <SelectContent className="max-h-60">
-                            {Object.entries(SKILLS_CATEGORIES).map(([category, skills]) => (
-                              <div key={category}>
-                                <div className="px-2 py-1 text-xs font-semibold text-muted-foreground uppercase">
-                                  {category}
-                                </div>
-                                {skills.map((skill) => (
-                                  <SelectItem key={skill} value={skill} disabled={selectedSkills.includes(skill)}>
-                                    {skill}
-                                  </SelectItem>
-                                ))}
-                              </div>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        />
                       </div>
                     </div>
                   )}
@@ -742,37 +668,215 @@ export default function MyAlertsPage() {
                       <p className="text-xs text-muted-foreground">
                         Where should the {alertType === 'profile' ? 'people' : 'opportunities'} be located?
                       </p>
-                      {selectedCountries.length > 0 && (
-                        <div className="flex flex-wrap gap-2">
-                          {selectedCountries.map((country) => (
-                            <Badge key={country} variant="secondary" className="flex items-center gap-1">
-                              {country}
-                              <X 
-                                className="h-3 w-3 cursor-pointer" 
-                                onClick={() => setSelectedCountries(prev => prev.filter(c => c !== country))}
-                              />
-                            </Badge>
-                          ))}
+                      <div className="flex gap-2">
+                        <CountrySelector
+                          value={selectedCountry}
+                          onValueChange={setSelectedCountry}
+                          placeholder="Select a country..."
+                          className="flex-1"
+                        />
+                        <Input 
+                          placeholder="City (optional)" 
+                          className="flex-1" 
+                          value={locationCity} 
+                          onChange={e => setLocationCity(e.target.value)} 
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Conditional Fields for Listing Alerts */}
+                  {alertType === 'listing' && selectedListingTypes.length > 0 && (
+                    <>
+                      {/* Funding Stage */}
+                      {(selectedListingTypes.includes("find-funding") || selectedListingTypes.includes("investment-opportunity")) && (
+                        <div className="grid grid-cols-4 items-start gap-4">
+                          <Label className="text-right pt-2">Funding Stage</Label>
+                          <div className="col-span-3">
+                            <Select value={fundingStage} onValueChange={setFundingStage}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select funding stage" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Pre-seed">Pre-seed</SelectItem>
+                                <SelectItem value="Seed">Seed</SelectItem>
+                                <SelectItem value="Series A">Series A</SelectItem>
+                                <SelectItem value="Series B">Series B</SelectItem>
+                                <SelectItem value="Series C">Series C</SelectItem>
+                                <SelectItem value="Series D">Series D</SelectItem>
+                                <SelectItem value="Growth">Growth</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
                         </div>
                       )}
-                      <Select onValueChange={(value) => {
-                        if (!selectedCountries.includes(value)) {
-                          setSelectedCountries(prev => [...prev, value]);
-                        }
-                      }}>
+
+                      {/* Compensation Type / Equity Offered */}
+                      {!["sell-startup", "investment-opportunity", "buy-startup"].some(type => selectedListingTypes.includes(type)) && (
+                        <div className="grid grid-cols-4 items-start gap-4">
+                          <Label className="text-right pt-2">
+                            {selectedListingTypes.includes("find-funding") ? "Equity Offered" : "Compensation Type"}
+                          </Label>
+                          <div className="col-span-3 space-y-2">
+                            <Select value={compensationType} onValueChange={setCompensationType}>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select countries..." />
+                                <SelectValue placeholder="Select compensation type" />
                         </SelectTrigger>
-                        <SelectContent className="max-h-60">
-                          {COUNTRIES.map((country) => (
-                            <SelectItem key={country} value={country} disabled={selectedCountries.includes(country)}>
-                              {country}
-                            </SelectItem>
-                          ))}
+                              <SelectContent>
+                                {/* Find funding - Equity only */}
+                                {selectedListingTypes.includes("find-funding") && (
+                                  <SelectItem value="Equity">Equity</SelectItem>
+                                )}
+                                
+                                {/* Expert/Freelance work - Cash */}
+                                {selectedListingTypes.includes("expert-freelance") && (
+                                  <SelectItem value="Cash">Cash</SelectItem>
+                                )}
+                                
+                                {/* Co-founder - Cash, Equity, Hybrid */}
+                                {selectedListingTypes.includes("cofounder") && (
+                                  <>
+                                    <SelectItem value="Cash">Cash</SelectItem>
+                                    <SelectItem value="Equity">Equity</SelectItem>
+                                    <SelectItem value="Hybrid">Hybrid</SelectItem>
+                                  </>
+                                )}
+                                
+                                {/* Employee/Job/Mentor - Full range */}
+                                {(selectedListingTypes.includes("employee") || selectedListingTypes.includes("job") || selectedListingTypes.includes("mentor")) && (
+                                  <>
+                                    <SelectItem value="Cash">Cash</SelectItem>
+                                    <SelectItem value="Salary">Salary</SelectItem>
+                                    <SelectItem value="Equity">Equity</SelectItem>
+                                    <SelectItem value="Salary & Equity">Salary & Equity</SelectItem>
+                                    <SelectItem value="Cash & Equity">Cash & Equity</SelectItem>
+                                  </>
+                                )}
+
+                                {/* Mission - Equity, Cash, Hybrid */}
+                                {selectedListingTypes.includes("mission") && (
+                                  <>
+                                    <SelectItem value="Equity">Equity</SelectItem>
+                                    <SelectItem value="Cash">Cash</SelectItem>
+                                    <SelectItem value="Hybrid">Hybrid</SelectItem>
+                                  </>
+                                )}
                     </SelectContent>
                   </Select>
+                            
+                            {/* Compensation Value Inputs */}
+                            {compensationType === 'Cash' && (
+                              <Input placeholder="Cash amount (ex: $5000)" value={compensationValue.value || ''} onChange={e => setCompensationValue({ value: e.target.value })} />
+                            )}
+                            {compensationType === 'Equity' && (
+                              <Input placeholder="Equity (ex: 5-10%)" value={compensationValue.value || ''} onChange={e => setCompensationValue({ value: e.target.value })} />
+                            )}
+                            {compensationType === 'Salary' && (
+                              <Input placeholder="Salary (ex: $40-50K)" value={compensationValue.value || ''} onChange={e => setCompensationValue({ value: e.target.value })} />
+                            )}
+                            {compensationType === 'Hybrid' && (
+                              <div className="flex flex-col gap-2">
+                                <Input placeholder="Equity (ex: 5-10%)" value={compensationValue.equity || ''} onChange={e => setCompensationValue((prev: any) => ({ ...prev, equity: e.target.value }))} />
+                                <Input placeholder="Cash amount (ex: $5000)" value={compensationValue.cash || ''} onChange={e => setCompensationValue((prev: any) => ({ ...prev, cash: e.target.value }))} />
                     </div>
+                            )}
+                            {compensationType === 'Salary & Equity' && (
+                              <div className="flex flex-col gap-2">
+                                <Input placeholder="Salary (ex: $40-50K)" value={compensationValue.salary || ''} onChange={e => setCompensationValue((prev: any) => ({ ...prev, salary: e.target.value }))} />
+                                <Input placeholder="Equity (ex: 5-10%)" value={compensationValue.equity || ''} onChange={e => setCompensationValue((prev: any) => ({ ...prev, equity: e.target.value }))} />
                 </div>
+                            )}
+                            {compensationType === 'Cash & Equity' && (
+                              <div className="flex flex-col gap-2">
+                                <Input placeholder="Cash amount (ex: $5000)" value={compensationValue.cash || ''} onChange={e => setCompensationValue((prev: any) => ({ ...prev, cash: e.target.value }))} />
+                                <Input placeholder="Equity (ex: 5-10%)" value={compensationValue.equity || ''} onChange={e => setCompensationValue((prev: any) => ({ ...prev, equity: e.target.value }))} />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Amount Seeking */}
+                      {selectedListingTypes.includes("find-funding") && (
+                        <div className="grid grid-cols-4 items-start gap-4">
+                          <Label className="text-right pt-2">Amount Seeking</Label>
+                          <div className="col-span-3">
+                            <Input 
+                              placeholder="Ex: $1M - $5M" 
+                              value={amount} 
+                              onChange={e => setAmount(e.target.value)} 
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Investment Capacity */}
+                      {(selectedListingTypes.includes("investment-opportunity") || selectedListingTypes.includes("buy-startup")) && (
+                        <div className="grid grid-cols-4 items-start gap-4">
+                          <Label className="text-right pt-2">Investment Capacity</Label>
+                          <div className="col-span-3">
+                            <Input 
+                              placeholder={selectedListingTypes.includes("buy-startup") ? "Ex: $1M - $5M for acquisition" : "Ex: $100K - $500K per deal"}
+                              value={amount} 
+                              onChange={e => setAmount(e.target.value)} 
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Missing Capital and Equity Offered for co-investor search */}
+                      {selectedListingTypes.includes("co-investor") && (
+                        <>
+                          <div className="grid grid-cols-4 items-start gap-4">
+                            <Label className="text-right pt-2">Missing Capital</Label>
+                            <div className="col-span-3">
+                              <Input 
+                                placeholder="Ex: $500K needed to complete the round"
+                                value={amount} 
+                                onChange={e => setAmount(e.target.value)} 
+                              />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-4 items-start gap-4">
+                            <Label className="text-right pt-2">Equity Offered</Label>
+                            <div className="col-span-3">
+                              <Input 
+                                placeholder="Ex: 15-20% for co-investor"
+                                value={compensationValue.value || ''} 
+                                onChange={e => setCompensationValue({ value: e.target.value })} 
+                              />
+                            </div>
+                          </div>
+                        </>
+                      )}
+
+                      {/* Sale Price and Percentage for startup sales */}
+                      {selectedListingTypes.includes("sell-startup") && (
+                        <>
+                          <div className="grid grid-cols-4 items-start gap-4">
+                            <Label className="text-right pt-2">Sale Price</Label>
+                            <div className="col-span-3">
+                              <Input 
+                                placeholder="Ex: $500K - $1M"
+                                value={amount} 
+                                onChange={e => setAmount(e.target.value)} 
+                              />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-4 items-start gap-4">
+                            <Label className="text-right pt-2">Percentage for Sale</Label>
+                            <div className="col-span-3">
+                              <Input 
+                                placeholder="Ex: 100% for full sale, or 20-40% for partial"
+                                value={compensationValue.value || ''} 
+                                onChange={e => setCompensationValue({ value: e.target.value })} 
+                              />
+                            </div>
+                          </div>
+                        </>
+                      )}
+                    </>
+                  )}
               </div>
               <DialogFooter>
                   <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
