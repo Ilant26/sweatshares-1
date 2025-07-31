@@ -53,11 +53,10 @@ export default function MyNetworkPage() {
     const [connections, setConnections] = useState<Connection[]>([]);
     const [receivedInvitations, setReceivedInvitations] = useState<Connection[]>([]);
     const [sentInvitations, setSentInvitations] = useState<Connection[]>([]);
-    const [allProfiles, setAllProfiles] = useState<Profile[]>([]);
     const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>({});
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
-    const [activeTab, setActiveTab] = useState('all-users');
+    const [activeTab, setActiveTab] = useState('connections');
     const [loadingStates, setLoadingStates] = useState<LoadingStates>({});
     const router = useRouter();
     const { refreshUnreadCount } = useNotifications();
@@ -110,20 +109,6 @@ export default function MyNetworkPage() {
         const fetchAllData = async (userId: string) => {
             setLoading(true);
             try {
-                // Fetch all profiles (excluding current user)
-                const { data: profiles, error: profilesError } = await supabase
-                    .from('profiles')
-                    .select('id, username, full_name, avatar_url, professional_role, bio, country, is_online, last_seen')
-                    .neq('id', userId);
-
-                if (profilesError) {
-                    console.error('Error fetching profiles:', JSON.stringify(profilesError, null, 2));
-                    showToast('Error', 'Failed to load users', 'destructive');
-                    return;
-                }
-
-                setAllProfiles(profiles || []);
-
                 // Fetch accepted connections
                 const { data: acceptedConnections, error: connectionsError } = await supabase
                     .from('connections')
@@ -489,76 +474,54 @@ export default function MyNetworkPage() {
         );
     };
 
-    const filteredProfiles = allProfiles.filter(profile => {
+
+
+    // Filter connections based on search query
+    const filteredConnections = connections.filter(connection => {
         if (!searchQuery) return true;
+        const otherUser = getOtherUser(connection);
+        if (!otherUser) return false;
+        
         const query = searchQuery.toLowerCase();
         return (
-            profile.full_name?.toLowerCase().includes(query) ||
-            profile.username.toLowerCase().includes(query) ||
-            profile.professional_role?.toLowerCase().includes(query) ||
-            profile.bio?.toLowerCase().includes(query) ||
-            profile.country?.toLowerCase().includes(query)
+            otherUser.full_name?.toLowerCase().includes(query) ||
+            otherUser.username.toLowerCase().includes(query) ||
+            otherUser.professional_role?.toLowerCase().includes(query) ||
+            otherUser.bio?.toLowerCase().includes(query) ||
+            otherUser.country?.toLowerCase().includes(query)
         );
     });
 
-    const renderAllUsersCards = () => (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-            {filteredProfiles.map(profile => (
-                <Card key={profile.id}>
-                    <CardHeader className="flex flex-row items-center gap-3 sm:gap-4 space-y-0 pb-2">
-                        <div className="relative">
-                            <Avatar className="h-12 w-12 sm:h-16 sm:w-16">
-                                <AvatarImage src={profile.avatar_url || undefined} />
-                                <AvatarFallback>{profile.full_name?.charAt(0) || profile.username.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                            {profile.is_online && (
-                                <span className="absolute bottom-0 right-0 block h-3 w-3 rounded-full bg-green-500 ring-2 ring-white" />
-                            )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <CardTitle 
-                                className="text-base sm:text-lg cursor-pointer hover:text-primary transition-colors truncate"
-                                onClick={() => handleProfileClick(profile.id)}
-                            >
-                                {profile.full_name || profile.username}
-                            </CardTitle>
-                            <CardDescription className="truncate">{profile.professional_role || 'No role specified'}</CardDescription>
-                        </div>
-                    </CardHeader>
-                    <CardContent className="space-y-3 p-4 sm:p-6">
-                        <div className="space-y-2">
-                            {profile.bio && (
-                                <p className="text-sm text-muted-foreground line-clamp-2">{profile.bio}</p>
-                            )}
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                <span>@{profile.username}</span>
-                                {profile.professional_role && (
-                                    <>
-                                        <span>•</span>
-                                        <Briefcase className="h-3 w-3" />
-                                        <span>{profile.professional_role}</span>
-                                    </>
-                                )}
-                                {profile.country && (
-                                    <>
-                                        <span>•</span>
-                                        <Globe2 className="h-3 w-3" />
-                                        <span>{profile.country}</span>
-                                    </>
-                                )}
-                            </div>
-                        </div>
-                        <div className="flex flex-col sm:flex-row gap-2 sm:justify-end">
-                            <Button variant="outline" size="sm" onClick={() => handleMessage(profile.id)} className="w-full sm:w-auto">
-                                <MessageCircle className="h-4 w-4 mr-2" /> Message
-                            </Button>
-                            {getConnectionButton(profile)}
-                        </div>
-                    </CardContent>
-                </Card>
-            ))}
-        </div>
-    );
+    // Filter invitations based on search query
+    const filteredReceivedInvitations = receivedInvitations.filter(invitation => {
+        if (!searchQuery) return true;
+        const user = invitation.sender;
+        if (!user) return false;
+        
+        const query = searchQuery.toLowerCase();
+        return (
+            user.full_name?.toLowerCase().includes(query) ||
+            user.username.toLowerCase().includes(query) ||
+            user.professional_role?.toLowerCase().includes(query) ||
+            user.bio?.toLowerCase().includes(query) ||
+            user.country?.toLowerCase().includes(query)
+        );
+    });
+
+    const filteredSentInvitations = sentInvitations.filter(invitation => {
+        if (!searchQuery) return true;
+        const user = invitation.receiver;
+        if (!user) return false;
+        
+        const query = searchQuery.toLowerCase();
+        return (
+            user.full_name?.toLowerCase().includes(query) ||
+            user.username.toLowerCase().includes(query) ||
+            user.professional_role?.toLowerCase().includes(query) ||
+            user.bio?.toLowerCase().includes(query) ||
+            user.country?.toLowerCase().includes(query)
+        );
+    });
 
     const renderConnectionCards = (data: Connection[]) => (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
@@ -790,7 +753,7 @@ export default function MyNetworkPage() {
             <div className="relative w-full mt-4">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
-                    placeholder="Search by name, username, role, or bio..."
+                    placeholder="Search connections and invitations..."
                     className="pl-8 w-full"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -798,10 +761,7 @@ export default function MyNetworkPage() {
             </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 w-full mt-6">
-                <TabsList className="w-full grid grid-cols-4">
-                    <TabsTrigger value="all-users" className="text-xs sm:text-sm">
-                        All Users <span className="ml-2 text-xs font-semibold text-primary">{filteredProfiles.length}</span>
-                    </TabsTrigger>
+                <TabsList className="w-full grid grid-cols-3">
                     <TabsTrigger value="connections" className="text-xs sm:text-sm">
                         My Connections <span className="ml-2 text-xs font-semibold text-primary">{connections.length}</span>
                     </TabsTrigger>
@@ -813,43 +773,31 @@ export default function MyNetworkPage() {
                     </TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="all-users">
-                    {loading ? (
-                        <div className="text-center py-8">
-                            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-muted-foreground" />
-                            <p className="text-muted-foreground">Loading users...</p>
-                        </div>
-                    ) : filteredProfiles.length === 0 ? (
-                        <div className="text-center py-8">
-                            <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                            <p className="text-muted-foreground">No users found.</p>
-                            {searchQuery && (
-                                <p className="text-sm text-muted-foreground mt-1">
-                                    Try adjusting your search terms
-                                </p>
-                            )}
-                        </div>
-                    ) : (
-                        renderAllUsersCards()
-                    )}
-                </TabsContent>
-
                 <TabsContent value="connections">
                     {loading ? (
                         <div className="text-center py-8">
                             <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-muted-foreground" />
                             <p className="text-muted-foreground">Loading connections...</p>
                         </div>
-                    ) : connections.length === 0 ? (
+                    ) : filteredConnections.length === 0 ? (
                         <div className="text-center py-8">
                             <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                            <p className="text-muted-foreground">No connections yet.</p>
-                            <p className="text-sm text-muted-foreground mt-1">
-                                Start connecting with other professionals to grow your network.
+                            <p className="text-muted-foreground">
+                                {connections.length === 0 ? "No connections yet." : "No connections match your search."}
                             </p>
+                            {connections.length === 0 && (
+                                <p className="text-sm text-muted-foreground mt-1">
+                                    Start connecting with other professionals to grow your network.
+                                </p>
+                            )}
+                            {searchQuery && connections.length > 0 && (
+                                <p className="text-sm text-muted-foreground mt-1">
+                                    Try adjusting your search terms
+                                </p>
+                            )}
                         </div>
                     ) : (
-                        renderConnectionCards(connections)
+                        renderConnectionCards(filteredConnections)
                     )}
                 </TabsContent>
                 
@@ -859,13 +807,20 @@ export default function MyNetworkPage() {
                             <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-muted-foreground" />
                             <p className="text-muted-foreground">Loading invitations...</p>
                         </div>
-                    ) : receivedInvitations.length === 0 ? (
+                    ) : filteredReceivedInvitations.length === 0 ? (
                         <div className="text-center py-8">
                             <Mail className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                            <p className="text-muted-foreground">No received invitations.</p>
+                            <p className="text-muted-foreground">
+                                {receivedInvitations.length === 0 ? "No received invitations." : "No received invitations match your search."}
+                            </p>
+                            {searchQuery && receivedInvitations.length > 0 && (
+                                <p className="text-sm text-muted-foreground mt-1">
+                                    Try adjusting your search terms
+                                </p>
+                            )}
                         </div>
                     ) : (
-                        renderInvitationCards(receivedInvitations, 'received')
+                        renderInvitationCards(filteredReceivedInvitations, 'received')
                     )}
                 </TabsContent>
 
@@ -875,13 +830,20 @@ export default function MyNetworkPage() {
                             <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-muted-foreground" />
                             <p className="text-muted-foreground">Loading invitations...</p>
                         </div>
-                    ) : sentInvitations.length === 0 ? (
+                    ) : filteredSentInvitations.length === 0 ? (
                         <div className="text-center py-8">
                             <Send className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                            <p className="text-muted-foreground">No sent invitations.</p>
+                            <p className="text-muted-foreground">
+                                {sentInvitations.length === 0 ? "No sent invitations." : "No sent invitations match your search."}
+                            </p>
+                            {searchQuery && sentInvitations.length > 0 && (
+                                <p className="text-sm text-muted-foreground mt-1">
+                                    Try adjusting your search terms
+                                </p>
+                            )}
                         </div>
                     ) : (
-                        renderInvitationCards(sentInvitations, 'sent')
+                        renderInvitationCards(filteredSentInvitations, 'sent')
                     )}
                 </TabsContent>
             </Tabs>

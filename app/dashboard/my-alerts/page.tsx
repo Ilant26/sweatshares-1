@@ -426,7 +426,7 @@ export default function MyAlertsPage() {
                             <BellRing className="h-6 w-6 text-primary" />
                         </div>
                         <div>
-                            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">My Alerts</h1>
+                            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Alerts</h1>
               <p className="text-sm text-muted-foreground">Get notified instantly when new profiles or listings match your criteria</p>
                         </div>
                     </div>

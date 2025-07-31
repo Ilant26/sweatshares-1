@@ -12,12 +12,13 @@ import { usePosts } from "@/hooks/use-posts";
 import { useFavorites } from "@/hooks/use-favorites";
 import { supabase } from "@/lib/supabase";
 import { useUser } from "@/hooks/use-user";
-import { MapPin, Briefcase, DollarSign, Heart, Share2, Mail, MessageCircle, Bookmark, FileIcon, ImageIcon, Loader2, Send, UserPlus, MoreHorizontal, Edit, Plus, Globe, ThumbsUp, Trash2, Star, Users, Eye, Building2 } from "lucide-react";
+import { MapPin, Briefcase, DollarSign, Heart, Share2, Mail, MessageCircle, Bookmark, FileIcon, ImageIcon, Loader2, Send, UserPlus, MoreHorizontal, Edit, Plus, Globe, ThumbsUp, Trash2, Star, Users, Eye, Building2, Save, X } from "lucide-react";
 import { motion, Variants } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { SkillsSelector } from "@/components/ui/skills-selector";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -140,6 +141,13 @@ export default function ProfilePage() {
   const [newReplies, setNewReplies] = useState<{ [key: string]: string }>({});
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [editingBio, setEditingBio] = useState(false);
+  const [editingSkills, setEditingSkills] = useState(false);
+  const [editingWebsite, setEditingWebsite] = useState(false);
+  const [tempBio, setTempBio] = useState("");
+  const [tempSkills, setTempSkills] = useState<string[]>([]);
+  const [tempWebsite, setTempWebsite] = useState("");
+  const [saving, setSaving] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -488,6 +496,126 @@ export default function ProfilePage() {
         description: "Failed to delete comment. Please try again.",
         variant: "destructive",
       });
+    }
+  };
+
+  // Bio editing functions
+  const startEditingBio = () => {
+    setTempBio(profile.bio || "");
+    setEditingBio(true);
+  };
+
+  const cancelEditingBio = () => {
+    setEditingBio(false);
+    setTempBio("");
+  };
+
+  const saveBio = async () => {
+    if (!user || user.id !== id) return;
+    
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ bio: tempBio })
+        .eq("id", user.id);
+
+      if (error) throw error;
+
+      setProfile((prev: any) => ({ ...prev, bio: tempBio }));
+      setEditingBio(false);
+      toast({
+        title: "Bio updated",
+        description: "Your bio has been updated successfully.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update bio. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Skills editing functions
+  const startEditingSkills = () => {
+    setTempSkills(profile.skills || []);
+    setEditingSkills(true);
+  };
+
+  const cancelEditingSkills = () => {
+    setEditingSkills(false);
+    setTempSkills([]);
+  };
+
+  const saveSkills = async () => {
+    if (!user || user.id !== id) return;
+    
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ skills: tempSkills })
+        .eq("id", user.id);
+
+      if (error) throw error;
+
+      setProfile((prev: any) => ({ ...prev, skills: tempSkills }));
+      setEditingSkills(false);
+      toast({
+        title: "Skills updated",
+        description: "Your skills have been updated successfully.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update skills. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Website editing functions
+  const startEditingWebsite = () => {
+    setTempWebsite(profile.website || "");
+    setEditingWebsite(true);
+  };
+
+  const cancelEditingWebsite = () => {
+    setEditingWebsite(false);
+    setTempWebsite("");
+  };
+
+  const saveWebsite = async () => {
+    if (!user || user.id !== id) return;
+    
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ website: tempWebsite })
+        .eq("id", user.id);
+
+      if (error) throw error;
+
+      setProfile((prev: any) => ({ ...prev, website: tempWebsite }));
+      setEditingWebsite(false);
+      toast({
+        title: "Website updated",
+        description: "Your website has been updated successfully.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update website. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -1138,24 +1266,66 @@ export default function ProfilePage() {
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <h3 className="text-lg font-semibold">About</h3>
-                    {user?.id === id && (
-                      <Button variant="ghost" size="sm">
-                        <Edit className="h-4 w-4 mr-2" />
-                        Edit
-                      </Button>
-                    )}
                   </div>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-6">
                     {/* Enhanced Bio Section */}
                     <div>
-                      <h4 className="font-medium mb-3 text-base">Bio</h4>
-                      <div className="bg-muted/30 rounded-lg p-4">
-                        <p className="text-muted-foreground leading-relaxed">
-                          {profile.bio || 'No bio available. This person hasn\'t added a bio yet.'}
-                        </p>
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-medium text-base">Bio</h4>
+                        {user?.id === id && !editingBio && (
+                          <Button variant="ghost" size="sm" onClick={startEditingBio}>
+                            <Edit className="h-4 w-4 mr-2" />
+                            Edit
+                          </Button>
+                        )}
                       </div>
+                      
+                      {editingBio ? (
+                        <div className="space-y-3">
+                          <Textarea
+                            value={tempBio}
+                            onChange={(e) => setTempBio(e.target.value)}
+                            placeholder="Tell us about yourself..."
+                            className="min-h-[100px]"
+                          />
+                          <div className="flex gap-2">
+                            <Button 
+                              size="sm" 
+                              onClick={saveBio}
+                              disabled={saving}
+                            >
+                              {saving ? (
+                                <>
+                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                  Saving...
+                                </>
+                              ) : (
+                                <>
+                                  <Save className="h-4 w-4 mr-2" />
+                                  Save
+                                </>
+                              )}
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={cancelEditingBio}
+                              disabled={saving}
+                            >
+                              <X className="h-4 w-4 mr-2" />
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="bg-muted/30 rounded-lg p-4">
+                          <p className="text-muted-foreground leading-relaxed">
+                            {profile.bio || 'No bio available. This person hasn\'t added a bio yet.'}
+                          </p>
+                        </div>
+                      )}
                     </div>
                     
                     <Separator />
@@ -1164,131 +1334,138 @@ export default function ProfilePage() {
                     <div>
                       <div className="flex items-center justify-between mb-3">
                         <h4 className="font-medium text-base">Skills</h4>
-                        {user?.id === id && (
-                          <Button variant="ghost" size="sm">
-                            <Plus className="h-4 w-4 mr-2" />
-                            Add Skill
+                        {user?.id === id && !editingSkills && (
+                          <Button variant="ghost" size="sm" onClick={startEditingSkills}>
+                            <Edit className="h-4 w-4 mr-2" />
+                            Edit Skills
                           </Button>
                         )}
                       </div>
-                      <div className="flex flex-wrap gap-2">
-                        {profile.skills && profile.skills.length > 0 ? (
-                          profile.skills.map((skill: string, index: number) => (
-                            <Badge 
-                              key={index} 
-                              className={`px-3 py-1 text-sm font-medium ${getSkillColor(skill)}`}
+                      
+                      {editingSkills ? (
+                        <div className="space-y-3">
+                          <SkillsSelector
+                            value={tempSkills}
+                            onChange={setTempSkills}
+                            placeholder="Search and select skills..."
+                            label=""
+                          />
+                          <div className="flex gap-2">
+                            <Button 
+                              size="sm" 
+                              onClick={saveSkills}
+                              disabled={saving}
                             >
-                              {skill}
-                            </Badge>
-                          ))
-                        ) : (
-                          <div className="text-muted-foreground text-sm italic">
-                            No skills listed yet.
+                              {saving ? (
+                                <>
+                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                  Saving...
+                                </>
+                              ) : (
+                                <>
+                                  <Save className="h-4 w-4 mr-2" />
+                                  Save
+                                </>
+                              )}
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={cancelEditingSkills}
+                              disabled={saving}
+                            >
+                              <X className="h-4 w-4 mr-2" />
+                              Cancel
+                            </Button>
                           </div>
-                        )}
-                      </div>
+                        </div>
+                      ) : (
+                        <div className="flex flex-wrap gap-2">
+                          {profile.skills && profile.skills.length > 0 ? (
+                            profile.skills.map((skill: string, index: number) => (
+                              <Badge 
+                                key={index} 
+                                className={`px-3 py-1 text-sm font-medium ${getSkillColor(skill)}`}
+                              >
+                                {skill}
+                              </Badge>
+                            ))
+                          ) : (
+                            <div className="text-muted-foreground text-sm italic">
+                              No skills listed yet.
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                     
                     <Separator />
                     
-                    {/* Enhanced Experience Section */}
+                    {/* Website Section */}
                     <div>
                       <div className="flex items-center justify-between mb-3">
-                        <h4 className="font-medium text-base">Experience</h4>
-                        {user?.id === id && (
-                          <Button variant="ghost" size="sm">
-                            <Plus className="h-4 w-4 mr-2" />
-                            Add Experience
+                        <h4 className="font-medium text-base">Website</h4>
+                        {user?.id === id && !editingWebsite && (
+                          <Button variant="ghost" size="sm" onClick={startEditingWebsite}>
+                            <Edit className="h-4 w-4 mr-2" />
+                            {profile.website ? 'Edit' : 'Add'}
                           </Button>
                         )}
                       </div>
-                      <div className="space-y-4">
-                        {profile.experience && profile.experience.length > 0 ? (
-                          profile.experience.map((exp: any, index: number) => (
-                            <div key={index} className="flex gap-4 p-4 bg-muted/30 rounded-lg">
-                              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                                <Briefcase className="h-6 w-6 text-primary" />
-                              </div>
-                              <div className="flex-1">
-                                <h5 className="font-medium text-base">{exp.title}</h5>
-                                <p className="text-sm text-muted-foreground">{exp.company}</p>
-                                <p className="text-xs text-muted-foreground">{exp.duration}</p>
-                                {exp.description && (
-                                  <p className="text-sm text-muted-foreground mt-2">{exp.description}</p>
-                                )}
-                              </div>
+                      
+                      {editingWebsite ? (
+                        <div className="space-y-3">
+                          <Input
+                            value={tempWebsite}
+                            onChange={(e) => setTempWebsite(e.target.value)}
+                            placeholder="https://example.com"
+                            type="url"
+                          />
+                          <div className="flex gap-2">
+                            <Button 
+                              size="sm" 
+                              onClick={saveWebsite}
+                              disabled={saving}
+                            >
+                              {saving ? (
+                                <>
+                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                  Saving...
+                                </>
+                              ) : (
+                                <>
+                                  <Save className="h-4 w-4 mr-2" />
+                                  Save
+                                </>
+                              )}
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={cancelEditingWebsite}
+                              disabled={saving}
+                            >
+                              <X className="h-4 w-4 mr-2" />
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-2 text-sm">
+                          {profile.website ? (
+                            <div className="flex items-center gap-2">
+                              <Globe className="h-4 w-4 text-muted-foreground" />
+                              <a href={profile.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                                {profile.website}
+                              </a>
                             </div>
-                          ))
-                        ) : (
-                          <div className="text-muted-foreground text-sm italic p-4 bg-muted/30 rounded-lg">
-                            No experience listed yet.
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Additional Sections */}
-                    <Separator />
-                    
-                    {/* Education Section */}
-                    <div>
-                      <div className="flex items-center justify-between mb-3">
-                        <h4 className="font-medium text-base">Education</h4>
-                        {user?.id === id && (
-                          <Button variant="ghost" size="sm">
-                            <Plus className="h-4 w-4 mr-2" />
-                            Add Education
-                          </Button>
-                        )}
-                      </div>
-                      <div className="space-y-4">
-                        {profile.education && profile.education.length > 0 ? (
-                          profile.education.map((edu: any, index: number) => (
-                            <div key={index} className="flex gap-4 p-4 bg-muted/30 rounded-lg">
-                              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                                <Bookmark className="h-6 w-6 text-primary" />
-                              </div>
-                              <div className="flex-1">
-                                <h5 className="font-medium text-base">{edu.degree}</h5>
-                                <p className="text-sm text-muted-foreground">{edu.school}</p>
-                                <p className="text-xs text-muted-foreground">{edu.year}</p>
-                              </div>
+                          ) : (
+                            <div className="text-muted-foreground text-sm italic">
+                              No website listed yet.
                             </div>
-                          ))
-                        ) : (
-                          <div className="text-muted-foreground text-sm italic p-4 bg-muted/30 rounded-lg">
-                            No education listed yet.
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Contact Information */}
-                    <Separator />
-                    <div>
-                      <h4 className="font-medium text-base mb-3">Contact Information</h4>
-                      <div className="space-y-2 text-sm">
-                        {profile.email && (
-                          <div className="flex items-center gap-2">
-                            <Mail className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-muted-foreground">{profile.email}</span>
-                          </div>
-                        )}
-                        {profile.phone && (
-                          <div className="flex items-center gap-2">
-                            <MessageCircle className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-muted-foreground">{profile.phone}</span>
-                          </div>
-                        )}
-                        {profile.website && (
-                          <div className="flex items-center gap-2">
-                            <Globe className="h-4 w-4 text-muted-foreground" />
-                            <a href={profile.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                              {profile.website}
-                            </a>
-                          </div>
-                        )}
-                      </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </CardContent>
