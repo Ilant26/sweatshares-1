@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { AnimatedGroup } from "@/components/ui/animated-group";
-import { Loader2, Star, Eye, User, Tag, Briefcase, MapPin, XCircle, Heart, Share2, Mail, DollarSign, ListFilter, Handshake, Building2, Users, X } from "lucide-react";
+import { Loader2, Star, Eye, User, Tag, Briefcase, MapPin, XCircle, Heart, Share2, Mail, DollarSign, ListFilter, Handshake, Building2, UserSearch, X, Users } from "lucide-react";
 import { format } from "date-fns";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -660,7 +660,7 @@ export default function FindPartnerPage() {
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
                         <div className="flex items-center space-x-3">
                             <div className="p-2 bg-primary/10 rounded-lg">
-                                <Users className="h-6 w-6 text-primary" />
+                                <UserSearch className="h-6 w-6 text-primary" />
                             </div>
                             <div>
                                 <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Find My Partner</h1>

@@ -289,7 +289,7 @@ export default function MyInvoicesPage() {
     vat_amount: 0,
     subtotal: 0,
     total: 0,
-    paymentMethod: 'standard' as 'standard' | 'escrow',
+    paymentMethod: 'escrow' as 'standard' | 'escrow',
     // Escrow-specific fields
     transactionType: 'work' as 'work' | 'business_sale' | 'partnership' | 'service' | 'consulting' | 'investment' | 'other',
     completionDeadlineDays: 30,
@@ -897,7 +897,7 @@ export default function MyInvoicesPage() {
       vat_amount: 0,
       subtotal: 0,
       total: 0,
-      paymentMethod: 'standard',
+      paymentMethod: 'escrow',
       // Reset escrow fields
       transactionType: 'work',
       completionDeadlineDays: 30,
@@ -1936,7 +1936,7 @@ export default function MyInvoicesPage() {
                           <Label htmlFor="payment-escrow" className="text-sm font-medium cursor-pointer flex-1">
                             <div className="flex items-center gap-2">
                               <Shield className="h-4 w-4 text-muted-foreground" />
-                              Secure Payment
+                              Invoice + Secure Payment
                             </div>
                             <p className="text-xs text-muted-foreground font-normal mt-1">
                               Secure payment held in escrow until work is completed and approved
@@ -1961,7 +1961,7 @@ export default function MyInvoicesPage() {
                           <Label htmlFor="payment-standard" className="text-sm font-medium cursor-pointer flex-1">
                             <div className="flex items-center gap-2">
                               <FileText className="h-4 w-4 text-muted-foreground" />
-                              Standard Invoice
+                              Standard Invoice (No Secure Payment)
                             </div>
                             <p className="text-xs text-muted-foreground font-normal mt-1">
                               Send a traditional invoice for manual payment processing

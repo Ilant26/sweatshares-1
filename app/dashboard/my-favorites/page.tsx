@@ -11,40 +11,102 @@ import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useFavorites } from '@/hooks/use-favorites';
 import { useToast } from '@/components/ui/use-toast';
-import { Search, SlidersHorizontal, Eye, Heart, Share2, Briefcase, MapPin, Building2, Loader2, Star } from 'lucide-react';
+import { Search, SlidersHorizontal, Eye, Heart, Share2, Briefcase, MapPin, Building2, Loader2, Star, User, Tag, DollarSign, Mail, X } from 'lucide-react';
+import { motion, AnimatePresence, Variants } from "framer-motion";
+import { cn } from "@/lib/utils";
 
-interface Profile {
+type FavoriteItem = {
   id: string;
-  type: 'profile';
+  type: 'profile' | 'listing';
   addedDate: string;
-  image: string;
-  name: string;
-  title: string;
-  description: string;
-  skills: { label: string; color: string; }[];
-  location: string;
+  data: any;
+  created_at: string;
+};
+
+// Animation variants from find-partner page
+const cardVariants: Variants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      type: "spring",
+      bounce: 0.2,
+      duration: 0.8,
+      stiffness: 50
+    }
+  },
+  hover: {
+    y: -5,
+    transition: {
+      type: "spring",
+      bounce: 0.2,
+      duration: 0.3
+    }
+  }
+};
+
+function getInitials(name: string | null | undefined): string {
+  if (!name) return "U";
+  return name
+    .split(" ")
+    .map((n: string) => n[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
 }
 
-interface Listing {
-  id: string;
-  type: 'listing';
-  addedDate: string;
-  icon: React.ReactNode;
-  title: string;
-  company: string;
-  location: string;
-  description: string;
-  postedAgo: string;
-}
+// Function to format listing type values for display
+const formatListingType = (listingType: string): string => {
+  const typeMap: { [key: string]: string } = {
+    "find-funding": "Find Funding",
+    "cofounder": "Co Founder",
+    "expert-freelance": "Expert/ Freelance",
+    "employee": "Employee",
+    "mentor": "Mentor",
+    "sell-startup": "Startup Sale",
+    "investment-opportunity": "Investment Opportunity",
+    "buy-startup": "Buy Startup",
+    "co-investor": "Co-investor",
+    "mission": "Mission",
+    "job": "Job"
+  };
+  
+  return typeMap[listingType] || listingType;
+};
 
-type FavoriteItem = Profile | Listing;
+// Helper functions to get proper labels based on listing type and profile type
+const getAmountLabel = (listingType: string, profileType: string): string => {
+  if (profileType === "Founder" && listingType === "sell-startup") {
+    return "Sale Price";
+  }
+  if (profileType === "Investor" && (listingType === "investment-opportunity" || listingType === "buy-startup")) {
+    return "Investment Capacity";
+  }
+  if (profileType === "Investor" && listingType === "co-investor") {
+    return "Missing Capital";
+  }
+  if (profileType === "Founder" && listingType === "find-funding") {
+    return "Amount Seeking";
+  }
+  return "Amount";
+};
+
+const getCompensationValueLabel = (listingType: string, profileType: string): string => {
+  if (profileType === "Founder" && listingType === "sell-startup") {
+    return "Percentage for Sale";
+  }
+  if (profileType === "Investor" && listingType === "co-investor") {
+    return "Equity Offered";
+  }
+  return "Compensation";
+};
 
 export default function MyFavoritesPage() {
   const [activeTab, setActiveTab] = useState('all');
-  const [searchTerm, setSearchTerm] = useState('');
   const [softRemovedItems, setSoftRemovedItems] = useState<Set<string>>(new Set());
-  const [removedProfilesCache, setRemovedProfilesCache] = useState<Profile[]>([]);
-  const [removedListingsCache, setRemovedListingsCache] = useState<Listing[]>([]);
+  const [removedProfilesCache, setRemovedProfilesCache] = useState<FavoriteItem[]>([]);
+  const [removedListingsCache, setRemovedListingsCache] = useState<FavoriteItem[]>([]);
   const [itemOrder, setItemOrder] = useState<string[]>([]);
   const router = useRouter();
   const { toast } = useToast();
@@ -122,33 +184,25 @@ export default function MyFavoritesPage() {
     return colors[index];
   };
 
-  // Transform saved profiles data and include cached removed items
+  // Transform saved profiles data to match find-partner structure
   const activeProfiles = savedProfiles.map(saved => ({
     id: saved.profile.id,
     type: 'profile' as const,
     addedDate: formatDate(saved.created_at),
-    image: saved.profile.avatar_url || '',
-    name: saved.profile.full_name || 'Anonymous',
-    title: saved.profile.professional_role || 'Role not specified',
-    description: saved.profile.bio || 'No description available',
-    skills: (saved.profile.skills || []).map((skill: string) => ({
-      label: skill,
-      color: getSkillColor(skill),
-    })),
-    location: saved.profile.country || 'Location not specified',
+    data: saved.profile,
+    created_at: saved.created_at
   }));
 
-  // Transform liked listings data and include cached removed items
+  // Transform liked listings data to match find-partner structure
   const listings = likedListings.map(liked => ({
     id: liked.listing.id,
     type: 'listing' as const,
     addedDate: formatDate(liked.created_at),
-    icon: <Building2 className="h-4 w-4" />,
-    title: liked.listing.title || 'Untitled Listing',
-    company: liked.listing.sector || 'Company not specified',
-    location: liked.listing.location_country || 'Location not specified',
-    description: stripHtml(liked.listing.description || 'No description available'),
-    postedAgo: formatDate(liked.listing.created_at),
+    data: {
+      ...liked.listing,
+      profiles: liked.listing_profile // Map listing_profile to profiles to match find-partner structure
+    },
+    created_at: liked.created_at
   }));
 
   // Combine active and cached items, maintaining order
@@ -169,14 +223,10 @@ export default function MyFavoritesPage() {
       return 0;
     });
 
-  // Filter items based on search and tab
+  // Filter items based on tab only
   const filteredItems = allItems.filter(item => {
-    const matchesSearch = searchTerm === '' || 
-      (item.type === 'profile' ? item.name : item.title)?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (item.type === 'listing' && item.company.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesTab = activeTab === 'all' || activeTab === item.type + 's';
-    return matchesSearch && matchesTab;
+    return matchesTab;
   });
 
   const handleRemoveFavorite = async (item: FavoriteItem) => {
@@ -188,7 +238,7 @@ export default function MyFavoritesPage() {
         // Cache the profile before removing
         setRemovedProfilesCache(prev => {
           if (prev.some(p => p.id === item.id)) return prev;
-          return [...prev, item as Profile];
+          return [...prev, item];
         });
         
         await unsaveProfile(item.id);
@@ -200,7 +250,7 @@ export default function MyFavoritesPage() {
         // Cache the listing before removing
         setRemovedListingsCache(prev => {
           if (prev.some(l => l.id === item.id)) return prev;
-          return [...prev, item as Listing];
+          return [...prev, item];
         });
         
         await unlikeListing(item.id);
@@ -286,6 +336,30 @@ export default function MyFavoritesPage() {
     }
   };
 
+  const handleShareItem = async (item: FavoriteItem) => {
+    try {
+      let url = '';
+      if (item.type === 'profile') {
+        url = `${window.location.origin}/dashboard/profile/${item.id}`;
+      } else {
+        url = `${window.location.origin}/dashboard/listings/${item.id}`;
+      }
+      
+      await navigator.clipboard.writeText(url);
+      
+      toast({
+        title: "Link copied to clipboard",
+        description: "The link has been copied to your clipboard and is ready to share.",
+      });
+    } catch (error) {
+      toast({
+        title: "Failed to copy link",
+        description: "Please try again or copy the link manually.",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
@@ -310,34 +384,10 @@ export default function MyFavoritesPage() {
                             <p className="text-sm text-muted-foreground">Your saved profiles and listings</p>
                         </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="outline">
-                                    <SlidersHorizontal className="mr-2 h-4 w-4" /> Sort by
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                <DropdownMenuItem>Date Added (newest)</DropdownMenuItem>
-                                <DropdownMenuItem>Date Added (oldest)</DropdownMenuItem>
-                                <DropdownMenuItem>Name (A-Z)</DropdownMenuItem>
-                                <DropdownMenuItem>Name (Z-A)</DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    </div>
                 </div>
             </div>
 
-      <div className="flex items-center gap-2">
-        <div className="relative flex-1">
-          <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search in your favorites..."
-            className="pl-8 max-w-sm"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
+      <div className="flex items-center justify-end">
         <Tabs defaultValue="all" onValueChange={setActiveTab} className="w-auto">
           <TabsList>
             <TabsTrigger value="all">All</TabsTrigger>
@@ -347,88 +397,433 @@ export default function MyFavoritesPage() {
         </Tabs>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 w-full flex-1">
         {filteredItems.length > 0 ? (
-          filteredItems.map((item) => {
+          filteredItems.map((item, idx) => {
             const isSoftRemoved = softRemovedItems.has(item.id);
+            if (item.type === 'profile') {
+              const profile = item.data;
+              const skillsArr = Array.isArray(profile.skills)
+                ? profile.skills
+                : typeof profile.skills === "string"
+                ? profile.skills.split(",").map((s: string) => s.trim()).filter((s: string) => Boolean(s))
+                : [];
             return (
-            <Card key={item.id} className="flex flex-col">
-              <CardHeader className="flex-row items-center gap-4 space-y-0 pb-2">
-                {item.type === 'profile' ? (
-                  <Avatar className="h-12 w-12">
-                    <AvatarImage src={item.image} alt={item.name} />
-                    <AvatarFallback>{item.name.charAt(0)}</AvatarFallback>
+                <motion.div
+                  key={profile.id}
+                  variants={cardVariants}
+                  initial="hidden"
+                  animate="visible"
+                  whileHover="hover"
+                  transition={{ delay: idx * 0.1 }}
+                  className="h-full"
+                >
+                  <Card className="group relative h-full bg-gradient-to-br from-white to-gray-50/50 dark:from-zinc-900/80 dark:to-zinc-800/60 border-0 shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] rounded-3xl overflow-hidden backdrop-blur-sm">
+                    {/* Gradient overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    
+                    <CardContent className="relative p-0 flex flex-col h-full">
+                      {/* Header Section */}
+                      <div className="p-4 pb-3">
+                        {/* Profile Type Badge */}
+                        {profile.profile_type && (
+                          <div className="flex justify-end mb-2">
+                            <div className="flex items-center gap-1.5 bg-blue-500/10 text-blue-600 px-2 py-1 rounded-full text-xs font-medium">
+                              {profile.profile_type === "Founder" && <Briefcase className="h-3.5 w-3.5" />}
+                              {profile.profile_type === "Investor" && <DollarSign className="h-3.5 w-3.5" />}
+                              {profile.profile_type === "Expert" && <Star className="h-3.5 w-3.5" />}
+                              <span>{profile.profile_type}</span>
+                            </div>
+                          </div>
+                        )}
+                        
+                        <div className="flex items-start gap-4">
+                          {/* Avatar with status indicator */}
+                          <div className="relative">
+                            <Avatar className="h-12 w-12 border-4 border-white/80 dark:border-zinc-800/80 shadow-lg">
+                              <AvatarImage src={profile.avatar_url || undefined} alt={profile.full_name || undefined} />
+                              <AvatarFallback className="text-lg font-semibold bg-gradient-to-br from-primary to-primary/80 text-white">
+                                {getInitials(profile.full_name)}
+                              </AvatarFallback>
                   </Avatar>
-                ) : (
-                  (item as Listing).icon
-                )}
-                <div className="flex-1">
-                  <CardDescription className="text-xs font-semibold">Added {item.addedDate}</CardDescription>
-                  <CardTitle className="text-lg leading-tight">
-                    {item.type === 'profile' ? item.name : item.title}
-                  </CardTitle>
-                  {item.type === 'listing' && (
-                    <CardDescription className="text-sm text-muted-foreground">
-                      {(item as Listing).company} &bull; {(item as Listing).location}
-                    </CardDescription>
-                  )}
-                  {item.type === 'profile' && (
-                    <CardDescription className="text-sm text-muted-foreground">
-                      {item.title}
-                    </CardDescription>
+                            {/* Online status indicator */}
+                            <div className="absolute -bottom-1 -right-1 h-3 w-3 bg-green-500 border-2 border-white dark:border-zinc-800 rounded-full" />
+                          </div>
+                          
+                          {/* Profile Info */}
+                          <div className="flex-1 min-w-0">
+                              <h3 
+                              className="font-bold text-base text-gray-900 dark:text-white cursor-pointer hover:text-primary transition-colors mb-1"
+                                onClick={() => handleViewItem(item)}
+                              >
+                                {profile.full_name}
+                              </h3>
+                            
+                            {profile.professional_role && (
+                              <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                {profile.professional_role}
+                                {profile.company && (
+                                  <>
+                                    <span className="mx-1">•</span>
+                                    <span className="text-gray-600">{profile.company}</span>
+                                  </>
+                                )}
+                              </p>
+                            )}
+                            
+                            {/* Location */}
+                            <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                              <div className="flex items-center gap-1">
+                                <MapPin className="h-3 w-3" />
+                                <span>{profile.country || "Location not specified"}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Bio Section */}
+                      {profile.bio && (
+                        <div className="px-4 pb-4">
+                          <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">About</h4>
+                          <div className="text-xs text-gray-600 dark:text-gray-400 line-clamp-3 leading-relaxed">
+                            {profile.bio}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Details Section */}
+                      <div className="px-4 pb-4 space-y-3">
+                        {/* Skills */}
+                        {skillsArr.length > 0 && (
+                          <div className="space-y-2">
+                            <h4 className="text-sm font-semibold text-gray-900 dark:text-white">Skills & Expertise</h4>
+                            <div className="flex flex-wrap gap-1.5">
+                              {skillsArr.map((skill: string) => (
+                                <Badge 
+                                  key={skill} 
+                                  variant="secondary"
+                                  className="bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-900/20 dark:to-blue-800/20 
+                                           text-blue-700 dark:text-blue-400 border-blue-200/50 dark:border-blue-700/50 
+                                           hover:bg-blue-100 dark:hover:bg-blue-800/30 transition-colors
+                                           text-xs px-2 py-0.5 rounded-lg"
+                                >
+                                  {skill}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
                   )}
                 </div>
-              </CardHeader>
-              <CardContent className="space-y-4 pt-2">
-                <p className="text-sm text-muted-foreground line-clamp-3">
-                  {item.description}
-                </p>
-                {item.type === 'profile' && item.skills && item.skills.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {item.skills.map((skill, index) => (
-                      <Badge key={index} className={skill.color}>
-                        {skill.label}
+
+                      {/* Action Buttons */}
+                      <div className="mt-auto p-4 pt-3">
+                        <div className="flex items-center gap-3">
+                          <Button
+                            variant="default"
+                            size="sm"
+                            className="flex-1 bg-primary hover:bg-primary/90 text-white font-semibold rounded-xl h-8"
+                            onClick={() => handleViewItem(item)}
+                          >
+                            <Eye className="h-4 w-4 mr-2" />
+                            View Profile
+                          </Button>
+                          
+                          <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-yellow-50 dark:hover:bg-yellow-900/20"
+                              onClick={() => handleToggleFavorite(item)}
+                            >
+                              <Star
+                                className={`h-4 w-4 ${
+                                  isSoftRemoved
+                                    ? "text-gray-400 hover:text-yellow-500"
+                                    : "fill-yellow-400 text-yellow-500"
+                                }`}
+                                strokeWidth={isSoftRemoved ? 1.5 : 0}
+                              />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              className="h-8 w-8 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                              onClick={() => handleShareItem(item)}
+                            >
+                              <Share2 className="h-4 w-4 text-gray-400 hover:text-blue-500" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              );
+            } else if (item.type === 'listing') {
+              const listing = item.data;
+              return (
+                <motion.div
+                  key={listing.id}
+                  variants={cardVariants}
+                  initial="hidden"
+                  animate="visible"
+                  whileHover="hover"
+                  transition={{ delay: idx * 0.1 }}
+                  className="h-full"
+                >
+                  <Card className="group relative h-full bg-gradient-to-br from-white to-gray-50/50 dark:from-zinc-900/80 dark:to-zinc-800/60 border-0 shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] rounded-3xl overflow-hidden backdrop-blur-sm">
+                    {/* Gradient overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    
+                    <CardContent className="relative p-0 flex flex-col h-full">
+                      {/* Header Section */}
+                      <div className="p-4 pb-3">
+                        {/* Listing Type Badge */}
+                        <div className="flex justify-end mb-2">
+                          <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/20 text-xs px-2 py-1">
+                            {formatListingType(listing.listing_type)}
+                          </Badge>
+                        </div>
+                        
+                        <div className="flex items-start gap-4">
+                          {/* Avatar */}
+                          <Avatar className="h-12 w-12 border-4 border-white/80 dark:border-zinc-800/80 shadow-lg">
+                            <AvatarImage src={listing.profiles?.avatar_url || undefined} alt={listing.profiles?.full_name || 'User'} />
+                            <AvatarFallback className="text-lg font-semibold bg-gradient-to-br from-primary to-primary/80 text-white">
+                              {listing.profiles?.full_name?.charAt(0) || 'U'}
+                            </AvatarFallback>
+                          </Avatar>
+                          
+                          {/* Listing Info */}
+                          <div className="flex-1 min-w-0">
+                              <h3 
+                              className="font-bold text-base text-gray-900 dark:text-white cursor-pointer hover:text-primary transition-colors mb-1"
+                                onClick={() => handleViewItem(item)}
+                              >
+                                {listing.profiles?.full_name || listing.user_id || 'Unknown User'}
+                              </h3>
+                            
+                            {listing.profiles?.professional_role && (
+                              <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                {listing.profiles.professional_role}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Title and Description */}
+                      <div className="px-4 pb-4">
+                        <h4 className="font-bold text-base text-gray-900 dark:text-white mb-3 line-clamp-2 group-hover:text-primary transition-colors">
+                          {listing.title}
+                        </h4>
+                        
+                        <div 
+                          className="text-xs text-gray-600 dark:text-gray-400 line-clamp-3 leading-relaxed mb-4"
+                          dangerouslySetInnerHTML={{ __html: listing.description || '' }}
+                        />
+                      </div>
+
+                      {/* Details Section */}
+                      <div className="px-4 pb-4 space-y-3">
+                        {/* Skills */}
+                        {listing.skills && (
+                          <div className="space-y-2">
+                            <h4 className="text-sm font-semibold text-gray-900 dark:text-white">Required Skills</h4>
+                            <div className="flex flex-wrap gap-1.5">
+                              {(Array.isArray(listing.skills) ? listing.skills : listing.skills.split(",").map((s: string) => s.trim())).map((skill: string) => (
+                                <Badge 
+                                  key={skill} 
+                                  variant="secondary"
+                                  className="bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-900/20 dark:to-blue-800/20 
+                                           text-blue-700 dark:text-blue-400 border-blue-200/50 dark:border-blue-700/50 
+                                           hover:bg-blue-100 dark:hover:bg-blue-800/30 transition-colors
+                                           text-xs px-2 py-0.5 rounded-lg"
+                                >
+                                  {skill}
                       </Badge>
                     ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Compensation Information */}
+                        {(listing.compensation_type || listing.compensation_value || listing.amount) && (
+                          <div className="space-y-2">
+                            <h4 className="text-sm font-semibold text-gray-900 dark:text-white">
+                              {listing.profiles?.profile_type === "Founder" && listing.listing_type === "sell-startup" ? "Sale Details" : 
+                               listing.profiles?.profile_type === "Investor" && (listing.listing_type === "investment-opportunity" || listing.listing_type === "buy-startup") ? "Investment Details" :
+                               listing.profiles?.profile_type === "Investor" && listing.listing_type === "co-investor" ? "Co-Investment Details" :
+                               "Compensation"}
+                            </h4>
+                            <div className="flex flex-wrap gap-1.5">
+                              {listing.compensation_type && (
+                                <Badge 
+                                  variant="secondary"
+                                  className="bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-900/20 dark:to-green-800/20 
+                                           text-green-700 dark:text-green-400 border-green-200/50 dark:border-green-700/50 
+                                           hover:bg-green-100 dark:hover:bg-green-800/30 transition-colors
+                                           text-xs px-2 py-0.5 rounded-lg"
+                                >
+                                  {listing.compensation_type}
+                                </Badge>
+                              )}
+                              {listing.compensation_value && (
+                                <>
+                                  {typeof listing.compensation_value === 'object' ? (
+                                    <>
+                                      {listing.compensation_value.salary && (
+                                <Badge 
+                                  variant="secondary"
+                                  className="bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-900/20 dark:to-green-800/20 
+                                           text-green-700 dark:text-green-400 border-green-200/50 dark:border-green-700/50 
+                                           hover:bg-green-100 dark:hover:bg-green-800/30 transition-colors
+                                           text-xs px-2 py-0.5 rounded-lg"
+                                >
+                                          Salary: {listing.compensation_value.salary}
+                                </Badge>
+                                      )}
+                                      {listing.compensation_value.equity && (
+                                        <Badge 
+                                          variant="secondary"
+                                          className="bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-900/20 dark:to-green-800/20 
+                                                   text-green-700 dark:text-green-400 border-green-200/50 dark:border-green-700/50 
+                                                   hover:bg-green-100 dark:hover:bg-green-800/30 transition-colors
+                                                   text-xs px-2 py-0.5 rounded-lg"
+                                        >
+                                          Equity: {listing.compensation_value.equity}
+                                        </Badge>
+                                      )}
+                                      {listing.compensation_value.cash && (
+                                        <Badge 
+                                          variant="secondary"
+                                          className="bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-900/20 dark:to-green-800/20 
+                                                   text-green-700 dark:text-green-400 border-green-200/50 dark:border-green-700/50 
+                                                   hover:bg-green-100 dark:hover:bg-green-800/30 transition-colors
+                                                   text-xs px-2 py-0.5 rounded-lg"
+                                        >
+                                          Cash: {listing.compensation_value.cash}
+                                        </Badge>
+                                      )}
+                                      {listing.compensation_value.value && (
+                                        <Badge 
+                                          variant="secondary"
+                                          className="bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-900/20 dark:to-green-800/20 
+                                                   text-green-700 dark:text-green-400 border-green-200/50 dark:border-green-700/50 
+                                                   hover:bg-green-100 dark:hover:bg-green-800/30 transition-colors
+                                                   text-xs px-2 py-0.5 rounded-lg"
+                                        >
+                                          {getCompensationValueLabel(listing.listing_type, listing.profiles?.profile_type || '')}: {listing.compensation_value.value}
+                                        </Badge>
+                                      )}
+                                    </>
+                                  ) : (
+                                    <Badge 
+                                      variant="secondary"
+                                      className="bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-900/20 dark:to-green-800/20 
+                                               text-green-700 dark:text-green-400 border-green-200/50 dark:border-green-700/50 
+                                               hover:bg-green-100 dark:hover:bg-green-800/30 transition-colors
+                                               text-xs px-2 py-0.5 rounded-lg"
+                                    >
+                                      {getCompensationValueLabel(listing.listing_type, listing.profiles?.profile_type || '')}: {listing.compensation_value}
+                                    </Badge>
+                                  )}
+                                </>
+                              )}
+                              {listing.amount && (
+                                <Badge 
+                                  variant="secondary"
+                                  className="bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-900/20 dark:to-green-800/20 
+                                           text-green-700 dark:text-green-400 border-green-200/50 dark:border-green-700/50 
+                                           hover:bg-green-100 dark:hover:bg-green-800/30 transition-colors
+                                           text-xs px-2 py-0.5 rounded-lg"
+                                >
+                                  {getAmountLabel(listing.listing_type, listing.profiles?.profile_type || '')}: {listing.amount}
+                                </Badge>
+                              )}
+                            </div>
                   </div>
                 )}
-                {item.type === 'listing' && (
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <MapPin className="mr-1 h-4 w-4" />
-                    <span>{(item as Listing).location}</span>
+
+                        {/* Key Details Badges */}
+                        <div className="flex flex-wrap gap-2">
+                          {listing.funding_stage && (
+                            <div className="flex items-center gap-1.5 bg-purple-500/10 text-purple-600 px-3 py-1.5 rounded-full text-xs font-medium">
+                              <Building2 className="h-3.5 w-3.5" />
+                              <span>Stage: {listing.funding_stage}</span>
                   </div>
                 )}
-              </CardContent>
-              <CardFooter className="mt-auto flex justify-between pt-4">
+                        </div>
+
+                        {/* Location and Sector */}
+                        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                          <MapPin className="h-3 w-3" />
+                          <span>{listing.location_city ? `${listing.location_city}, ` : ""}{listing.location_country}</span>
+                          {listing.sector && (
+                            <>
+                              <span className="mx-1">•</span>
+                              <Badge variant="outline" className="text-xs border-gray-200 dark:border-gray-700">
+                                {listing.sector}
+                              </Badge>
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="mt-auto p-4 pt-3">
+                        <div className="flex items-center gap-3">
                 <Button 
-                  variant="outline" 
+                            variant="default"
                   size="sm"
+                            className="flex-1 bg-primary hover:bg-primary/90 text-white font-semibold rounded-xl h-8"
                   onClick={() => handleViewItem(item)}
                 >
-                  {item.type === 'profile' ? 'View Profile' : 'View Listing'}
+                            <Eye className="h-4 w-4 mr-2" />
+                            View Listing
                 </Button>
-                <div className="flex items-center gap-2">
+                          
+                          <div className="flex gap-1">
                   <Button 
                     variant="ghost" 
-                    size="icon"
+                              size="sm"
+                              className="h-8 w-8 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-yellow-50 dark:hover:bg-yellow-900/20" 
                       onClick={() => handleToggleFavorite(item)}
-                      className={isSoftRemoved 
-                        ? "text-gray-400 hover:text-yellow-500 hover:bg-yellow-50" 
-                        : "text-yellow-500 hover:text-yellow-700 hover:bg-yellow-50"
-                      }
-                  >
-                      <Star className={`h-4 w-4 ${isSoftRemoved ? 'text-gray-400' : 'fill-yellow-400 text-yellow-500'}`} />
+                            >
+                              <Star 
+                                className={`h-4 w-4 ${
+                                  isSoftRemoved 
+                                    ? "text-gray-400 hover:text-yellow-500" 
+                                    : "fill-yellow-400 text-yellow-500"
+                                }`} 
+                                strokeWidth={isSoftRemoved ? 1.5 : 0} 
+                              />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              className="h-8 w-8 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                              onClick={() => handleShareItem(item)}
+                            >
+                              <Share2 className="h-4 w-4 text-gray-400 hover:text-blue-500" />
                   </Button>
-                  <Button variant="ghost" size="icon"><Share2 className="h-4 w-4" /></Button>
+                          </div>
+                        </div>
                 </div>
-              </CardFooter>
+                    </CardContent>
             </Card>
+                </motion.div>
             );
+            }
+            return null;
           })
         ) : (
-          <p className="col-span-full text-center text-muted-foreground">
-            No favorites found.
-          </p>
+          <div className="flex flex-col items-center justify-center min-h-[40vh] text-muted-foreground col-span-full">
+            <img src="/images/empty-state.svg" alt="No results" className="w-32 h-32 mb-4 opacity-80" />
+            <span className="text-lg font-semibold">No favorites found.</span>
+            <span className="text-sm mt-1">Start adding profiles and listings to your favorites.</span>
+          </div>
         )}
       </div>
     </div>

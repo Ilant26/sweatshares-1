@@ -17,7 +17,7 @@ import { Toaster } from "@/components/ui/toaster"
 import Link from "next/link"
 import { supabase } from "@/lib/supabase"
 import { cn } from "@/lib/utils"
-import { ArrowLeft, Newspaper, Users } from "lucide-react"
+import { ArrowLeft, Newspaper, UserSearch } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { NotificationsDropdown } from "@/components/notifications-dropdown"
 import { ChatInterface } from "@/components/chat-interface"
@@ -278,7 +278,7 @@ function DashboardHeader() {
                 isFindPartner && "after:scale-x-100"
               )}
             >
-              <Users className="h-4 w-4" />
+              <UserSearch className="h-4 w-4" />
               Find My Partner
             </Link>
           </nav>
@@ -310,7 +310,7 @@ function DashboardHeader() {
                 isFindPartner && "after:scale-x-100"
               )}
             >
-              <Users className="h-3 w-3" />
+              <UserSearch className="h-3 w-3" />
               Find
             </Link>
           </nav>
@@ -411,7 +411,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                           News Feed
                         </div>
                         <div className="relative px-2 py-1 text-xs lg:text-sm font-bold text-muted-foreground dark:text-white flex items-center gap-2">
-                          <Users className="h-4 w-4" />
+                          <UserSearch className="h-4 w-4" />
                           Find My Partner
                         </div>
                       </nav>
@@ -425,7 +425,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                           Feed
                         </div>
                         <div className="relative px-2 py-1 text-xs font-bold text-muted-foreground dark:text-white flex items-center gap-1">
-                          <Users className="h-3 w-3" />
+                          <UserSearch className="h-3 w-3" />
                           Find
                         </div>
                       </nav>
