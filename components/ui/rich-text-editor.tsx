@@ -59,8 +59,8 @@ export function RichTextEditor({ content, onChange, placeholder = 'Start writing
   }
 
   return (
-    <div className="border rounded-md">
-      <div className="border-b p-2 flex gap-1">
+    <div className="bg-background">
+      <div className="p-2 flex gap-1 border-b">
         <Button
           variant="ghost"
           size="sm"
@@ -145,7 +145,7 @@ export function RichTextEditor({ content, onChange, placeholder = 'Start writing
       </div>
       <EditorContent 
         editor={editor} 
-        className="prose prose-sm max-w-none p-4 min-h-[200px] focus:outline-none [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_li]:my-1" 
+        className="prose prose-sm max-w-none p-4 min-h-[200px] focus:outline-none [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_li]:my-1 cursor-text [&_.ProseMirror]:min-h-[200px] [&_.ProseMirror]:outline-none" 
       />
     </div>
   )

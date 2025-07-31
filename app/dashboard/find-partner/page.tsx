@@ -438,7 +438,9 @@ export default function FindPartnerPage() {
 
   // Add new state for skill search
   const [skillSearchTerm, setSkillSearchTerm] = useState("");
-  const [viewType, setViewType] = useState<'profiles' | 'opportunities'>('profiles');
+  const searchParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
+  const defaultViewType = (searchParams.get('view') as 'profiles' | 'opportunities') || 'profiles';
+  const [viewType, setViewType] = useState<'profiles' | 'opportunities'>(defaultViewType);
 
   // Memoized flat skill list
   const ALL_SKILLS: string[] = useMemo(() => {
@@ -674,8 +676,13 @@ export default function FindPartnerPage() {
                     <Button
                       variant={viewType === 'profiles' ? 'default' : 'ghost'}
                       size="sm"
-                      onClick={() => setViewType('profiles')}
-                      className="px-4 py-2"
+                                                            onClick={() => {
+                                        setViewType('profiles');
+                                        const newSearchParams = new URLSearchParams(window.location.search);
+                                        newSearchParams.set('view', 'profiles');
+                                        router.replace(`${window.location.pathname}?${newSearchParams.toString()}`, { scroll: false });
+                                      }}
+                                      className="px-4 py-2"
                     >
                       <User className="h-4 w-4 mr-2" />
                       Profiles
@@ -683,8 +690,13 @@ export default function FindPartnerPage() {
                     <Button
                       variant={viewType === 'opportunities' ? 'default' : 'ghost'}
                       size="sm"
-                      onClick={() => setViewType('opportunities')}
-                      className="px-4 py-2"
+                                                            onClick={() => {
+                                        setViewType('opportunities');
+                                        const newSearchParams = new URLSearchParams(window.location.search);
+                                        newSearchParams.set('view', 'opportunities');
+                                        router.replace(`${window.location.pathname}?${newSearchParams.toString()}`, { scroll: false });
+                                      }}
+                                      className="px-4 py-2"
                     >
                       <Handshake className="h-4 w-4 mr-2" />
                       Opportunities
