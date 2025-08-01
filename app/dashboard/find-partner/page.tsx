@@ -35,10 +35,11 @@ import { IndustrySelector } from '@/components/ui/industry-selector';
 import { ProfessionalRoleSelector } from '@/components/ui/professional-role-selector';
 
 // Simple single skill selector component for filtering
-const SingleSkillSelector = ({ value, onChange, placeholder }: { 
+const SingleSkillSelector = ({ value, onChange, placeholder, className }: { 
   value: string; 
   onChange: (skill: string) => void; 
-  placeholder: string; 
+  placeholder: string;
+  className?: string;
 }) => {
   const [search, setSearch] = React.useState("");
   const [open, setOpen] = React.useState(false);
@@ -90,7 +91,7 @@ const SingleSkillSelector = ({ value, onChange, placeholder }: {
           onBlur={() => setTimeout(() => setOpen(false), 150)}
           onKeyDown={handleInputKeyDown}
           placeholder={placeholder}
-          className="w-full text-sm pr-8"
+          className={cn("w-full text-sm pr-8", className)}
           autoComplete="off"
         />
         {(search || value) && (
@@ -666,6 +667,7 @@ export default function FindPartnerPage() {
                       size="sm"
                                                             onClick={() => {
                                         setViewType('opportunities');
+                                        setProfileType('all'); // Reset "Posted By" filter to "All Types"
                                         const newSearchParams = new URLSearchParams(window.location.search);
                                         newSearchParams.set('view', 'opportunities');
                                         router.replace(`${window.location.pathname}?${newSearchParams.toString()}`, { scroll: false });
@@ -702,11 +704,13 @@ export default function FindPartnerPage() {
                       {/* Professional Role Filter */}
                       <div className="flex flex-col gap-1">
                         <Label className="text-xs font-medium text-muted-foreground">Profession</Label>
-                        <div className="w-36">
+                        <div className="w-36 relative">
+                          <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
                           <ProfessionalRoleSelector
                             value={professionalRole === 'all' ? '' : professionalRole}
                             onChange={(selectedRole: string) => setProfessionalRole(selectedRole || 'all')}
                             placeholder="Search profession"
+                            className="pl-10"
                           />
                         </div>
                       </div>
@@ -714,11 +718,13 @@ export default function FindPartnerPage() {
                       {/* Skills Filter */}
                       <div className="flex flex-col gap-1">
                         <Label className="text-xs font-medium text-muted-foreground">Skills</Label>
-                        <div className="w-36">
+                        <div className="w-36 relative">
+                          <Tag className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
                           <SingleSkillSelector
                             value={skill === 'all' ? '' : skill}
                             onChange={(selectedSkill) => setSkill(selectedSkill || 'all')}
                             placeholder="Search skills"
+                            className="pl-10"
                           />
                         </div>
                       </div>
@@ -726,11 +732,13 @@ export default function FindPartnerPage() {
                       {/* Country Filter */}
                       <div className="flex flex-col gap-1">
                         <Label className="text-xs font-medium text-muted-foreground">Country</Label>
-                        <div className="w-36">
+                        <div className="w-36 relative">
+                          <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
                           <CountrySelector
                             value={country === 'all' ? '' : country}
                             onValueChange={(selectedCountry: string) => setCountry(selectedCountry || 'all')}
                             placeholder="Search country"
+                            className="pl-10"
                           />
                         </div>
                       </div>
@@ -808,11 +816,13 @@ export default function FindPartnerPage() {
                         (profileType === "Founder" || profileType === "Investor" || profileType === "Expert") && (
                                               <div className="flex flex-col gap-1">
                           <Label className="text-xs font-medium text-muted-foreground">Skills</Label>
-                          <div className="w-36">
+                          <div className="w-36 relative">
+                            <Tag className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
                             <SingleSkillSelector
                               value={skill === 'all' ? '' : skill}
                               onChange={(selectedSkill) => setSkill(selectedSkill || 'all')}
                               placeholder="Search skills"
+                              className="pl-10"
                             />
                           </div>
                         </div>
@@ -821,11 +831,13 @@ export default function FindPartnerPage() {
                       {/* Country Filter */}
                       <div className="flex flex-col gap-1">
                         <Label className="text-xs font-medium text-muted-foreground">Country</Label>
-                        <div className="w-36">
+                        <div className="w-36 relative">
+                          <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
                           <CountrySelector
                             value={listingCountry === 'all' ? '' : listingCountry}
                             onValueChange={(selectedCountry: string) => setListingCountry(selectedCountry || 'all')}
                             placeholder="Search country"
+                            className="pl-10"
                           />
                         </div>
                       </div>
@@ -833,11 +845,13 @@ export default function FindPartnerPage() {
                       {/* Industry Filter */}
                       <div className="flex flex-col gap-1">
                         <Label className="text-xs font-medium text-muted-foreground">Industry</Label>
-                        <div className="w-36">
+                        <div className="w-36 relative">
+                          <Building2 className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
                           <IndustrySelector
                             value={listingSector === 'all' ? '' : listingSector}
                             onChange={(selectedIndustry: string) => setListingSector(selectedIndustry || 'all')}
                             placeholder="Search industry"
+                            className="pl-10"
                           />
                         </div>
                       </div>
