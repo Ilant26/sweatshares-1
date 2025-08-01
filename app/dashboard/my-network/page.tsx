@@ -786,9 +786,9 @@ export default function MyNetworkPage() {
                                 {connections.length === 0 ? "No connections yet." : "No connections match your search."}
                             </p>
                             {connections.length === 0 && (
-                                <p className="text-sm text-muted-foreground mt-1">
-                                    Start connecting with other professionals to grow your network.
-                                </p>
+                            <p className="text-sm text-muted-foreground mt-1">
+                                Start connecting with other professionals to grow your network.
+                            </p>
                             )}
                             {searchQuery && connections.length > 0 && (
                                 <p className="text-sm text-muted-foreground mt-1">

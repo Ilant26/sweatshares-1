@@ -1320,11 +1320,11 @@ export default function ProfilePage() {
                           </div>
                         </div>
                       ) : (
-                        <div className="bg-muted/30 rounded-lg p-4">
-                          <p className="text-muted-foreground leading-relaxed">
-                            {profile.bio || 'No bio available. This person hasn\'t added a bio yet.'}
-                          </p>
-                        </div>
+                      <div className="bg-muted/30 rounded-lg p-4">
+                        <p className="text-muted-foreground leading-relaxed">
+                          {profile.bio || 'No bio available. This person hasn\'t added a bio yet.'}
+                        </p>
+                      </div>
                       )}
                     </div>
                     
@@ -1380,22 +1380,22 @@ export default function ProfilePage() {
                           </div>
                         </div>
                       ) : (
-                        <div className="flex flex-wrap gap-2">
-                          {profile.skills && profile.skills.length > 0 ? (
-                            profile.skills.map((skill: string, index: number) => (
-                              <Badge 
-                                key={index} 
-                                className={`px-3 py-1 text-sm font-medium ${getSkillColor(skill)}`}
-                              >
-                                {skill}
-                              </Badge>
-                            ))
-                          ) : (
-                            <div className="text-muted-foreground text-sm italic">
-                              No skills listed yet.
-                            </div>
-                          )}
-                        </div>
+                      <div className="flex flex-wrap gap-2">
+                        {profile.skills && profile.skills.length > 0 ? (
+                          profile.skills.map((skill: string, index: number) => (
+                            <Badge 
+                              key={index} 
+                              className={`px-3 py-1 text-sm font-medium ${getSkillColor(skill)}`}
+                            >
+                              {skill}
+                            </Badge>
+                          ))
+                        ) : (
+                          <div className="text-muted-foreground text-sm italic">
+                            No skills listed yet.
+                          </div>
+                        )}
+                      </div>
                       )}
                     </div>
                     
@@ -1438,7 +1438,7 @@ export default function ProfilePage() {
                                   Save
                                 </>
                               )}
-                            </Button>
+                          </Button>
                             <Button 
                               variant="outline" 
                               size="sm" 
@@ -1448,23 +1448,23 @@ export default function ProfilePage() {
                               <X className="h-4 w-4 mr-2" />
                               Cancel
                             </Button>
-                          </div>
-                        </div>
+                      </div>
+                              </div>
                       ) : (
-                        <div className="space-y-2 text-sm">
+                      <div className="space-y-2 text-sm">
                           {profile.website ? (
-                            <div className="flex items-center gap-2">
-                              <Globe className="h-4 w-4 text-muted-foreground" />
-                              <a href={profile.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                                {profile.website}
-                              </a>
-                            </div>
+                          <div className="flex items-center gap-2">
+                            <Globe className="h-4 w-4 text-muted-foreground" />
+                            <a href={profile.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                              {profile.website}
+                            </a>
+                          </div>
                           ) : (
                             <div className="text-muted-foreground text-sm italic">
                               No website listed yet.
-                            </div>
-                          )}
-                        </div>
+                          </div>
+                        )}
+                      </div>
                       )}
                     </div>
                   </div>

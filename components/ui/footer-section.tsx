@@ -129,13 +129,13 @@ function Footerdemo() {
             © 2024 SweatShares. All rights reserved.
           </p>
           <nav className="flex gap-4 text-sm">
-            <a href="#" className="transition-colors hover:text-primary">
+            <a href="/legal/privacy" className="transition-colors hover:text-primary">
               Privacy Policy
             </a>
-            <a href="#" className="transition-colors hover:text-primary">
+            <a href="/legal/terms" className="transition-colors hover:text-primary">
               Terms of Service
             </a>
-            <a href="#" className="transition-colors hover:text-primary">
+            <a href="/legal/cookies" className="transition-colors hover:text-primary">
               Cookie Settings
             </a>
           </nav>

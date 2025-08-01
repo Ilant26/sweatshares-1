@@ -1,5 +1,5 @@
 import { Card, CardContent } from '@/components/ui/card'
-import { Settings2, Sparkles, Zap, Briefcase, DollarSign, Star } from 'lucide-react'
+import { Crown, Briefcase, DollarSign } from 'lucide-react'
 import { ReactNode } from 'react'
 
 export default function Features() {
@@ -25,7 +25,7 @@ export default function Features() {
                                     className="bg-radial to-background absolute inset-0 from-transparent to-75%"
                                 />
                                 <div className="bg-background absolute inset-0 m-auto flex size-12 items-center justify-center border-l border-t">
-                                    <Zap className="size-6 text-primary" strokeWidth={1.5} />
+                                    <Crown className="size-6 text-primary" strokeWidth={1.5} />
                                 </div>
                             </div>
                             <div className="space-y-3">
@@ -49,7 +49,7 @@ export default function Features() {
                                     className="bg-radial to-background absolute inset-0 from-transparent to-75%"
                                 />
                                 <div className="bg-background absolute inset-0 m-auto flex size-12 items-center justify-center border-l border-t">
-                                    <Settings2 className="size-6 text-primary" strokeWidth={1.5} />
+                                    <Briefcase className="size-6 text-primary" strokeWidth={1.5} />
                                 </div>
                             </div>
                             <div className="space-y-3">
@@ -73,7 +73,7 @@ export default function Features() {
                                     className="bg-radial to-background absolute inset-0 from-transparent to-75%"
                                 />
                                 <div className="bg-background absolute inset-0 m-auto flex size-12 items-center justify-center border-l border-t">
-                                    <Sparkles className="size-6 text-primary" strokeWidth={1.5} />
+                                    <DollarSign className="size-6 text-primary" strokeWidth={1.5} />
                                 </div>
                             </div>
                             <div className="space-y-3">

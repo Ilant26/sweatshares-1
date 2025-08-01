@@ -192,14 +192,14 @@ export default function MyAlertsPage() {
       if (selectedProfessionalRoles.length > 0) criteria.professional_roles = selectedProfessionalRoles;
       if (selectedSkills.length > 0) criteria.skills = selectedSkills;
       if (selectedCountry) criteria.countries = [selectedCountry];
-         } else {
+    } else {
        if (selectedListingTypes.length === 0) {
          toast.error('Please select what type of opportunity you\'re looking for');
          return;
        }
-       if (selectedListingTypes.length > 0) criteria.listing_types = selectedListingTypes;
+      if (selectedListingTypes.length > 0) criteria.listing_types = selectedListingTypes;
        if (selectedProfileTypes.length > 0) criteria.profile_types = selectedProfileTypes;
-       if (selectedSkills.length > 0) criteria.skills = selectedSkills;
+      if (selectedSkills.length > 0) criteria.skills = selectedSkills;
        if (selectedCountry) criteria.countries = [selectedCountry];
        if (selectedSector) criteria.sectors = [selectedSector];
        if (fundingStage) criteria.funding_stage = fundingStage;
@@ -207,7 +207,7 @@ export default function MyAlertsPage() {
        if (Object.keys(compensationValue).length > 0) criteria.compensation_value = compensationValue;
        if (amount) criteria.amount = amount;
        if (locationCity) criteria.location_city = locationCity;
-     }
+    }
 
     if (Object.keys(criteria).length === 0) {
       toast.error('Please select at least one criteria');
@@ -566,12 +566,12 @@ export default function MyAlertsPage() {
                                   {category}
                                 </div>
                                 <div className="grid grid-cols-1 gap-1">
-                                                                     {types.map((type) => (
-                                     <label key={type.value} className="flex items-center space-x-2 cursor-pointer hover:bg-muted/50 p-2 rounded">
-                                       <Checkbox
-                                         checked={selectedListingTypes.includes(type.value)}
-                                         onCheckedChange={(checked) => {
-                                           if (checked) {
+                                  {types.map((type) => (
+                                    <label key={type.value} className="flex items-center space-x-2 cursor-pointer hover:bg-muted/50 p-2 rounded">
+                                      <Checkbox
+                                        checked={selectedListingTypes.includes(type.value)}
+                                        onCheckedChange={(checked) => {
+                                          if (checked) {
                                              // Clear previous selection and set new one (single selection)
                                              setSelectedListingTypes([type.value]);
                                              
@@ -598,21 +598,21 @@ export default function MyAlertsPage() {
                                              if (!SKILL_REQUIRED_TYPES.includes(type.value)) {
                                                setSelectedSkills([]);
                                              }
-                                           } else {
+                                          } else {
                                              // If unchecking, clear everything
                                              setSelectedListingTypes([]);
-                                             setSelectedSkills([]);
+                                              setSelectedSkills([]);
                                              setSelectedProfileTypes([]);
                                              setFundingStage('');
                                              setCompensationType('');
                                              setCompensationValue({});
                                              setAmount('');
-                                           }
-                                         }}
-                                       />
-                                       <span className="text-sm">{type.label}</span>
-                                     </label>
-                                   ))}
+                                          }
+                                        }}
+                                      />
+                                      <span className="text-sm">{type.label}</span>
+                                    </label>
+                                  ))}
                                 </div>
                               </div>
                             ))}

@@ -30,11 +30,12 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
 import { CountrySelector } from '@/components/ui/country-selector';
-import { SkillsSelector, SKILLS_CATEGORIES } from '@/components/ui/skills-selector';
+import { SKILLS_CATEGORIES } from '@/components/ui/skills-selector';
 import { IndustrySelector } from '@/components/ui/industry-selector';
+import { ProfessionalRoleSelector } from '@/components/ui/professional-role-selector';
 
-// Single skill selector component for filtering
-const SingleSkillsSelector = ({ value, onChange, placeholder }: { 
+// Simple single skill selector component for filtering
+const SingleSkillSelector = ({ value, onChange, placeholder }: { 
   value: string; 
   onChange: (skill: string) => void; 
   placeholder: string; 
@@ -43,7 +44,7 @@ const SingleSkillsSelector = ({ value, onChange, placeholder }: {
   const [open, setOpen] = React.useState(false);
   const inputRef = React.useRef<HTMLInputElement>(null);
 
-  // Flatten skills from all categories
+  // Flatten all skills from all categories into a single array
   const allSkills = React.useMemo(() => {
     const skills: string[] = [];
     Object.values(SKILLS_CATEGORIES).forEach(categorySkills => {
@@ -136,6 +137,7 @@ const SingleSkillsSelector = ({ value, onChange, placeholder }: {
   );
 };
 
+
 const getSkillColor = (skill: string) => {
   const colors = [
     'bg-blue-100 text-blue-800',
@@ -170,56 +172,7 @@ const formatListingType = (listingType: string): string => {
   return typeMap[listingType] || listingType;
 };
 
-// Professional Role Categories
-const PROFESSIONAL_CATEGORIES = {
-  "Product & Design": [
-    "Product Designer", "UX/UI Designer", "UX/UI Researcher", "Graphic Designer", "Social Media Manager", 
-    "Brand Designer", "Content Manager", "Digital Designer", "Interaction Designer", "Web Designer"
-  ],
-  "Tech & Development": [
-    "CEO (Operational Tech Role)", "CTO", "Backend Developer", "Frontend Developer", "Full-stack Developer",
-    "Mobile Developer (iOS, Android)", "No-code Developer", "DevOps Engineer", "QA Tester", "Security Engineer",
-    "Cloud Architect", "Blockchain Developer", "AI/ML Engineer", "Performance Engineer", "Database Administrator (DBA)",
-    "Systems Architect"
-  ],
-  "Growth & Marketing": [
-    "Growth Hacker", "Marketing Specialist", "Performance Marketing Manager", "Customer Acquisition Manager",
-    "Growth Manager", "Digital Marketing Specialist", "Event Manager", "Email Marketing Specialist",
-    "Influencer Relations Manager", "PR Specialist", "Community Manager", "Content Strategist",
-    "SEO/SEM Specialist", "Affiliate Marketing Manager", "Product Marketing Manager", "Brand Marketing Manager",
-    "Partnership Manager"
-  ],
-  "Operations": [
-    "Customer Support", "Customer Success Manager", "Operations Manager", "Supply Chain Manager",
-    "Procurement Manager", "Logistics Manager", "Business Operations Analyst", "Facilities Manager",
-    "Data Entry Specialist", "Business Process Analyst"
-  ],
-  "Legal, Finance & Operations": [
-    "Legal Counsel", "Business Lawyer", "Tax Lawyer", "IP Lawyer (Intellectual Property)", "Financial Analyst",
-    "Accountant", "Bookkeeper", "Tax Consultant", "Fundraiser", "IP Agent (Intellectual Property Agent)",
-    "Regulatory Affairs Specialist", "Compliance Officer", "Sustainability Manager", "Risk Manager",
-    "Insurance Manager", "Corporate Treasurer", "Investment Analyst", "Investor Relations Manager"
-  ],
-  "Human Resources & Recruiting": [
-    "HR Manager", "Recruiter", "Talent Acquisition Specialist", "HR Generalist", "Compensation and Benefits Manager",
-    "Training and Development Manager", "Employee Engagement Manager", "HR Business Partner",
-    "Learning and Development Specialist", "HR Coordinator"
-  ],
-  "Mentorship & Advisory": [
-    "Mentor", "Advisor", "Venture Partner", "Portfolio Manager", "Investment Advisor", "Business Consultant",
-    "Startup Mentor", "Growth Advisor"
-  ],
-  "Investment Roles": [
-    "Business Angel", "Advisor (Investor + Advisor)", "Crowdfunding Contributor", "Venture Capitalists (VC)",
-    "Family Office", "Private Equity Firms", "BPI (Business Public Investment)", "Government-backed Funds",
-    "Incubators / Accelerators", "Impact Funds", "Sector-Specific Funds"
-  ],
-  "Leadership & General": [
-    "Founder", "Startup Owner", "CEO", "COO", "CFO", "Product Manager", "Software Engineer", "Data Scientist",
-    "Marketing Manager", "Sales Manager", "Business Development", "Investor", "Angel Investor",
-    "Venture Capitalist", "Freelancer", "Consultant", "Expert", "Coach"
-  ]
-};
+
 
 // Funding Stages from create-listing-modal.tsx
 const FUNDING_STAGES = [
@@ -497,16 +450,14 @@ export default function FindPartnerPage() {
       if (listingSector && listingSector !== 'all') {
         query = query.eq('sector', listingSector);
       }
-      if (profileType && profileType !== 'all') {
-        query = query.eq('profile_type', profileType);
-      }
+      // Note: profileType filtering is done client-side since it's on the joined profiles table
       const { data, error } = await query;
       if (error) setListingError(error.message);
       else setListings(data || []);
       setLoadingListings(false);
     };
     fetchListings();
-  }, [listingType, listingFundingStage, listingCompensationType, listingCountry, listingSector, profileType]);
+  }, [listingType, listingFundingStage, listingCompensationType, listingCountry, listingSector]);
 
   // Helper function to check if a profile has meaningful information
   const hasProfileInformation = (profile: Profile): boolean => {
@@ -567,20 +518,48 @@ export default function FindPartnerPage() {
     });
   }, [profiles, search, professionalRole, profileType, skill, country]);
 
-  // Filter listings client-side based on search, country, sector
+  // Filter listings client-side based on all filters
   const filteredListings = useMemo(() => {
     return listings.filter((listing) => {
+      // Search filter
       const matchesSearch =
         !listingSearch ||
         (listing.title && listing.title.toLowerCase().includes(listingSearch.toLowerCase())) ||
         (listing.description && listing.description.toLowerCase().includes(listingSearch.toLowerCase())) ||
         (listing.profiles?.full_name && listing.profiles.full_name.toLowerCase().includes(listingSearch.toLowerCase())) ||
         (listing.profiles?.company && listing.profiles.company.toLowerCase().includes(listingSearch.toLowerCase()));
+      
+      // Posted By (Profile Type) filter
+      const matchesProfileType = profileType === "all" || (listing.profiles?.profile_type === profileType);
+      
+      // Listing Type filter
+      const matchesListingType = listingType === "all" || (listing.listing_type === listingType);
+      
+      // Skills filter
+      const matchesSkill = skill === "all" || (() => {
+        if (Array.isArray(listing.skills)) {
+          return listing.skills.includes(skill);
+        } else if (typeof listing.skills === 'string') {
+          return listing.skills.split(',').map((s: string) => s.trim()).includes(skill);
+        }
+        return false;
+      })();
+      
+      // Country filter
       const matchesCountry = listingCountry === "all" || (listing.location_country && listing.location_country === listingCountry);
+      
+      // Sector/Industry filter
       const matchesSector = listingSector === "all" || (listing.sector && listing.sector === listingSector);
-      return matchesSearch && matchesCountry && matchesSector;
+      
+      // Funding Stage filter
+      const matchesFundingStage = listingFundingStage === "all" || (listing.funding_stage && listing.funding_stage === listingFundingStage);
+      
+      // Compensation Type filter
+      const matchesCompensationType = listingCompensationType === "all" || (listing.compensation_type && listing.compensation_type === listingCompensationType);
+      
+      return matchesSearch && matchesProfileType && matchesListingType && matchesSkill && matchesCountry && matchesSector && matchesFundingStage && matchesCompensationType;
     });
-  }, [listings, listingSearch, listingCountry, listingSector]);
+  }, [listings, listingSearch, profileType, listingType, skill, listingCountry, listingSector, listingFundingStage, listingCompensationType]);
 
   // Merge and sort
   const mergedItems = useMemo(() => {
@@ -612,6 +591,7 @@ export default function FindPartnerPage() {
     setSkill("all");
     setCountry("all");
     setSkillSearchTerm("");
+    setListingSearch("");
     setListingType("all");
     setListingCountry("all");
     setListingSector("all");
@@ -632,15 +612,9 @@ export default function FindPartnerPage() {
     router.push(`/dashboard/messages?userId=${userId}`);
   };
 
-  // Get filtered roles based on category
-  const getRolesByCategory = (category: string) => {
-    return PROFESSIONAL_CATEGORIES[category as keyof typeof PROFESSIONAL_CATEGORIES] || [];
-  };
 
-  // Get all roles flattened
-  const getAllRoles = useMemo(() => {
-    return Object.values(PROFESSIONAL_CATEGORIES).flat();
-  }, []);
+
+
 
   // Get filtered listing types based on profile type
   const getFilteredListingTypes = (selectedProfileType: string) => {
@@ -728,25 +702,20 @@ export default function FindPartnerPage() {
                       {/* Professional Role Filter */}
                       <div className="flex flex-col gap-1">
                         <Label className="text-xs font-medium text-muted-foreground">Profession</Label>
-                        <Select value={professionalRole} onValueChange={setProfessionalRole}>
-                          <SelectTrigger className="w-36" aria-label="Filter by professional role">
-                            <Briefcase className="mr-2 h-4 w-4 text-muted-foreground" />
-                            <SelectValue placeholder="Role" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">All Roles</SelectItem>
-                            {getAllRoles.map((role) => (
-                              <SelectItem key={role} value={role}>{role}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <div className="w-36">
+                          <ProfessionalRoleSelector
+                            value={professionalRole === 'all' ? '' : professionalRole}
+                            onChange={(selectedRole: string) => setProfessionalRole(selectedRole || 'all')}
+                            placeholder="Search profession"
+                          />
+                        </div>
                       </div>
 
                       {/* Skills Filter */}
                       <div className="flex flex-col gap-1">
                         <Label className="text-xs font-medium text-muted-foreground">Skills</Label>
                         <div className="w-36">
-                          <SingleSkillsSelector
+                          <SingleSkillSelector
                             value={skill === 'all' ? '' : skill}
                             onChange={(selectedSkill) => setSkill(selectedSkill || 'all')}
                             placeholder="Search skills"
@@ -833,17 +802,21 @@ export default function FindPartnerPage() {
                         </Select>
                       </div>
 
-                      {/* Skills Filter */}
-                      <div className="flex flex-col gap-1">
-                        <Label className="text-xs font-medium text-muted-foreground">Skills</Label>
-                        <div className="w-36">
-                          <SingleSkillsSelector
-                            value={skill === 'all' ? '' : skill}
-                            onChange={(selectedSkill: string) => setSkill(selectedSkill || 'all')}
-                            placeholder="Search skills"
-                          />
+                      {/* Skills Filter - Hide for founder+find-funding/sell-startup and investor+investment-opportunity/buy-startup/co-investor */}
+                      {!(profileType === "Founder" && (["find-funding", "sell-startup"].includes(listingType))) && 
+                        !(profileType === "Investor" && (["investment-opportunity", "buy-startup", "co-investor"].includes(listingType))) && 
+                        (profileType === "Founder" || profileType === "Investor" || profileType === "Expert") && (
+                                              <div className="flex flex-col gap-1">
+                          <Label className="text-xs font-medium text-muted-foreground">Skills</Label>
+                          <div className="w-36">
+                            <SingleSkillSelector
+                              value={skill === 'all' ? '' : skill}
+                              onChange={(selectedSkill) => setSkill(selectedSkill || 'all')}
+                              placeholder="Search skills"
+                            />
+                          </div>
                         </div>
-                      </div>
+                      )}
 
                       {/* Country Filter */}
                       <div className="flex flex-col gap-1">
@@ -869,7 +842,9 @@ export default function FindPartnerPage() {
                         </div>
                       </div>
 
-                      {/* Funding Stage Filter */}
+                      {/* Funding Stage Filter - Only show for founder+find-funding or investor+investment-opportunity */}
+                      {((profileType === "Founder" && listingType === "find-funding") || 
+                        (profileType === "Investor" && listingType === "investment-opportunity")) && (
                       <div className="flex flex-col gap-1">
                         <Label className="text-xs font-medium text-muted-foreground">Stage</Label>
                         <Select value={listingFundingStage} onValueChange={setListingFundingStage}>
@@ -889,8 +864,12 @@ export default function FindPartnerPage() {
                           </SelectContent>
                         </Select>
                       </div>
+                      )}
 
-                      {/* Compensation Type Filter */}
+                      {/* Compensation Type Filter - Hide for founder+sell-startup and investor+investment-opportunity/buy-startup/co-investor */}
+                      {(profileType === "Founder" || profileType === "Investor" || profileType === "Expert") && 
+                        !(profileType === "Founder" && listingType === "sell-startup") &&
+                        !(profileType === "Investor" && ["investment-opportunity", "buy-startup", "co-investor"].includes(listingType)) && (
                       <div className="flex flex-col gap-1">
                         <Label className="text-xs font-medium text-muted-foreground">Compensation</Label>
                         <Select value={listingCompensationType} onValueChange={setListingCompensationType}>
@@ -910,6 +889,7 @@ export default function FindPartnerPage() {
                           </SelectContent>
                         </Select>
                       </div>
+                      )}
                     </>
                   )}
 
