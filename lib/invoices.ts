@@ -125,6 +125,18 @@ export async function editInvoice(invoiceId: string, updates: Partial<Omit<Invoi
   return ensureVatFields(data);
 }
 
+export async function deleteInvoice(invoiceId: string) {
+  const supabase = createClientComponentClient<Database>();
+  
+  const { error } = await supabase
+    .from('invoices')
+    .delete()
+    .eq('id', invoiceId);
+
+  if (error) throw error;
+  return true;
+}
+
 export function generateInvoicePDF(invoice: Invoice, senderProfile: any, receiverProfile: any) {
   const doc = new jsPDF();
 

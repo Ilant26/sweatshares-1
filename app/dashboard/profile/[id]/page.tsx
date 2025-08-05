@@ -136,7 +136,7 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<any>(null);
   const [listings, setListings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("posts");
+  const [activeTab, setActiveTab] = useState("about");
   const [newComments, setNewComments] = useState<{ [key: string]: string }>({});
   const [newReplies, setNewReplies] = useState<{ [key: string]: string }>({});
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
@@ -629,7 +629,7 @@ export default function ProfilePage() {
       {/* Profile Header */}
       <motion.div className="relative" variants={itemVariants}>
         {/* Cover Image */}
-        <div className="h-48 bg-gradient-to-r from-blue-500 to-purple-500" />
+        <div className="h-48 bg-gradient-to-r from-[#003dff] to-[#00b0ff]" />
         
         {/* Profile Info */}
         <div className="max-w-4xl mx-auto px-4">
@@ -679,28 +679,10 @@ export default function ProfilePage() {
                     className="flex items-center gap-2"
                   >
                     <Star className={`h-4 w-4 ${isProfileSaved(id as string) ? 'fill-yellow-400 text-yellow-500' : 'text-muted-foreground'}`} strokeWidth={isProfileSaved(id as string) ? 0 : 1.5} />
-                    {isProfileSaved(id as string) ? 'Saved' : 'Save Profile'}
+                    {isProfileSaved(id as string) ? 'Saved' : 'Add to favorites'}
                   </Button>
                 )}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem>
-                      <Share2 className="h-4 w-4 mr-2" />
-                      Share Profile
-                    </DropdownMenuItem>
-                    {user?.id !== id && (
-                      <DropdownMenuItem onClick={handleSaveProfile}>
-                      <Star className="h-4 w-4 mr-2" />
-                        {isProfileSaved(id as string) ? 'Remove from Favorites' : 'Add to Favorites'}
-                    </DropdownMenuItem>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
+
               </div>
             </div>
           </div>
@@ -711,9 +693,9 @@ export default function ProfilePage() {
       <motion.div className="max-w-4xl mx-auto px-4 mt-8" variants={itemVariants}>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="w-full justify-start">
-            <TabsTrigger value="posts">Posts</TabsTrigger>
-            <TabsTrigger value="listings">Listings</TabsTrigger>
             <TabsTrigger value="about">About</TabsTrigger>
+            <TabsTrigger value="listings">Listings</TabsTrigger>
+            <TabsTrigger value="posts">Posts</TabsTrigger>
           </TabsList>
 
           <TabsContent value="posts" className="mt-6">

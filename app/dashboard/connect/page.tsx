@@ -34,6 +34,7 @@ export default function ConnectPage() {
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>({})
   const [currentUser, setCurrentUser] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [expandedBios, setExpandedBios] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     const fetchCurrentUser = async () => {
@@ -163,6 +164,29 @@ export default function ConnectPage() {
       })
   }
 
+  const toggleBioExpansion = (profileId: string) => {
+    setExpandedBios(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(profileId)) {
+        newSet.delete(profileId)
+      } else {
+        newSet.add(profileId)
+      }
+      return newSet
+    })
+  }
+
+  const truncateBio = (bio: string, profileId: string) => {
+    const isExpanded = expandedBios.has(profileId)
+    const maxLength = 120 // Approximately 2 lines of text
+    
+    if (bio.length <= maxLength || isExpanded) {
+      return bio
+    }
+    
+    return bio.substring(0, maxLength) + '...'
+  }
+
   const getConnectionButton = (profile: Profile) => {
     const status = connectionStatus[profile.id] || 'none'
 
@@ -206,9 +230,6 @@ export default function ConnectPage() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold">Find People to Connect With</h1>
-          <Badge variant="secondary">
-            {profiles.length} People Found
-          </Badge>
         </div>
         <div className="relative w-full">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -272,7 +293,19 @@ export default function ConnectPage() {
                           )}
                         </div>
                         {profile.bio && (
-                          <p className="text-sm text-muted-foreground mt-1">{profile.bio}</p>
+                          <div className="mt-1">
+                            <p className="text-sm text-muted-foreground">
+                              {truncateBio(profile.bio, profile.id)}
+                            </p>
+                            {profile.bio.length > 120 && (
+                              <button
+                                onClick={() => toggleBioExpansion(profile.id)}
+                                className="text-sm text-primary hover:underline mt-1"
+                              >
+                                {expandedBios.has(profile.id) ? 'See less' : 'See more'}
+                              </button>
+                            )}
+                          </div>
                         )}
                       </div>
                     </div>

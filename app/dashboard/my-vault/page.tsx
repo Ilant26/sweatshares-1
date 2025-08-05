@@ -116,13 +116,11 @@ export default function MyVaultPage() {
     name: string;
     type: string;
     description: string;
-    tags: string;
     file: File | null;
   }>({
     name: '',
     type: '',
     description: '',
-    tags: '',
     file: null,
   });
   const fileRef = useRef<HTMLInputElement>(null);
@@ -366,7 +364,7 @@ export default function MyVaultPage() {
 
       toast.success('Document uploaded!');
       setAddDocumentDialogOpen(false);
-      setForm({ name: '', type: '', description: '', tags: '', file: null });
+      setForm({ name: '', type: '', description: '', file: null });
       setFileInput(null);
       if (fileRef.current) fileRef.current.value = '';
 
@@ -642,21 +640,12 @@ export default function MyVaultPage() {
                         rows={3}
                       />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="tags">Tags</Label>
-                      <Input 
-                        id="tags" 
-                        value={form.tags} 
-                        onChange={handleFormChange} 
-                        placeholder="finance, q4, confidential (comma separated)" 
-                      />
-                  </div>
                 </div>
                 <DialogFooter className="mt-6">
                     <Button type="button" variant="outline" onClick={() => {
                       setAddDocumentDialogOpen(false);
                       setFileInput(null);
-                      setForm({ name: '', type: '', description: '', tags: '', file: null });
+                      setForm({ name: '', type: '', description: '', file: null });
                     }}>
                       Cancel
                     </Button>

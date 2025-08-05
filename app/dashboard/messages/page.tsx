@@ -90,6 +90,7 @@ export default function MessagesPage() {
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [userProfileCache, setUserProfileCache] = useState<Record<string, any>>({});
+    const [attachmentDropdownOpen, setAttachmentDropdownOpen] = useState(false);
 
     const {
         messages,
@@ -484,6 +485,7 @@ export default function MessagesPage() {
     const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(event.target.files || []);
         setSelectedFiles(prev => [...prev, ...files]);
+        setAttachmentDropdownOpen(false);
     };
 
     const handleRemoveFile = (index: number) => {
@@ -721,12 +723,14 @@ export default function MessagesPage() {
         if (selectedConversation) {
             router.push(`/dashboard/my-invoices?create=true&userId=${selectedConversation}`);
         }
+        setAttachmentDropdownOpen(false);
     };
 
     const handleSendSignatureRequest = () => {
         if (selectedConversation) {
             router.push(`/dashboard/my-vault?signature=true&userId=${selectedConversation}`);
         }
+        setAttachmentDropdownOpen(false);
     };
 
     if (isMobile) {
@@ -911,10 +915,10 @@ export default function MessagesPage() {
                                                                     <AvatarFallback>{senderName.charAt(0)}</AvatarFallback>
                                                                 </Avatar>
                                                             )}
-                                                            <div className="rounded-lg border-2 border-green-500 bg-green-50 dark:bg-green-900/20 p-4 shadow-md flex flex-col w-full">
+                                                            <div className="rounded-lg border-2 border-blue-500 bg-blue-50 dark:bg-blue-900/20 p-4 shadow-md flex flex-col w-full">
                                                                 <div className="flex items-center gap-2 mb-2">
-                                                                    <Receipt className="h-5 w-5 text-green-600" />
-                                                                    <span className="font-semibold text-green-700 dark:text-green-300">Invoice Sent</span>
+                                                                    <Receipt className="h-5 w-5 text-blue-600" />
+                                                                    <span className="font-semibold text-blue-700 dark:text-blue-300">Invoice Sent</span>
                                                                 </div>
                                                                 <div className="text-sm mb-1">
                                                                     <span className="font-medium">Invoice #{invoiceMsg.invoice_number}</span>
@@ -930,7 +934,7 @@ export default function MessagesPage() {
                                                                 )}
                                                                 <a
                                                                     href={`/dashboard/my-invoices?tab=${isSent ? 'sent' : 'received'}&invoiceId=${invoiceMsg.invoice_id}`}
-                                                                    className="inline-block mt-2 px-4 py-2 rounded bg-green-600 text-white text-xs font-semibold hover:bg-green-700 transition"
+                                                                    className="inline-block mt-2 px-4 py-2 rounded bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 transition"
                                                                     target="_blank"
                                                                     rel="noopener noreferrer"
                                                                 >
@@ -956,18 +960,18 @@ export default function MessagesPage() {
                                                             <div className={`rounded-lg border-2 p-4 shadow-md flex flex-col w-full ${
                                                                 signatureMsg.type === 'signature_request' 
                                                                     ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' 
-                                                                    : 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
+                                                                    : 'border-green-500 bg-green-50 dark:bg-green-900/20'
                                                             }`}>
                                                                 <div className="flex items-center gap-2 mb-2">
                                                                     <Signature className={`h-5 w-5 ${
                                                                         signatureMsg.type === 'signature_request' 
                                                                             ? 'text-blue-600' 
-                                                                            : 'text-purple-600'
+                                                                            : 'text-green-600'
                                                                     }`} />
                                                                     <span className={`font-semibold ${
                                                                         signatureMsg.type === 'signature_request' 
                                                                             ? 'text-blue-700 dark:text-blue-300' 
-                                                                            : 'text-purple-700 dark:text-purple-300'
+                                                                            : 'text-green-700 dark:text-green-300'
                                                                     }`}>
                                                                         {signatureMsg.type === 'signature_request' ? 'Signature Request' : 'Document Signed'}
                                                                     </span>
@@ -995,7 +999,7 @@ export default function MessagesPage() {
                                                                     className={`inline-block mt-2 px-4 py-2 rounded text-white text-xs font-semibold transition ${
                                                                         signatureMsg.type === 'signature_request' 
                                                                             ? 'bg-blue-600 hover:bg-blue-700' 
-                                                                            : 'bg-purple-600 hover:bg-purple-700'
+                                                                            : 'bg-green-600 hover:bg-green-700'
                                                                     }`}
                                                                     target="_blank"
                                                                     rel="noopener noreferrer"
@@ -1070,7 +1074,7 @@ export default function MessagesPage() {
                                     </div>
                                 )}
                                 <div className="flex items-center gap-2">
-                                    <DropdownMenu>
+                                    <DropdownMenu open={attachmentDropdownOpen} onOpenChange={setAttachmentDropdownOpen}>
                                         <DropdownMenuTrigger asChild>
                                             <Button variant="ghost" size="icon" title="Attach file or action">
                                                 <BriefcaseBusiness className="h-4 w-4 text-gray-500" />
@@ -1105,7 +1109,10 @@ export default function MessagesPage() {
                                             <DropdownMenuItem onClick={handleSendSignatureRequest} disabled={!selectedConversation}>
                                                 <Signature className="mr-2 h-4 w-4" /> Send Signature Request
                                             </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => router.push('/dashboard/my-vault')} disabled={!currentUserId}>
+                                            <DropdownMenuItem onClick={() => {
+                                                router.push('/dashboard/my-vault');
+                                                setAttachmentDropdownOpen(false);
+                                            }} disabled={!currentUserId}>
                                                 <Vault className="mr-2 h-4 w-4" /> Share Documentation From Vault
                                             </DropdownMenuItem>
                                         </DropdownMenuContent>

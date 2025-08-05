@@ -35,7 +35,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { format, formatDistanceToNow } from 'date-fns';
 import { safeFormatDate } from '@/lib/utils';
-import { downloadInvoicePDF, createInvoice, getInvoices, updateInvoiceStatus, editInvoice, type Invoice, type InvoiceItem } from '@/lib/invoices';
+import { downloadInvoicePDF, createInvoice, getInvoices, updateInvoiceStatus, editInvoice, deleteInvoice, type Invoice, type InvoiceItem } from '@/lib/invoices';
 import { useUser } from '@/lib/auth';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { Database } from '@/lib/database.types';
@@ -70,7 +70,7 @@ import {
   XCircle,
   ChevronDown,
   EllipsisVertical,
-  Trash2,
+  Trash,
   Pencil,
   User,
   Building2,
@@ -79,6 +79,7 @@ import {
   AlertCircle,
   Loader2,
   RefreshCw,
+  Ban,
 } from 'lucide-react';
 
 // Add dynamic helpers before the return statement in MyInvoicesPage
@@ -998,6 +999,24 @@ export default function MyInvoicesPage() {
     }
   };
 
+  const handleDeleteInvoice = async (invoiceId: string) => {
+    try {
+      await deleteInvoice(invoiceId);
+      setInvoices(prev => prev.filter(inv => inv.id !== invoiceId));
+      toast({
+        title: "Invoice deleted",
+        description: "The invoice has been successfully deleted.",
+      });
+    } catch (error) {
+      console.error('Error deleting invoice:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete the invoice. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleEditInvoice = async () => {
     if (!editingInvoice || !invoiceDate || !dueDate) return;
 
@@ -1813,7 +1832,7 @@ export default function MyInvoicesPage() {
                                   setNewInvoice(prev => ({ ...prev, items: newItems }));
                                 }}
                               >
-                                <Trash2 className="h-4 w-4 mr-2" /> Remove Item
+                                <Trash className="h-4 w-4 mr-2" /> Remove Item
                               </Button>
                             )}
                           </Card>
@@ -2365,9 +2384,6 @@ export default function MyInvoicesPage() {
                       <Button variant="ghost" size="sm" onClick={() => handleDownloadPDF(invoice)}>
                         <Download className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="sm" onClick={() => activeTab === 'received' ? handleViewInvoice(invoice) : handleStartEdit(invoice)}>
-                        <Eye className="h-4 w-4" />
-                      </Button>
                     </div>
                   </div>
                 </Card>
@@ -2474,17 +2490,7 @@ export default function MyInvoicesPage() {
                               View Escrow
                             </Button>
                           )}
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              activeTab === 'received' ? handleViewInvoice(invoice) : handleStartEdit(invoice);
-                            }}
-                          >
-                            <Eye className="h-4 w-4" />
-                            <span className="sr-only">View Details</span>
-                          </Button>
+
                           <Button
                             variant="ghost"
                             size="icon"
@@ -2504,16 +2510,19 @@ export default function MyInvoicesPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                              <DropdownMenuItem onClick={() => handleStartEdit(invoice)}>
-                                <Pencil className="mr-2 h-4 w-4" />
-                                <span>Edit</span>
-                              </DropdownMenuItem>
                               <DropdownMenuItem
                                 className="text-red-500"
                                 onClick={() => handleStatusChange(invoice.id, 'cancelled')}
                               >
-                                <Trash2 className="mr-2 h-4 w-4" />
+                                <Ban className="mr-2 h-4 w-4" />
                                 <span>Cancel</span>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="text-red-500"
+                                onClick={() => handleDeleteInvoice(invoice.id)}
+                              >
+                                <Trash className="mr-2 h-4 w-4" />
+                                <span>Delete</span>
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -2541,24 +2550,23 @@ export default function MyInvoicesPage() {
                                   <span>View Escrow</span>
                                 </DropdownMenuItem>
                               )}
-                              <DropdownMenuItem onClick={() => handleStartEdit(invoice)}>
-                                <Eye className="mr-2 h-4 w-4" />
-                                <span>View</span>
-                              </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleDownloadPDF(invoice)}>
                                 <Download className="mr-2 h-4 w-4" />
                                 <span>Download PDF</span>
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleStartEdit(invoice)}>
-                                <Pencil className="mr-2 h-4 w-4" />
-                                <span>Edit</span>
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 className="text-red-500"
                                 onClick={() => handleStatusChange(invoice.id, 'cancelled')}
                               >
-                                <Trash2 className="mr-2 h-4 w-4" />
+                                <Ban className="mr-2 h-4 w-4" />
                                 <span>Cancel</span>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="text-red-500"
+                                onClick={() => handleDeleteInvoice(invoice.id)}
+                              >
+                                <Trash className="mr-2 h-4 w-4" />
+                                <span>Delete</span>
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -2727,9 +2735,6 @@ export default function MyInvoicesPage() {
                       <Button variant="ghost" size="sm" onClick={() => handleDownloadPDF(invoice)}>
                         <Download className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="sm" onClick={() => activeTab === 'received' ? handleViewInvoice(invoice) : handleStartEdit(invoice)}>
-                        <Eye className="h-4 w-4" />
-                      </Button>
                     </div>
                   </div>
                 </Card>
@@ -2828,17 +2833,6 @@ export default function MyInvoicesPage() {
                             size="icon"
                             onClick={(e) => {
                               e.stopPropagation();
-                              activeTab === 'received' ? handleViewInvoice(invoice) : handleStartEdit(invoice);
-                            }}
-                          >
-                            <Eye className="h-4 w-4" />
-                            <span className="sr-only">View Details</span>
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={(e) => {
-                              e.stopPropagation();
                               handleDownloadPDF(invoice);
                             }}
                           >
@@ -2853,16 +2847,19 @@ export default function MyInvoicesPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                              <DropdownMenuItem onClick={() => handleStartEdit(invoice)}>
-                                <Pencil className="mr-2 h-4 w-4" />
-                                <span>Edit</span>
-                              </DropdownMenuItem>
                               <DropdownMenuItem
                                 className="text-red-500"
                                 onClick={() => handleStatusChange(invoice.id, 'cancelled')}
                               >
-                                <Trash2 className="mr-2 h-4 w-4" />
+                                <Ban className="mr-2 h-4 w-4" />
                                 <span>Cancel</span>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="text-red-500"
+                                onClick={() => handleDeleteInvoice(invoice.id)}
+                              >
+                                <Trash className="mr-2 h-4 w-4" />
+                                <span>Delete</span>
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -2890,24 +2887,23 @@ export default function MyInvoicesPage() {
                                   <span>View Escrow</span>
                                 </DropdownMenuItem>
                               )}
-                              <DropdownMenuItem onClick={() => handleStartEdit(invoice)}>
-                                <Eye className="mr-2 h-4 w-4" />
-                                <span>View</span>
-                              </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleDownloadPDF(invoice)}>
                                 <Download className="mr-2 h-4 w-4" />
                                 <span>Download PDF</span>
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleStartEdit(invoice)}>
-                                <Pencil className="mr-2 h-4 w-4" />
-                                <span>Edit</span>
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 className="text-red-500"
                                 onClick={() => handleStatusChange(invoice.id, 'cancelled')}
                               >
-                                <Trash2 className="mr-2 h-4 w-4" />
+                                <Ban className="mr-2 h-4 w-4" />
                                 <span>Cancel</span>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="text-red-500"
+                                onClick={() => handleDeleteInvoice(invoice.id)}
+                              >
+                                <Trash className="mr-2 h-4 w-4" />
+                                <span>Delete</span>
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -3438,7 +3434,7 @@ export default function MyInvoicesPage() {
                             setEditingInvoice(prev => prev ? { ...prev, items: newItems } : null);
                           }}
                         >
-                          <Trash2 className="h-4 w-4 mr-2" /> Remove Item
+                          <Trash className="h-4 w-4 mr-2" /> Remove Item
                         </Button>
                       )}
                     </Card>
