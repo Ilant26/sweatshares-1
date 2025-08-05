@@ -915,10 +915,10 @@ export default function MessagesPage() {
                                                                     <AvatarFallback>{senderName.charAt(0)}</AvatarFallback>
                                                                 </Avatar>
                                                             )}
-                                                            <div className="rounded-lg border-2 border-blue-500 bg-blue-50 dark:bg-blue-900/20 p-4 shadow-md flex flex-col w-full">
+                                                            <div className="rounded-lg border-2 border-green-500 bg-green-50 dark:bg-green-900/20 p-4 shadow-md flex flex-col w-full">
                                                                 <div className="flex items-center gap-2 mb-2">
-                                                                    <Receipt className="h-5 w-5 text-blue-600" />
-                                                                    <span className="font-semibold text-blue-700 dark:text-blue-300">Invoice Sent</span>
+                                                                    <Receipt className="h-5 w-5 text-green-600" />
+                                                                    <span className="font-semibold text-green-700 dark:text-green-300">Invoice Sent</span>
                                                                 </div>
                                                                 <div className="text-sm mb-1">
                                                                     <span className="font-medium">Invoice #{invoiceMsg.invoice_number}</span>
@@ -934,7 +934,7 @@ export default function MessagesPage() {
                                                                 )}
                                                                 <a
                                                                     href={`/dashboard/my-invoices?tab=${isSent ? 'sent' : 'received'}&invoiceId=${invoiceMsg.invoice_id}`}
-                                                                    className="inline-block mt-2 px-4 py-2 rounded bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 transition"
+                                                                    className="inline-block mt-2 px-4 py-2 rounded bg-green-600 text-white text-xs font-semibold hover:bg-green-700 transition"
                                                                     target="_blank"
                                                                     rel="noopener noreferrer"
                                                                 >

@@ -77,11 +77,13 @@ export async function POST(request: NextRequest) {
       escrowTransactionId: escrowTransaction.id
     });
 
-    // First, try to get by user_id
+    // First, try to get by user_id with more flexible query
     const { data: accountByUserId, error: errorByUserId } = await supabase
       .from('stripe_connect_accounts')
       .select('*')
       .eq('user_id', escrowTransaction.payee_id)
+      .order('created_at', { ascending: false })
+      .limit(1)
       .maybeSingle();
 
     console.log('Account lookup result:', {

@@ -91,7 +91,9 @@ export async function createEscrowTransaction(
       .eq('user_id', payeeId)
       .eq('account_status', 'active')
       .eq('onboarding_completed', true)
-      .single();
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
     if (!connectError && connectAccount) {
       stripeConnectAccountId = connectAccount.stripe_account_id;

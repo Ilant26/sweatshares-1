@@ -41,7 +41,7 @@ BEGIN
   FROM profiles WHERE id = NEW.payee_id;
   
   -- Get invoice number
-  SELECT invoice_number INTO invoice_number
+  SELECT invoices.invoice_number INTO invoice_number
   FROM invoices WHERE id = NEW.invoice_id;
   
   -- Format amount
