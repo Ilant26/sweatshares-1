@@ -380,7 +380,7 @@ export default function MyVaultPage() {
       console.error('Upload error:', error);
       toast.error('An unexpected error occurred during upload');
       setFileInput(null);
-      setForm({ name: '', type: '', description: '', tags: '', file: null });
+      setForm({ name: '', type: '', description: '', file: null });
     } finally {
       setUploading(false);
     }
