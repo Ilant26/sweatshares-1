@@ -63,7 +63,7 @@ const getListingTypesForProfile = (profileType: string) => {
         { value: "expert-freelance", label: "💼 Find an expert/freelancer", category: "Work" },
         { value: "employee", label: "💼 Find an employee", category: "Work" },
         { value: "mentor", label: "🎓 Find a mentor", category: "Learning" },
-        { value: "sell-startup", label: "🏢 Sell his startup", category: "Business" }
+        { value: "sell-startup", label: "🏢 Sell a startup", category: "Business" }
       ];
     case "investor":
       return [
@@ -553,70 +553,62 @@ export default function MyAlertsPage() {
                             Select one type of opportunity you want to be notified about
                           </p>
                           
-                          <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto border rounded-md p-3">
-                            {Object.entries(
-                              ALL_LISTING_TYPES.reduce((acc, type) => {
-                                if (!acc[type.category]) acc[type.category] = [];
-                                acc[type.category].push(type);
-                                return acc;
-                              }, {} as Record<string, typeof ALL_LISTING_TYPES>)
-                            ).map(([category, types]) => (
-                              <div key={category} className="space-y-2">
-                                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                                  {category}
-                                </div>
-                                <div className="grid grid-cols-1 gap-1">
-                                  {types.map((type) => (
-                                    <label key={type.value} className="flex items-center space-x-2 cursor-pointer hover:bg-muted/50 p-2 rounded">
-                                      <Checkbox
-                                        checked={selectedListingTypes.includes(type.value)}
-                                        onCheckedChange={(checked) => {
-                                          if (checked) {
-                                             // Clear previous selection and set new one (single selection)
-                                             setSelectedListingTypes([type.value]);
-                                             
-                                             // Clear previous conditional fields
-                                             setFundingStage('');
-                                             setCompensationType('');
-                                             setCompensationValue({});
-                                             setAmount('');
-                                             
-                                             // Auto-select appropriate profile types based on listing type
-                                             const profileTypesForListing: string[] = [];
-                                             if (getListingTypesForProfile("founder").some(t => t.value === type.value)) {
-                                               profileTypesForListing.push("founder");
-                                             }
-                                             if (getListingTypesForProfile("investor").some(t => t.value === type.value)) {
-                                               profileTypesForListing.push("investor");
-                                             }
-                                             if (getListingTypesForProfile("expert").some(t => t.value === type.value)) {
-                                               profileTypesForListing.push("expert");
-                                             }
-                                             setSelectedProfileTypes(profileTypesForListing);
-                                             
-                                             // Clear skills if this type doesn't require them
-                                             if (!SKILL_REQUIRED_TYPES.includes(type.value)) {
-                                               setSelectedSkills([]);
-                                             }
-                                          } else {
-                                             // If unchecking, clear everything
-                                             setSelectedListingTypes([]);
-                                              setSelectedSkills([]);
-                                             setSelectedProfileTypes([]);
-                                             setFundingStage('');
-                                             setCompensationType('');
-                                             setCompensationValue({});
-                                             setAmount('');
-                                          }
-                                        }}
-                                      />
-                                      <span className="text-sm">{type.label}</span>
-                                    </label>
-                                  ))}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
+                          <Select value={selectedListingTypes[0] || ""} onValueChange={(value) => {
+                            if (value) {
+                              // Clear previous selection and set new one (single selection)
+                              setSelectedListingTypes([value]);
+                              
+                              // Clear previous conditional fields
+                              setFundingStage('');
+                              setCompensationType('');
+                              setCompensationValue({});
+                              setAmount('');
+                              
+                              // Auto-select appropriate profile types based on listing type
+                              const profileTypesForListing: string[] = [];
+                              if (getListingTypesForProfile("founder").some(t => t.value === value)) {
+                                profileTypesForListing.push("founder");
+                              }
+                              if (getListingTypesForProfile("investor").some(t => t.value === value)) {
+                                profileTypesForListing.push("investor");
+                              }
+                              if (getListingTypesForProfile("expert").some(t => t.value === value)) {
+                                profileTypesForListing.push("expert");
+                              }
+                              setSelectedProfileTypes(profileTypesForListing);
+                              
+                              // Clear skills if this type doesn't require them
+                              if (!SKILL_REQUIRED_TYPES.includes(value)) {
+                                setSelectedSkills([]);
+                              }
+                            } else {
+                              // If clearing, clear everything
+                              setSelectedListingTypes([]);
+                              setSelectedSkills([]);
+                              setSelectedProfileTypes([]);
+                              setFundingStage('');
+                              setCompensationType('');
+                              setCompensationValue({});
+                              setAmount('');
+                            }
+                          }}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select what you're looking for..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="find-funding">Find funding</SelectItem>
+                              <SelectItem value="investment-opportunity">Find an investment opportunity</SelectItem>
+                              <SelectItem value="cofounder">Find a co-founder</SelectItem>
+                              <SelectItem value="co-investor">Find a co-investor</SelectItem>
+                              <SelectItem value="expert-freelance">Find an expert/freelancer</SelectItem>
+                              <SelectItem value="employee">Find an employee</SelectItem>
+                              <SelectItem value="mission">Find a mission</SelectItem>
+                              <SelectItem value="job">Find a job</SelectItem>
+                              <SelectItem value="mentor">Find a mentor</SelectItem>
+                              <SelectItem value="sell-startup">Sell a startup</SelectItem>
+                              <SelectItem value="buy-startup">Buy a startup</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
                       </div>
 

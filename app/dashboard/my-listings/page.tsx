@@ -15,7 +15,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Textarea } from '@/components/ui/textarea';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { Plus, Search, ChevronDown, Edit, Trash2, Eye, Settings2, Calendar as CalendarIcon, DollarSign, Filter, ListFilter, SlidersHorizontal, ArrowUpDown, AlignLeft, List as ListIcon } from 'lucide-react';
+import { Plus, Search, ChevronDown, Edit, Trash2, Eye, Settings2, Calendar as CalendarIcon, DollarSign, Filter, ListFilter, SlidersHorizontal, ArrowUpDown, AlignLeft, Handshake } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/lib/supabase';
 import { useSession } from '@/components/providers/session-provider';
@@ -283,7 +283,7 @@ export default function MyListingsPage() {
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
                     <div className="flex items-center space-x-3">
                         <div className="p-2 bg-primary/10 rounded-lg">
-                            <ListIcon className="h-6 w-6 text-primary" />
+                            <Handshake className="h-6 w-6 text-primary" />
                         </div>
                         <div>
                             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Manage Your Opportunities</h1>
@@ -291,9 +291,6 @@ export default function MyListingsPage() {
                         </div>
                     </div>
                     <div className="flex flex-col sm:flex-row gap-2">
-                        <Button onClick={() => router.push('/dashboard/listings')} variant="outline" className="w-full sm:w-auto">
-                            View Opportunities
-                        </Button>
                         <Button onClick={() => setIsNewListingModalOpen(true)} className="w-full sm:w-auto">
                             <Plus className="mr-2 h-4 w-4" /> New Opportunity
                         </Button>

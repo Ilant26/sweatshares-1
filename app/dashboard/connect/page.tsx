@@ -5,10 +5,11 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Search, UserPlus, Check, X, Globe2, MapPin, Briefcase } from 'lucide-react'
+import { Search, UserPlus, Check, X, Globe2, MapPin, Briefcase, Eye, MessageCircle } from 'lucide-react'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { supabase } from '@/lib/supabase'
 import { Badge } from '@/components/ui/badge'
+import { useRouter } from 'next/navigation'
 
 interface Profile {
   id: string
@@ -27,6 +28,7 @@ interface ConnectionStatus {
 }
 
 export default function ConnectPage() {
+  const router = useRouter()
   const [searchQuery, setSearchQuery] = useState('')
   const [profiles, setProfiles] = useState<Profile[]>([])
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>({})
@@ -201,26 +203,23 @@ export default function ConnectPage() {
 
   return (
     <div className="flex flex-col flex-1 h-full bg-background p-8 pt-6">
-      <Card>
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <CardTitle>Find People to Connect With</CardTitle>
-            <Badge variant="secondary">
-              {profiles.length} People Found
-            </Badge>
-          </div>
-          <div className="relative w-full mt-4">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search by name, username, or role..."
-              className="pl-8 w-full"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-        </CardHeader>
-        <CardContent>
-          <ScrollArea className="h-[calc(100vh-300px)]">
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h1 className="text-2xl font-bold">Find People to Connect With</h1>
+          <Badge variant="secondary">
+            {profiles.length} People Found
+          </Badge>
+        </div>
+        <div className="relative w-full">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by name, username, or role..."
+            className="pl-8 w-full"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+        <ScrollArea className="h-[calc(100vh-300px)]">
             {loading ? (
               <div className="flex items-center justify-center h-32">
                 <span className="text-muted-foreground">Loading profiles...</span>
@@ -277,14 +276,33 @@ export default function ConnectPage() {
                         )}
                       </div>
                     </div>
-                    {getConnectionButton(profile)}
+                    <div className="flex items-center gap-2">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => router.push(`/dashboard/profile/${profile.id}`)}
+                        className="h-8 w-8 p-0"
+                        title="View Profile"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => router.push(`/dashboard/messages?userId=${profile.id}`)}
+                        className="h-8 w-8 p-0"
+                        title="Send Message"
+                      >
+                        <MessageCircle className="h-4 w-4" />
+                      </Button>
+                      {getConnectionButton(profile)}
+                    </div>
                   </div>
                 ))}
               </div>
             )}
           </ScrollArea>
-        </CardContent>
-      </Card>
+        </div>
     </div>
   )
 } 

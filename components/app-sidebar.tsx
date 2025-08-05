@@ -19,7 +19,7 @@ import {
   LayoutDashboard,
   MessageCircle,
   List,
-  ReceiptText,
+  Receipt,
   HelpCircle,
   MessageSquarePlus,
   Handshake,
@@ -94,7 +94,7 @@ const data = {
     {
       title: "Invoices",
       url: "/dashboard/my-invoices",
-      icon: ReceiptText,
+      icon: Receipt,
     },
   ],
 }
