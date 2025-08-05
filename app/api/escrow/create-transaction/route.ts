@@ -20,12 +20,13 @@ export async function POST(request: NextRequest) {
       amount,
       transactionType,
       payerId,
+      payeeId,
       description,
       customTimeline
     } = body;
 
     // Validate required fields
-    if (!invoiceId || !amount || !transactionType || !payerId) {
+    if (!invoiceId || !amount || !transactionType || !payerId || !payeeId) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -41,7 +42,7 @@ export async function POST(request: NextRequest) {
         amount,
         transactionType,
         payerId,
-        user.id,
+        payeeId,
         description,
         customTimeline
       );

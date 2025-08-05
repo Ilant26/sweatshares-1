@@ -127,7 +127,8 @@ export default function EscrowPaymentPage() {
           invoiceId: invoiceData.id,
           amount: invoiceData.total || invoiceData.amount,
           transactionType: 'work',
-          payerId: invoiceData.sender_id,
+          payerId: user.id,
+          payeeId: invoiceData.sender_id,
           description: `Escrow payment for invoice ${invoiceData.invoice_number}`,
           customTimeline: {
             completion_deadline_days: 30,
